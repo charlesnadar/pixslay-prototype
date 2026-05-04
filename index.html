@@ -1,0 +1,2416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Pixslay — Interactive Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:#E8E4DF;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;overflow:hidden;}
+.phone{width:390px;height:844px;background:#F8F7F5;border-radius:50px;overflow:hidden;position:relative;flex-shrink:0;
+  box-shadow:0 0 0 8px #2E2A26,0 0 0 10px #1A1610,0 32px 64px rgba(0,0,0,.35);}
+@media(max-width:500px){
+  body{padding:0;background:#F8F7F5;align-items:flex-start;overflow:hidden;}
+  .phone{width:100vw;height:100svh;border-radius:0;box-shadow:none;flex-shrink:0;}
+  .notch{display:none;}
+  .switch-pill{top:8px;}
+}
+@supports not (height:100svh){
+  @media(max-width:500px){.phone{height:100vh;}}
+}
+.notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:126px;height:34px;background:#111;border-radius:0 0 20px 20px;z-index:9999;pointer-events:none;}
+
+/* SWITCH PILL */
+.switch-pill{position:absolute;top:6px;left:50%;transform:translateX(-50%);z-index:9998;background:#fff;border:0.5px solid #1B4FD8;border-radius:20px;padding:4px 12px;font-size:10px;font-weight:500;color:#1B4FD8;cursor:pointer;white-space:nowrap;font-family:inherit;}
+
+/* SCREEN */
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;background:#F8F7F5;transition:transform .28s ease,opacity .28s ease;}
+.screen.hidden{transform:translateX(100%);opacity:0;pointer-events:none;}
+.screen.slide-left{transform:translateX(-20%);opacity:0;pointer-events:none;}
+
+/* STATUS BAR */
+.sbar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:8px 20px 0;flex-shrink:0;}
+.sbar-time{font-size:13px;font-weight:600;color:#1A1917;}
+.sbar-icons{display:flex;gap:5px;align-items:center;}
+
+/* TOP BAR */
+.tbar{height:44px;display:flex;align-items:center;padding:0 4px;flex-shrink:0;background:#fff;position:relative;}
+.tbar-title{position:absolute;left:50%;transform:translateX(-50%);font-size:16px;font-weight:700;color:#1A1917;white-space:nowrap;pointer-events:none;}
+.tbar-l,.tbar-r{display:flex;align-items:center;z-index:1;}
+.tbar-r{margin-left:auto;}
+.ibtn{width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:50%;border:none;background:none;transition:background .1s;}
+.ibtn:active{background:rgba(0,0,0,.06);}
+
+/* NAV BAR */
+.nav{height:72px;background:#fff;border-top:0.5px solid #F0EEEB;display:flex;align-items:center;padding:0 40px 10px;flex-shrink:0;position:relative;}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;flex:1;}
+.nav-lbl{font-size:9px;font-weight:500;}
+.nav-fab{width:52px;height:52px;background:#1B4FD8;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid #fff;box-shadow:0 4px 12px rgba(27,79,216,.3);cursor:pointer;position:absolute;bottom:22px;left:50%;transform:translateX(-50%);z-index:10;transition:transform .1s;}
+.nav-fab:active{transform:translateX(-50%) scale(.95);}
+
+/* SCROLL */
+.scroll{flex:1;overflow-y:auto;overflow-x:hidden;}
+.scroll::-webkit-scrollbar{display:none;}
+
+/* BUTTONS */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;border:none;font-family:inherit;cursor:pointer;transition:all .1s;}
+.btn-p{height:50px;border-radius:12px;font-size:15px;font-weight:600;color:#fff;background:#1B4FD8;width:100%;}
+.btn-p:active{background:#2960F5;transform:scale(.98);}
+.btn-p.dis{background:#F0EEEB;color:#A8A49F;cursor:default;transform:none;}
+.btn-s{height:44px;border-radius:12px;font-size:13px;font-weight:600;color:#1B4FD8;background:#fff;border:0.5px solid #C7D4FB;width:100%;}
+.btn-g{height:44px;border-radius:12px;font-size:13px;font-weight:500;color:#6B6864;background:transparent;width:100%;}
+
+/* FLOATING INPUT */
+.fi-wrap{position:relative;margin-bottom:12px;}
+.fi{width:100%;height:52px;border:0.5px solid #F0EEEB;border-radius:10px;padding:20px 14px 7px;font-family:inherit;font-size:14px;font-weight:400;color:#1A1917;background:#fff;outline:none;transition:border .15s;}
+.fi:focus{border:1px solid #1B4FD8;}
+.fi.has-val{border-color:#C7D4FB;}
+.fi-lbl{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:14px;font-weight:400;color:#A8A49F;pointer-events:none;transition:all .15s;background:#fff;padding:0;}
+.fi:focus~.fi-lbl,.fi.has-val~.fi-lbl{top:0;transform:translateY(-50%);font-size:11px;font-weight:600;color:#1B4FD8;padding:0 4px;}
+.fi.has-val:not(:focus)~.fi-lbl{color:#A8A49F;}
+.fi-err~.fi-lbl{color:#E8490F!important;}
+.fi-err{border:1px solid #E8490F!important;}
+.fi-errmsg{font-size:12px;color:#E8490F;margin-top:4px;padding-left:2px;}
+
+/* OTP */
+.otp-row{display:flex;gap:8px;justify-content:center;position:relative;}
+.otp-box{width:40px;height:52px;border:0.5px solid #F0EEEB;border-radius:10px;background:#fff;font-size:24px;font-weight:800;color:#1B4FD8;text-align:center;font-family:inherit;outline:none;transition:all .15s;display:flex;align-items:center;justify-content:center;pointer-events:none;position:relative;z-index:1;}
+.otp-box:focus{border:1.5px solid #1B4FD8;}
+.otp-box.filled{background:#EEF2FD;border-color:#C7D4FB;}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.shake{animation:shake .3s;}
+
+/* PROGRESS DOTS */
+.pdots{display:flex;gap:6px;justify-content:center;padding:20px 0 24px;}
+.pdot{width:6px;height:6px;background:#F0EEEB;border-radius:3px;transition:all .2s;}
+.pdot.act{width:18px;background:#1B4FD8;}
+
+/* FACE CHIP */
+.fchip{display:inline-flex;align-items:center;gap:6px;height:36px;border-radius:20px;padding:0 12px 0 6px;cursor:pointer;transition:all .15s;white-space:nowrap;flex-shrink:0;border:none;font-family:inherit;}
+.fchip.id{background:#1B4FD8;}
+.fchip.unid{background:#F0EEEB;}
+.fchip.af{outline:2px solid #fff;outline-offset:1px;transform:scale(1.02);}
+.fchip-av{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;}
+.fchip.id .fchip-av{background:rgba(255,255,255,.22);color:#fff;}
+.fchip.unid .fchip-av{background:#D4D1CC;color:#A8A49F;}
+.fchip-name{font-size:13px;font-weight:600;}
+.fchip.id .fchip-name{color:#fff;}
+.fchip.unid .fchip-name{color:#A8A49F;}
+.fchip-ct{font-size:12px;font-weight:600;margin-left:2px;}
+.fchip.id .fchip-ct{color:rgba(255,255,255,.8);}
+.fchip.unid .fchip-ct{color:#1A1917;}
+
+/* CHIPS ROW */
+.chips-row{display:flex;gap:8px;padding:8px 16px;overflow-x:auto;flex-shrink:0;}
+.chips-row::-webkit-scrollbar{display:none;}
+
+/* FILTER BAR */
+.filter-bar{background:#fff;flex-shrink:0;border-bottom:0.5px solid #F0EEEB;}
+.filter-cats{display:flex;gap:8px;padding:8px 16px;overflow-x:auto;}
+.filter-cats::-webkit-scrollbar{display:none;}
+.fcat{height:32px;border-radius:16px;padding:0 14px;font-size:12px;font-weight:500;cursor:pointer;border:none;font-family:inherit;white-space:nowrap;transition:all .15s;}
+.fcat.on{background:#1B4FD8;color:#fff;}
+.fcat.off{background:#F0EEEB;color:#6B6864;}
+.filter-subs{overflow:hidden;max-height:0;transition:max-height .2s ease;display:flex;gap:8px;padding:0 16px;overflow-x:auto;}
+.filter-subs.open{max-height:44px;padding:0 16px 8px;}
+.filter-subs::-webkit-scrollbar{display:none;}
+.fsub{height:30px;border-radius:15px;padding:0 12px;font-size:11px;font-weight:500;cursor:pointer;border:none;font-family:inherit;white-space:nowrap;transition:all .15s;}
+.fsub.on{background:#1B4FD8;color:#fff;}
+.fsub.off{background:#F0EEEB;color:#6B6864;}
+
+/* ACTION TABS */
+.atabs{display:flex;border-bottom:0.5px solid #F0EEEB;background:#fff;flex-shrink:0;}
+.atab{flex:1;height:40px;border:none;background:none;font-family:inherit;font-size:12px;font-weight:400;color:#A8A49F;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;padding:0;}
+.atab.on{font-weight:600;color:#1A1917;border-bottom-color:#1B4FD8;}
+
+/* PHOTO GRID */
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;}
+.pcell{aspect-ratio:1;overflow:hidden;position:relative;cursor:pointer;transition:opacity .3s;}
+.pcell.dim{opacity:0.2;}
+.pcell svg{width:100%;height:100%;display:block;}
+.pmarker{position:absolute;bottom:4px;right:4px;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.pmarker.grp{background:#1B4FD8;}
+.pmarker.ind{background:#6B6864;}
+.pmarker.sav{background:#0F9E6E;width:8px;height:8px;}
+.sel-cb{position:absolute;top:4px;left:4px;width:24px;height:24px;border-radius:50%;border:1.5px solid rgba(255,255,255,.9);background:rgba(0,0,0,.3);display:none;align-items:center;justify-content:center;pointer-events:none;}
+.sel-mode .sel-cb{display:flex;}
+.pcell.sel .sel-cb{background:#1B4FD8;border-color:#1B4FD8;}
+.pcell.sel::after{content:'';position:absolute;inset:0;background:rgba(27,79,216,.18);}
+
+/* BOTTOM SHEET */
+.sheet-ov{position:absolute;inset:0;background:rgba(0,0,0,.45);z-index:200;opacity:0;pointer-events:none;transition:opacity .28s;}
+.sheet-ov.open{opacity:1;pointer-events:all;}
+.bsheet{position:absolute;bottom:0;left:0;right:0;background:#fff;border-radius:20px 20px 0 0;z-index:201;transform:translateY(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);max-height:88%;}
+.bsheet.open{transform:translateY(0);}
+.sh-handle{width:40px;height:4px;background:#F0EEEB;border-radius:2px;margin:8px auto 0;}
+
+/* TOAST */
+.toast{position:absolute;top:-64px;left:16px;right:16px;height:48px;border-radius:12px;display:flex;align-items:center;gap:10px;padding:0 14px;z-index:500;transition:top .2s ease-out;font-size:13px;font-weight:600;color:#fff;pointer-events:none;}
+.toast.succ{background:#0F9E6E;}
+.toast.err{background:#E8490F;}
+.toast.warn{background:#F5A623;}
+.toast.show{top:16px;}
+
+/* POPUP */
+.popup-ov{position:absolute;inset:0;background:rgba(0,0,0,.45);z-index:400;display:none;align-items:center;justify-content:center;}
+.popup-ov.open{display:flex;}
+.popup{background:#fff;border-radius:16px;padding:24px;width:280px;}
+.popup-h{font-size:18px;font-weight:800;color:#1A1917;margin-bottom:8px;line-height:1.3;}
+.popup-b{font-size:13px;color:#6B6864;line-height:1.5;margin-bottom:20px;}
+.popup-btns{display:flex;gap:8px;}
+.popup-btns button{flex:1;height:44px;border-radius:10px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;}
+.pop-dest{background:#fff;border:0.5px solid #E8490F;color:#E8490F;}
+.pop-safe{background:#1B4FD8;color:#fff;border:none;}
+
+/* SHARE FAB */
+.share-fab{position:absolute;bottom:80px;right:16px;width:52px;height:52px;background:#1B4FD8;border-radius:50%;display:none;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(27,79,216,.45);cursor:pointer;z-index:100;transition:transform .1s;}
+.share-fab.vis{display:flex;}
+.share-fab:active{transform:scale(.95);}
+
+/* EVENT CARD */
+.ev-card{border-radius:16px;overflow:hidden;margin-bottom:12px;cursor:pointer;position:relative;}
+.ev-card:active{transform:scale(.99);}
+.ev-img{height:140px;position:relative;}
+.ev-grad{position:absolute;inset:0;background:linear-gradient(to bottom,transparent 20%,rgba(0,0,0,.65));}
+.ev-info{position:absolute;bottom:0;left:0;right:0;padding:12px;}
+.ev-name{font-size:17px;font-weight:800;color:#fff;}
+.ev-date{font-size:12px;color:rgba(255,255,255,.8);margin-top:2px;}
+.ev-mems{display:flex;margin-top:6px;}
+.mav{width:22px;height:22px;border-radius:50%;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#fff;margin-right:-5px;}
+.ev-live{position:absolute;top:10px;right:10px;width:8px;height:8px;background:#0F9E6E;border-radius:50%;}
+.ev-sync{position:absolute;bottom:0;left:0;right:0;height:2px;background:#F0EEEB;overflow:hidden;}
+.ev-sync-fill{height:100%;background:#1B4FD8;}
+@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.ev-sync-fill.anim{animation:shimmer 1.5s infinite;}
+
+/* AMBER BANNER */
+.amber-banner{background:#FFF8EC;border-radius:8px;padding:8px 12px;margin:8px 16px 0;font-size:12px;font-weight:600;color:#F5A623;transition:opacity .5s;}
+
+/* WHATSAPP CHAT MOCK */
+.wa-chat{border:0.5px solid #F0EEEB;border-radius:12px;padding:16px;background:#fff;margin:0 16px;}
+.wa-label{font-size:11px;font-weight:600;color:#A8A49F;letter-spacing:.04em;margin-bottom:12px;}
+.wa-msg{display:flex;gap:8px;margin-bottom:8px;}
+.wa-msg.me{flex-direction:row-reverse;gap:0;}
+.wa-bubble{max-width:70%;padding:8px 12px;border-radius:12px;}
+.wa-msg:not(.me) .wa-bubble{background:#F0EEEB;border-radius:12px 12px 12px 2px;}
+.wa-msg.me .wa-bubble{background:#1B4FD8;border-radius:12px 12px 2px 12px;}
+.wa-msg-text{font-size:13px;color:#1A1917;line-height:1.4;}
+.wa-msg.me .wa-msg-text{color:#fff;}
+.wa-msg-time{font-size:10px;color:#A8A49F;margin-top:3px;}
+.wa-msg.me .wa-msg-time{color:rgba(255,255,255,.7);text-align:right;}
+.wa-msg-sender{font-size:10px;font-weight:500;color:#6B6864;margin-top:2px;}
+.wa-av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;flex-shrink:0;margin-top:2px;}
+
+/* DELIVERY SCREEN */
+.del-row{padding:11px 14px;display:flex;align-items:center;gap:10px;}
+.del-badge{background:#E8F7F1;border-radius:999px;padding:3px 8px;font-size:11px;font-weight:600;color:#0F9E6E;}
+.del-badge.wait{background:#FFF8EC;color:#F5A623;}
+
+/* PROGRESS BAR */
+.prog-track{height:4px;background:#EEF2FD;border-radius:2px;overflow:hidden;}
+.prog-fill{height:100%;background:#1B4FD8;border-radius:2px;width:0%;transition:width .05s linear;}
+
+/* LINK CARD */
+.link-card{background:#EEF2FD;border-radius:10px;padding:12px 14px;}
+
+/* SECTION LABEL */
+.slbl{font-size:11px;font-weight:600;color:#A8A49F;letter-spacing:.04em;margin-bottom:10px;}
+
+/* WEB PREVIEW BLUR */
+.blur-photos{display:flex;gap:4px;justify-content:center;margin:16px 0;}
+.blur-photo{width:90px;height:90px;border-radius:8px;overflow:hidden;position:relative;}
+.blur-photo svg{width:100%;height:100%;}
+.blur-photo::after{content:'';position:absolute;inset:0;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);background:rgba(248,247,245,.4);}
+
+/* SYNC CARD */
+.sync-card{background:#fff;border:0.5px solid #F0EEEB;border-radius:16px;padding:20px;margin:0 16px;}
+
+/* MOMENT FACE GRID */
+.face-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0;}
+.face-tile{aspect-ratio:1;border-radius:10px;border:0.5px solid #F0EEEB;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;font-weight:800;color:#fff;position:relative;transition:all .15s;}
+.face-tile.sel{outline:2.5px solid #1B4FD8;outline-offset:1px;}
+.face-tile .ft-check{position:absolute;bottom:-6px;right:-6px;width:20px;height:20px;background:#1B4FD8;border-radius:50%;display:none;align-items:center;justify-content:center;border:2px solid #fff;}
+.face-tile.sel .ft-check{display:flex;}
+
+/* SUGGESTION CHIPS */
+.sug-chips{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;}
+.sug-chip{height:32px;border-radius:16px;padding:0 12px;font-size:11px;font-weight:600;color:#0C447C;background:#EEF2FD;border:none;cursor:pointer;font-family:inherit;}
+
+/* PROFILE AVATAR */
+.av-upload{width:72px;height:72px;border-radius:50%;background:#EEF2FD;border:1.5px dashed #C7D4FB;display:flex;align-items:center;justify-content:center;cursor:pointer;margin:0 auto 8px;position:relative;overflow:hidden;}
+.av-upload img,.av-fill{width:100%;height:100%;border-radius:50%;object-fit:cover;}
+.av-edit{position:absolute;bottom:0;right:0;width:22px;height:22px;background:#1B4FD8;border-radius:50%;display:none;align-items:center;justify-content:center;}
+.av-upload.has-photo .av-edit{display:flex;}
+
+/* HERO CARD ILLUSTRATIONS */
+.hero-photos{height:88px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;position:relative;}
+.hp{width:56px;height:72px;border-radius:8px;border:2px solid #fff;position:absolute;}
+
+/* DOWNLOAD SHEET ROWS */
+.dl-row{padding:14px 20px;display:flex;align-items:center;gap:14px;cursor:pointer;}
+.dl-row:active{background:#F8F7F5;}
+.dl-row-info{flex:1;}
+.dl-row-info .dl-title{font-size:14px;font-weight:500;color:#1A1917;}
+.dl-row-info .dl-sub{font-size:12px;color:#6B6864;margin-top:2px;}
+.dl-price{font-size:12px;font-weight:600;}
+
+/* PERMISSION CARD */
+.perm-card{background:#EEF2FD;border-radius:12px;padding:14px 14px;margin:0 16px;display:flex;align-items:center;gap:10px;}
+
+/* MEMBER ROW */
+.mem-row{padding:12px 14px;display:flex;align-items:center;gap:10px;border-bottom:0.5px solid #F0EEEB;}
+.mem-row:last-child{border-bottom:none;}
+
+/* CONTACT CHIP in create group */
+.cchip{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;flex-shrink:0;}
+.cchip-av{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;position:relative;transition:all .15s;}
+.cchip-av.sel{outline:2px solid #1B4FD8;outline-offset:2px;}
+.cchip-chk{position:absolute;bottom:-3px;right:-3px;width:16px;height:16px;background:#0F9E6E;border-radius:50%;border:2px solid #fff;display:none;align-items:center;justify-content:center;}
+.cchip-av.sel .cchip-chk{display:flex;}
+.cchip-name{font-size:9px;font-weight:500;color:#6B6864;}
+
+/* INFO BANNER */
+.info-banner{background:#EEF2FD;border-radius:8px;padding:8px 12px;margin:8px 16px 0;display:flex;align-items:center;gap:8px;}
+
+/* EXTERNAL SHARE ICONS */
+.ext-icons{display:flex;gap:16px;justify-content:center;padding:16px;}
+.ext-icon{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;}
+.ext-icon-circle{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.ext-icon-lbl{font-size:10px;color:#6B6864;font-weight:500;}
+
+/* PHOTO COUNT BADGE */
+.photo-ct-badge{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.55);border-radius:10px;padding:2px 6px;font-size:10px;font-weight:600;color:#fff;}
+</style>
+</head>
+<body>
+
+<div class="phone" id="phone">
+  <div class="notch"></div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <!-- POPUP -->
+  <div class="popup-ov" id="popup-ov">
+    <div class="popup" id="popup-card">
+      <div class="popup-h" id="popup-h"></div>
+      <div class="popup-b" id="popup-b"></div>
+      <div class="popup-btns">
+        <button class="pop-dest" id="popup-dest-btn"></button>
+        <button class="pop-safe" id="popup-safe-btn"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREENS will be rendered here by JS -->
+</div>
+
+<script>
+// ─── DESIGN TOKENS ───────────────────────────────────────────
+const P = {
+  blue:'#1B4FD8',bh:'#2960F5',bt:'#EEF2FD',bb:'#C7D4FB',bd:'#0C447C',bdp:'#185FA5',
+  bg:'#FFFFFF',bgw:'#F8F7F5',bgs:'#F0EEEB',
+  t:'#1A1917',ts:'#6B6864',tt:'#A8A49F',td:'#D4D1CC',
+  ok:'#0F9E6E',al:'#E8490F',am:'#F5A623'
+};
+
+// ─── STATE ───────────────────────────────────────────────────
+let state = {
+  screen: 'entry',
+  journey: null,
+  completed: [],
+  identifiedFaces: [], // [{index,name}]
+  selectedFace: null,
+  selectionMode: false,
+  selectedPhotos: new Set(),
+  sharedPhotos: new Set(),
+  savedPhotos: new Set(),
+  activeFilters: {cat:null, sub:null, tab:'all'},
+  prevScreen: null,
+};
+
+function go(s) {
+  const prev = state.screen;
+  state.screen = s;
+  render();
+}
+
+function markComplete(j) {
+  if (!state.completed.includes(j)) state.completed.push(j);
+  state.identifiedFaces = [];
+  state.selectedPhotos = new Set();
+  state.sharedPhotos = new Set();
+  state.selectionMode = false;
+  go('entry');
+}
+
+// ─── TOAST ───────────────────────────────────────────────────
+let toastTimer = null;
+function showToast(msg, type='succ') {
+  const t = document.getElementById('toast');
+  if (!t) return;
+  t.className = `toast ${type} show`;
+  t.innerHTML = `${icoSVG(type==='succ'?'check':type==='err'?'x':'alert-circle',16,'#fff',2)} ${msg}`;
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ t.className=`toast ${type}`; }, 3000);
+}
+
+// ─── POPUP ───────────────────────────────────────────────────
+function showPopup(h,b,destLbl,safeLbl,onDest,onSafe) {
+  document.getElementById('popup-h').textContent=h;
+  document.getElementById('popup-b').textContent=b;
+  document.getElementById('popup-dest-btn').textContent=destLbl;
+  document.getElementById('popup-safe-btn').textContent=safeLbl;
+  document.getElementById('popup-dest-btn').onclick=()=>{ closePopup(); onDest&&onDest(); };
+  document.getElementById('popup-safe-btn').onclick=()=>{ closePopup(); onSafe&&onSafe(); };
+  document.getElementById('popup-ov').classList.add('open');
+}
+function closePopup() { document.getElementById('popup-ov').classList.remove('open'); }
+
+// ─── ICONS ───────────────────────────────────────────────────
+const ICONS = {
+  'arrow-left':'<polyline points="15 18 9 12 15 6"/><line x1="9" y1="12" x2="20" y2="12"/>',
+  'plus':'<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+  'home':'<path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
+  'user':'<path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  'users':'<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>',
+  'bell':'<path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/>',
+  'search':'<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+  'share-2':'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>',
+  'download':'<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
+  'bookmark':'<path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>',
+  'trash-2':'<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/>',
+  'check':'<polyline points="20 6 9 17 4 12"/>',
+  'x':'<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+  'chevron-right':'<polyline points="9 18 15 12 9 6"/>',
+  'more-horizontal':'<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>',
+  'more-vertical':'<circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>',
+  'image':'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>',
+  'camera':'<path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/>',
+  'alert-circle':'<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>',
+  'link':'<path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>',
+  'star':'<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+  'zap':'<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+  'log-out':'<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>',
+  'wifi-off':'<line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0119 12.55"/><path d="M5 12.55a10.94 10.94 0 015.17-2.39"/><path d="M10.71 5.05A16 16 0 0122.56 9"/><path d="M1.42 9a15.91 15.91 0 014.7-2.88"/><path d="M8.53 16.11a6 6 0 016.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/>',
+};
+
+function icoSVG(name, size=20, color=P.t, sw=1.5) {
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]||''}</svg>`;
+}
+
+function ibtn(icon, onclick, color=P.t, size=20) {
+  return `<button class="ibtn btn" onclick="${onclick}" style="flex-shrink:0;">${icoSVG(icon,size,color)}</button>`;
+}
+
+// ─── LOGO ────────────────────────────────────────────────────
+function logo(iconSz=20, wordSz=16) {
+  const r = Math.round(iconSz*0.27);
+  return `<div style="display:flex;align-items:center;gap:6px;cursor:default;">
+    <div style="width:${iconSz}px;height:${iconSz}px;background:${P.blue};border-radius:${r}px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <svg width="${iconSz*.6}" height="${iconSz*.6}" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="5" width="18" height="14" rx="2"/>
+        <circle cx="12" cy="12" r="3.5"/>
+        <circle cx="12" cy="12" r="1.2" fill="white" stroke="none"/>
+        <line x1="3" y1="5" x2="5.5" y2="2.5"/><line x1="21" y1="5" x2="18.5" y2="2.5"/>
+        <line x1="3" y1="19" x2="5.5" y2="21.5"/><line x1="21" y1="19" x2="18.5" y2="21.5"/>
+      </svg>
+    </div>
+    <span style="font-size:${wordSz}px;font-weight:800;color:${P.t};letter-spacing:-.3px;">Pi<span style="color:${P.blue};">x</span>slay</span>
+  </div>`;
+}
+
+// ─── STATUS BAR ──────────────────────────────────────────────
+function sbar(dark=false) {
+  const c = dark?'#fff':P.t;
+  return `<div class="sbar" style="background:inherit;">
+    <span class="sbar-time" style="color:${c};">9:41</span>
+    <div class="sbar-icons">
+      <svg width="17" height="12" viewBox="0 0 17 12" fill="${c}">
+        <rect x="0" y="5" width="3" height="7" rx="1" opacity=".4"/>
+        <rect x="4.5" y="3" width="3" height="9" rx="1" opacity=".6"/>
+        <rect x="9" y="1" width="3" height="11" rx="1" opacity=".8"/>
+        <rect x="13.5" y="0" width="3" height="12" rx="1"/>
+      </svg>
+      <svg width="16" height="11" viewBox="0 0 16 11" fill="${c}">
+        <path d="M8 2C10.8 2 13.3 3.1 15.1 4.9L16 4C14 2 11.1.8 8 .8S2 2 0 4l.9.9C2.7 3.1 5.2 2 8 2Z" opacity=".4"/>
+        <path d="M8 4.5C10 4.5 11.8 5.3 13.2 6.7l.9-.9C12.5 4.2 10.3 3.3 8 3.3S3.5 4.2 1.9 5.8l.9.9C4.2 5.3 6 4.5 8 4.5Z" opacity=".7"/>
+        <path d="M8 7c1.2 0 2.3.5 3.1 1.3l.9-.9C11 6.3 9.6 5.8 8 5.8S5 6.3 4 7.4l.9.9C5.7 7.5 6.8 7 8 7Z"/>
+        <circle cx="8" cy="10" r="1"/>
+      </svg>
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="none">
+        <rect x="0" y="1" width="21" height="10" rx="2" stroke="${c}" stroke-width="1"/>
+        <rect x="22" y="4" width="2" height="4" rx="1" fill="${c}" opacity=".4"/>
+        <rect x="1" y="2" width="16" height="8" rx="1" fill="${c}"/>
+      </svg>
+    </div>
+  </div>`;
+}
+
+// ─── TOP BAR ─────────────────────────────────────────────────
+function tbar(title='', showBack=false, onBack='', rightHtml='', bgWhite=true) {
+  const bg = bgWhite ? P.bg : 'transparent';
+  return `<div class="tbar" style="background:${bg};">
+    <div class="tbar-l">${showBack ? ibtn('arrow-left', onBack, P.blue) : ''}</div>
+    ${title ? `<div class="tbar-title">${title}</div>` : ''}
+    <div class="tbar-r">${rightHtml}</div>
+  </div>`;
+}
+
+// ─── NAV BAR ─────────────────────────────────────────────────
+function navbar(active='home', onHome='', onProfile='', onFab='') {
+  const homeC = active==='home' ? P.blue : P.tt;
+  const profC = active==='profile' ? P.blue : P.tt;
+  return `<div class="nav">
+    <div class="nav-item" onclick="${onHome}" style="cursor:pointer;">
+      ${icoSVG('home',22,homeC)}
+      <span class="nav-lbl" style="color:${homeC};">Home</span>
+    </div>
+    <div style="flex:1;"></div>
+    <div class="nav-item" onclick="${onProfile}" style="cursor:pointer;">
+      ${icoSVG('user',22,profC)}
+      <span class="nav-lbl" style="color:${profC};">Profile</span>
+    </div>
+    <div class="nav-fab" onclick="${onFab}">${icoSVG('plus',22,'#fff',2.2)}</div>
+  </div>`;
+}
+
+// ─── SWITCH PILL ─────────────────────────────────────────────
+function switchPill() {
+  return `<button class="switch-pill" onclick="go('entry')">Switch journey</button>`;
+}
+
+// ─── FLOATING INPUT ──────────────────────────────────────────
+let fiCounter = 0;
+function floatInput(label, id, val='', type='text', disabled=false, half=false) {
+  const hasVal = val.length > 0;
+  const floatedStyle = "top:0;transform:translateY(-50%);font-size:11px;font-weight:600;color:#1B4FD8;padding:0 4px;";
+  const restStyle = "top:50%;transform:translateY(-50%);font-size:14px;font-weight:400;color:#A8A49F;padding:0;";
+  const initStyle = hasVal ? floatedStyle : restStyle;
+  const initBorder = hasVal ? "0.5px solid #C7D4FB" : "0.5px solid #F0EEEB";
+  return `<div style="position:relative;margin-bottom:12px;${half?'flex:1;':''}" >
+    <input id="${id}" type="${type}" value="${val}" ${disabled?'disabled':''}
+      autocomplete="off"
+      style="width:100%;height:52px;border:${initBorder};border-radius:10px;padding:20px 14px 7px;font-family:inherit;font-size:14px;font-weight:400;color:#1A1917;background:#fff;outline:none;transition:border .15s;${disabled?'background:#F8F7F5;color:#D4D1CC;':''}"
+      oninput="fiJS('${id}',this,false)"
+      onfocus="fiJS('${id}',this,true)"
+      onblur="fiJS('${id}',this,false)"
+    >
+    <label id="${id}-lbl" for="${id}"
+      style="position:absolute;left:14px;background:#fff;pointer-events:none;transition:all .15s;${initStyle}"
+    >${label}</label>
+  </div>`;
+}
+function fiJS(id, el, isFocus) {
+  const lbl = document.getElementById(id+'-lbl');
+  if (!lbl) return;
+  const filled = el.value.length > 0;
+  const up = filled || isFocus;
+  if (up) {
+    lbl.style.top = '0';
+    lbl.style.transform = 'translateY(-50%)';
+    lbl.style.fontSize = '11px';
+    lbl.style.fontWeight = '600';
+    lbl.style.color = isFocus ? '#1B4FD8' : '#A8A49F';
+    lbl.style.padding = '0 4px';
+    el.style.border = isFocus ? '1px solid #1B4FD8' : '0.5px solid #C7D4FB';
+  } else {
+    lbl.style.top = '50%';
+    lbl.style.transform = 'translateY(-50%)';
+    lbl.style.fontSize = '14px';
+    lbl.style.fontWeight = '400';
+    lbl.style.color = '#A8A49F';
+    lbl.style.padding = '0';
+    el.style.border = '0.5px solid #F0EEEB';
+  }
+}
+
+// ─── PHOTO ILLUSTRATIONS ─────────────────────────────────────
+const PHOTO_CONFIGS = [
+  // [bg1, bg2, type, people_initials]
+  ['#2D5A27','#1B3A6B','forest',['VR','KA']],
+  ['#0D1B0D','#F5A623','bonfire',['VR','BE','KA','MA']],
+  ['#1E5799','#2D7DD2','lake',['MA','VI']],
+  ['#2D5A27','#4A8A3F','waterfall',['KA','VR']],
+  ['#0D1B0D','#5B3A8B','stars',['BE','VI','AN']],
+  ['#D2691E','#8B4513','food',['VR','KA','MA']],
+  ['#1B3A6B','#2D7DD2','lake',['AN','VI']],
+  ['#2E3828','#4A8A3F','forest',['VR','BE']],
+  ['#0D1B0D','#FF6B35','bonfire',['MA','KA','VR']],
+  ['#1E5799','#185FA5','waterfall',['BE']],
+  ['#D4A96A','#8B6914','food',['VI','AN']],
+  ['#5B3A8B','#0D1B0D','stars',['VR','MA']],
+  ['#3D7A32','#2D5A27','forest',['KA','BE','MA']],
+  ['#2D7DD2','#1B3A6B','lake',['VR','AN']],
+  ['#FF6B35','#D2691E','bonfire',['VI','BE']],
+  ['#4A8A3F','#3D7A32','forest',['AN']],
+  ['#185FA5','#1E5799','lake',['KA','VR','MA']],
+  ['#8B4513','#D2691E','food',['BE','AN']],
+  ['#5B3A8B','#1A0A05','stars',['MA','VI','VR']],
+  ['#2D5A27','#1B3A6B','forest',['KA']],
+  ['#0D1B0D','#F5A623','bonfire',['VR','BE']],
+  ['#2D7DD2','#185FA5','lake',['AN','MA']],
+  ['#4A8A3F','#2D5A27','waterfall',['VI']],
+  ['#0D1B0D','#5B3A8B','stars',['KA','BE','AN']],
+  ['#D2691E','#8B6914','food',['VR','MA','KA']],
+  ['#1B3A6B','#2D7DD2','lake',['BE']],
+  ['#2E3828','#4A8A3F','forest',['VI','AN']],
+  ['#FF6B35','#D2691E','bonfire',['VR','KA','MA','BE']],
+  ['#1E5799','#185FA5','waterfall',['AN','MA']],
+  ['#D4A96A','#8B4513','food',['VI']],
+  ['#5B3A8B','#0D1B0D','stars',['VR']],
+  ['#3D7A32','#2D5A27','forest',['KA','BE']],
+  ['#2D7DD2','#1B3A6B','lake',['AN','VI','MA']],
+  ['#FF6B35','#F5A623','bonfire',['VR','BE','KA','MA','VI','AN']],
+];
+
+const PERSON_COLORS = {VR:'#1B4FD8',BE:'#0F9E6E',KA:'#E8490F',MA:'#F5A623',VI:'#6B6864',AN:'#185FA5'};
+
+function photoSVG(index, size=120) {
+  const cfg = PHOTO_CONFIGS[index % PHOTO_CONFIGS.length];
+  const [c1,c2,type,people] = cfg;
+  const id = `g${index}`;
+  let inner = '';
+
+  if (type==='forest') {
+    inner = `<ellipse cx="60" cy="90" rx="80" ry="40" fill="${c1}"/>
+      <polygon points="60,15 30,70 90,70" fill="${c2}"/>
+      <polygon points="45,30 20,75 70,75" fill="${c1}" opacity=".8"/>
+      <polygon points="75,25 50,75 100,75" fill="${c2}" opacity=".7"/>`;
+  } else if (type==='bonfire') {
+    inner = `<rect width="120" height="120" fill="#1A0A05"/>
+      <ellipse cx="60" cy="95" rx="30" ry="8" fill="#3A2010"/>
+      <path d="M50,90 Q55,60 60,45 Q65,60 70,90 Z" fill="#FF6B35"/>
+      <path d="M53,90 Q57,65 60,55 Q63,65 67,90 Z" fill="${P.am}"/>
+      <path d="M56,90 Q59,72 60,65 Q61,72 64,90 Z" fill="#FFEE88"/>
+      ${people.slice(0,3).map((p,i)=>`<circle cx="${35+i*25}" cy="100" r="7" fill="${PERSON_COLORS[p]||'#888'}"/>`).join('')}`;
+  } else if (type==='lake') {
+    inner = `<rect width="120" height="60" fill="${c1}"/>
+      <rect y="60" width="120" height="60" fill="${c2}" opacity=".85"/>
+      <ellipse cx="60" cy="60" rx="60" ry="4" fill="${c2}"/>
+      <circle cx="90" cy="20" r="12" fill="#F5A623" opacity=".8"/>`;
+  } else if (type==='waterfall') {
+    inner = `<rect width="120" height="120" fill="${c1}"/>
+      <rect x="40" width="40" height="80" fill="#C8E6F0" opacity=".7"/>
+      <rect x="42" width="36" height="78" fill="#EEF8FC" opacity=".5"/>
+      <ellipse cx="60" cy="82" rx="28" ry="10" fill="${c2}" opacity=".9"/>`;
+  } else if (type==='stars') {
+    inner = `<rect width="120" height="120" fill="${c1}"/>
+      <rect x="0" y="80" width="120" height="40" fill="${c2}" opacity=".4"/>
+      ${Array.from({length:20},(_,i)=>`<circle cx="${(i*37)%110+5}" cy="${(i*29)%60+5}" r="${i%3===0?2:1}" fill="white" opacity="${.4+.5*(i%3)/2}"/>`).join('')}`;
+  } else {
+    inner = `<rect width="120" height="120" fill="${c1}"/>
+      <circle cx="60" cy="45" r="25" fill="${c2}" opacity=".7"/>
+      <rect x="20" y="80" width="80" height="30" rx="4" fill="${c2}" opacity=".5"/>`;
+  }
+
+  // face chip indicators
+  const faceRow = people.slice(0,2).map((p,i)=>`<circle cx="${6+i*10}" cy="114" r="4" fill="${PERSON_COLORS[p]||'#888'}" stroke="white" stroke-width="1"/>`).join('');
+
+  return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+    <defs><clipPath id="${id}"><rect width="120" height="120"/></clipPath></defs>
+    <g clip-path="url(#${id})">${inner}</g>
+    ${faceRow}
+  </svg>`;
+}
+
+// ─── PHOTO GRID ──────────────────────────────────────────────
+function photoGrid(count=12, selMode=false, selectedSet=new Set(), sharedSet=new Set(), savedSet=new Set(), filterDim=[], onTap='photoTap') {
+  let html = `<div class="pgrid${selMode?' sel-mode':''}">`;
+  for (let i=0; i<count; i++) {
+    const isSel = selectedSet.has(i);
+    const isShared = sharedSet.has(i);
+    const isSaved = savedSet.has(i);
+    const isDim = filterDim.includes(i);
+    html += `<div class="pcell${isSel?' sel':''}${isDim?' dim':''}" onclick="${onTap}(${i})">
+      ${photoSVG(i)}
+      <div class="sel-cb">${icoSVG('check',10,'#fff',3)}</div>
+      ${isShared?`<div class="pmarker grp">${icoSVG('check',10,'#fff',2.5)}</div>`:''}
+      ${isSaved&&!isShared?`<div class="pmarker sav"></div>`:''}
+    </div>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
+// ─── FACE CHIPS ROW ──────────────────────────────────────────
+const FACE_CHIPS = [
+  {initials:'VR',name:'Varun',isYou:true},
+  {initials:'BE',name:'Beulah'},
+  {initials:'KA',name:'Kavitha'},
+  {initials:'MA',name:'Mayank'},
+  {initials:'VI',name:'Vishal'},
+  {initials:'AN',name:'Anand'},
+];
+const UNID_COUNTS = [14,9,7,6];
+
+function faceChipsRow(identified=[], showYou=true, activeFilter=null, onChipClick='faceChipClick') {
+  const chips = [];
+
+  if (showYou) {
+    const you = FACE_CHIPS[0];
+    chips.push({...you, identified:true, isYou:true});
+  }
+
+  FACE_CHIPS.slice(1).forEach((fc,i)=>{
+    const idEntry = identified.find(x=>x.index===i);
+    if (idEntry) {
+      chips.push({...fc, name:idEntry.name, identified:true});
+    } else {
+      chips.push({initials:'?',name:'',identified:false,count:UNID_COUNTS[i]||5, unidIndex:i});
+    }
+  });
+
+  let html = `<div class="chips-row">`;
+  chips.forEach((fc,i)=>{
+    const isActive = activeFilter===i;
+    const cls = `fchip ${fc.identified?'id':'unid'}${isActive?' af':''}`;
+    html += `<button class="${cls}" onclick="${onChipClick}(${i})">
+      <div class="fchip-av">${fc.identified?fc.initials:'?'}</div>
+      <span class="fchip-name">${fc.isYou?`${fc.initials} — You`:fc.name||'?'}</span>
+      ${fc.count?`<span class="fchip-ct">${fc.count}</span>`:''}
+    </button>`;
+  });
+  html += `</div>`;
+  return html;
+}
+
+// ─── FILTER BAR ──────────────────────────────────────────────
+const FILTER_CATS = ['People','Scene','Format','Time'];
+const FILTER_SUBS = {
+  People: ['Varun','Beulah','Kavitha','Mayank','Vishal','Anand'],
+  Scene: ['Bonfire','Waterfall','Group shot','Night sky','Forest','Food','Lakeside'],
+  Format: ['Selfie','Group','Portrait','Landscape','Video'],
+  Time: ['Day 1 (Sat)','Day 2 (Sun)','Morning','Evening','Night'],
+};
+
+function filterBar(activeCat=null, activeSub=null) {
+  const subs = activeCat ? FILTER_SUBS[activeCat] : [];
+  return `<div class="filter-bar" id="fbar">
+    <div class="filter-cats">
+      ${FILTER_CATS.map(c=>`<button class="fcat ${activeCat===c?'on':'off'}" onclick="filterCat('${c}')">${c}</button>`).join('')}
+    </div>
+    <div class="filter-subs ${activeCat?'open':''}" id="fsubs">
+      ${subs.map(s=>`<button class="fsub ${activeSub===s?'on':'off'}" onclick="filterSub('${s}')">${s}</button>`).join('')}
+    </div>
+  </div>`;
+}
+
+function filterCat(cat) {
+  if (state.activeFilters.cat === cat) {
+    state.activeFilters.cat = null;
+    state.activeFilters.sub = null;
+  } else {
+    state.activeFilters.cat = cat;
+    state.activeFilters.sub = null;
+  }
+  reRenderFilterBar();
+}
+function filterSub(sub) {
+  if (state.activeFilters.sub === sub) {
+    state.activeFilters.sub = null;
+  } else {
+    state.activeFilters.sub = sub;
+  }
+  reRenderFilterBar();
+  applyPhotoFilter();
+}
+function reRenderFilterBar() {
+  const fb = document.getElementById('fbar');
+  if (fb) {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = filterBar(state.activeFilters.cat, state.activeFilters.sub);
+    fb.replaceWith(tmp.firstElementChild);
+  }
+}
+function applyPhotoFilter() {
+  // Dim photos not matching the active sub-filter
+  const cells = document.querySelectorAll('.pcell');
+  if (!state.activeFilters.sub) {
+    cells.forEach(c=>c.classList.remove('dim'));
+    return;
+  }
+  // Simple deterministic: keep photos 0,3,6,9... when filter active to show effect
+  cells.forEach((c,i)=>{
+    const keep = (i % 3 === 0) || (i % 5 === 0);
+    c.classList.toggle('dim', !keep);
+  });
+}
+
+// ─── ACTION TABS ─────────────────────────────────────────────
+function actionTabs(active='all') {
+  const tabs = ['all','shared','received','saved','downloaded'];
+  const labels = ['All','Shared','Received','Saved','Downloaded'];
+  return `<div class="atabs">
+    ${tabs.map((t,i)=>`<button class="atab ${active===t?'on':''}" onclick="setTab('${t}')">${labels[i]}</button>`).join('')}
+  </div>`;
+}
+function setTab(t) {
+  state.activeFilters.tab = t;
+  const tabs = document.querySelectorAll('.atab');
+  tabs.forEach(el=>{
+    el.classList.toggle('on', el.getAttribute('onclick')===`setTab('${t}')`);
+  });
+}
+
+// ─── PHOTO TAP / SELECTION ───────────────────────────────────
+function photoTap(i) {
+  if (state.selectionMode) {
+    if (state.selectedPhotos.has(i)) state.selectedPhotos.delete(i);
+    else state.selectedPhotos.add(i);
+    updateSelectionUI();
+  } else {
+    // Open full screen photo view
+    state.currentPhoto = i;
+    state.photoCount = 34;
+    state.prevScreen = state.screen;
+    go('photo-full');
+  }
+}
+function longPressPhoto(i) {
+  state.selectionMode = true;
+  state.selectedPhotos = new Set([i]);
+  updateSelectionUI();
+}
+function updateSelectionUI() {
+  const cells = document.querySelectorAll('.pcell');
+  const pgrid = document.querySelector('.pgrid');
+  if (!pgrid) return;
+  pgrid.classList.toggle('sel-mode', state.selectionMode);
+  cells.forEach((c,i)=>{
+    c.classList.toggle('sel', state.selectedPhotos.has(i));
+  });
+  const tbarTitle = document.querySelector('.tbar-title');
+  if (tbarTitle && state.selectionMode) {
+    tbarTitle.textContent = `${state.selectedPhotos.size} photo${state.selectedPhotos.size!==1?'s':''} selected`;
+  }
+  // Show/hide share FAB
+  const sfab = document.getElementById('share-fab');
+  if (sfab) sfab.classList.toggle('vis', state.selectionMode && state.selectedPhotos.size > 0);
+  // Show cancel in topbar right
+  const cancelBtn = document.getElementById('sel-cancel');
+  if (cancelBtn) cancelBtn.style.display = state.selectionMode ? 'flex' : 'none';
+}
+function cancelSelection() {
+  state.selectionMode = false;
+  state.selectedPhotos = new Set();
+  updateSelectionUI();
+  const tbarTitle = document.querySelector('.tbar-title');
+  if (tbarTitle) tbarTitle.textContent = 'Mumbai — Karjat';
+}
+function faceChipClick(i) {
+  state.activeFilters.chipFilter = state.activeFilters.chipFilter===i ? null : i;
+  // visual update
+  document.querySelectorAll('.fchip').forEach((c,idx)=>{
+    c.classList.toggle('af', idx===i && state.activeFilters.chipFilter===i);
+  });
+}
+
+// ─── BOTTOM SHEET SYSTEM ─────────────────────────────────────
+function openSheet(id) {
+  document.getElementById(id+'-ov')?.classList.add('open');
+  document.getElementById(id)?.classList.add('open');
+}
+function closeSheet(id) {
+  document.getElementById(id+'-ov')?.classList.remove('open');
+  document.getElementById(id)?.classList.remove('open');
+}
+
+// ─── SHARE SHEET ─────────────────────────────────────────────
+function openShareSheet() {
+  openSheet('share-sheet');
+}
+function shareToAll() {
+  closeSheet('share-sheet');
+  state.selectedPhotos.forEach(i=>state.sharedPhotos.add(i));
+  state.selectionMode = false;
+  state.selectedPhotos = new Set();
+  showToast('Shared with everyone.');
+  setTimeout(()=>openSheet('ext-share'), 1200);
+  render();
+}
+function shareToSpecific() {
+  closeSheet('share-sheet');
+  openSheet('specific-sheet');
+}
+function confirmSpecificShare() {
+  closeSheet('specific-sheet');
+  state.selectedPhotos.forEach(i=>state.sharedPhotos.add(i));
+  state.selectionMode = false;
+  state.selectedPhotos = new Set();
+  showToast('Sent to Beulah and Kavitha.');
+  render();
+}
+function openDownloadSheet() {
+  closeSheet('share-sheet');
+  openSheet('dl-sheet');
+}
+function saveToPixslay() {
+  closeSheet('share-sheet');
+  state.selectedPhotos.forEach(i=>state.savedPhotos.add(i));
+  state.selectionMode = false;
+  state.selectedPhotos = new Set();
+  showToast('Saved to PixSlay.');
+  render();
+}
+function removePhotos() {
+  closeSheet('share-sheet');
+  showPopup(
+    'This photo will be gone from your Karjat album.',
+    'Others who received it will still have their copy.',
+    'Remove it','Keep it',
+    ()=>{ state.selectedPhotos.forEach(i=>{ state.sharedPhotos.delete(i); state.savedPhotos.delete(i); }); state.selectionMode=false; state.selectedPhotos=new Set(); showToast('Removed from your album.'); render(); },
+    null
+  );
+}
+function downloadLowRes() {
+  closeSheet('dl-sheet');
+  showToast('Saved to your phone. Free.');
+}
+function downloadHiRes() {
+  closeSheet('dl-sheet');
+  showToast('₹5 per photo — payment opens here.','warn');
+}
+function buyGroupSub() {
+  closeSheet('dl-sheet');
+  showToast('Group subscription activated!');
+}
+
+function shareSheetHTML(count) {
+  return `
+  <div class="sheet-ov" id="share-sheet-ov" onclick="closeSheet('share-sheet')"></div>
+  <div class="bsheet" id="share-sheet">
+    <div class="sh-handle"></div>
+    <div style="padding:16px 20px 0;">
+      <div class="slbl">Share ${count} photo${count!==1?'s':''} with...</div>
+    </div>
+    <div onclick="shareToAll()" style="padding:12px 20px;display:flex;align-items:center;gap:14px;cursor:pointer;border-bottom:0.5px solid ${P.bgs};">
+      <div>${icoSVG('users',20,P.blue)}</div>
+      <div style="flex:1;"><div style="font-size:14px;font-weight:500;color:${P.t};">Everyone in Mumbai — Karjat</div><div style="font-size:12px;color:${P.ts};margin-top:2px;">All 6 members will see these</div></div>
+      ${icoSVG('chevron-right',16,P.td)}
+    </div>
+    <div onclick="shareToSpecific()" style="padding:12px 20px;display:flex;align-items:center;gap:14px;cursor:pointer;border-bottom:0.5px solid ${P.bgs};">
+      <div>${icoSVG('user',20,P.blue)}</div>
+      <div style="flex:1;"><div style="font-size:14px;font-weight:500;color:${P.t};">Choose specific people</div><div style="font-size:12px;color:${P.ts};margin-top:2px;">Only they will see these</div></div>
+      ${icoSVG('chevron-right',16,P.td)}
+    </div>
+    <div onclick="openDownloadSheet()" style="padding:12px 20px;display:flex;align-items:center;gap:14px;cursor:pointer;">
+      ${icoSVG('download',20,P.ts)} <span style="font-size:14px;font-weight:500;color:${P.t};">Download</span>
+    </div>
+    <div onclick="saveToPixslay()" style="padding:12px 20px;display:flex;align-items:center;gap:14px;cursor:pointer;">
+      ${icoSVG('bookmark',20,P.ts)} <span style="font-size:14px;font-weight:500;color:${P.t};">Save to PixSlay</span>
+    </div>
+    <div style="height:0.5px;background:${P.bgs};margin:0 20px;"></div>
+    <div onclick="removePhotos()" style="padding:12px 20px;display:flex;align-items:center;gap:14px;cursor:pointer;margin-bottom:12px;">
+      ${icoSVG('trash-2',20,P.al)} <span style="font-size:14px;font-weight:500;color:${P.al};">Remove from my photos</span>
+    </div>
+  </div>`;
+}
+
+function downloadSheetHTML() {
+  return `
+  <div class="sheet-ov" id="dl-sheet-ov" onclick="closeSheet('dl-sheet')"></div>
+  <div class="bsheet" id="dl-sheet">
+    <div class="sh-handle"></div>
+    <div style="padding:12px 20px 4px;"><div class="slbl">Download options</div></div>
+    <div class="dl-row" onclick="downloadLowRes()">
+      ${icoSVG('image',20,P.ts)}
+      <div class="dl-row-info"><div class="dl-title">Download low-res</div><div class="dl-sub">Free — good for sharing</div></div>
+      <span class="dl-price" style="color:${P.ok};">Free</span>
+    </div>
+    <div class="dl-row" onclick="downloadHiRes()">
+      ${icoSVG('image',20,P.blue)}
+      <div class="dl-row-info"><div class="dl-title">Download in original quality</div><div class="dl-sub">Full resolution — ideal for printing</div></div>
+      <span class="dl-price" style="color:${P.am};">₹5/photo</span>
+    </div>
+    <div style="height:0.5px;background:${P.bgs};margin:4px 20px;"></div>
+    <div onclick="buyGroupSub()" style="background:${P.bt};border-radius:10px;padding:12px;margin:8px 20px 20px;cursor:pointer;">
+      <div style="font-size:13px;font-weight:600;color:${P.bd};">Unlimited hi-res for everyone — ₹149</div>
+      <div style="font-size:12px;color:${P.bdp};margin-top:4px;">That's ₹25 each for 6 people.</div>
+    </div>
+  </div>`;
+}
+
+function specificPeopleSheetHTML() {
+  const people = ['Beulah','Kavitha','Mayank','Vishal','Anand'];
+  const colors = [P.ok, P.al, P.am, P.ts, P.bdp];
+  return `
+  <div class="sheet-ov" id="specific-sheet-ov" onclick="closeSheet('specific-sheet')"></div>
+  <div class="bsheet" id="specific-sheet">
+    <div class="sh-handle"></div>
+    <div style="padding:16px 20px 12px;"><div class="slbl">Choose people</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;">
+        ${people.map((p,i)=>`<button onclick="this.style.background=this.style.background==='#1B4FD8'?'${P.bgs}':'#1B4FD8';this.style.color=this.style.color==='#fff'?'${P.bd}':'#fff';" style="height:36px;border-radius:18px;padding:0 14px;border:none;font-family:inherit;font-size:13px;font-weight:600;background:${P.bgs};color:${P.bd};cursor:pointer;">${p}</button>`).join('')}
+      </div>
+    </div>
+    <div style="padding:0 20px 24px;">
+      <button class="btn btn-p" onclick="confirmSpecificShare()">Share with selected people</button>
+    </div>
+  </div>`;
+}
+
+function extShareSheetHTML() {
+  return `
+  <div class="sheet-ov" id="ext-share-ov" onclick="closeSheet('ext-share')"></div>
+  <div class="bsheet" id="ext-share">
+    <div class="sh-handle"></div>
+    <div style="padding:16px 20px 8px;font-size:14px;font-weight:600;color:${P.t};">Share outside PixSlay too?</div>
+    <div class="ext-icons">
+      ${[['#25D366','WA'],['#E1306C','IG'],['#1B4FD8','Link'],['#6B6864','More']].map(([c,l])=>`
+        <div class="ext-icon" onclick="showToast('Opening ${l}...');closeSheet('ext-share');">
+          <div class="ext-icon-circle" style="background:${c};">${icoSVG(l==='WA'?'share-2':l==='IG'?'star':l==='Link'?'link':'more-horizontal',20,'#fff')}</div>
+          <span class="ext-icon-lbl">${l==='WA'?'WhatsApp':l==='IG'?'Instagram':l==='Link'?'Copy link':'More'}</span>
+        </div>`).join('')}
+    </div>
+    <div style="padding:4px 20px 20px;">
+      <div style="font-size:11px;color:${P.tt};text-align:center;">Shared via Pixslay watermark applied</div>
+    </div>
+  </div>`;
+}
+
+// ─── MOMENT A SHEET ──────────────────────────────────────────
+const FACE_COLORS = [P.blue, P.ok, P.al, P.am, P.ts, P.bdp];
+let momentASelectedFace = null;
+
+function momentASheet(nameDefault='Varun') {
+  return `
+  <div class="sheet-ov" id="momA-ov"></div>
+  <div class="bsheet" id="momA" style="padding-bottom:20px;">
+    <div class="sh-handle"></div>
+    <div style="padding:16px 20px 0;">
+      <div style="font-size:20px;font-weight:800;color:${P.t};margin-bottom:6px;">Which one is you?</div>
+      <div style="font-size:13px;color:${P.ts};">Tap your face so we know who you are.</div>
+      <div class="face-grid" id="face-grid">
+        ${FACE_CHIPS.map((fc,i)=>`
+          <div class="face-tile" style="background:${FACE_COLORS[i]};" onclick="selectMomentAFace(${i},'${fc.initials}')">
+            <span>${fc.initials}</span>
+            <div class="ft-check">${icoSVG('check',10,'#fff',3)}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+    <div style="padding:0 20px;display:flex;flex-direction:column;gap:10px;">
+      <button class="btn btn-p dis" id="momA-confirm" onclick="confirmMomentA()">That's me</button>
+      <button class="btn btn-g" onclick="skipMomentA()">Skip for now</button>
+    </div>
+  </div>`;
+}
+
+function selectMomentAFace(i, initials) {
+  momentASelectedFace = i;
+  document.querySelectorAll('.face-tile').forEach((t,idx)=>t.classList.toggle('sel',idx===i));
+  const btn = document.getElementById('momA-confirm');
+  if (btn) { btn.classList.remove('dis'); btn.removeAttribute('disabled'); }
+}
+function confirmMomentA() {
+  if (momentASelectedFace === null) return;
+  closeSheet('momA');
+  showToast('You\'re identified! PixSlay knows you now.');
+  // After 2s, trigger Moment B if unidentified faces remain
+  setTimeout(()=>{ if (state.identifiedFaces.length < 5) openMomentB(0); }, 2000);
+}
+function skipMomentA() {
+  closeSheet('momA');
+  setTimeout(()=>{ if (state.identifiedFaces.length < 5) openMomentB(0); }, 2000);
+}
+
+// ─── MOMENT B SHEET ──────────────────────────────────────────
+let currentMomentBIndex = 0;
+const UNID_FACE_INDICES = [1,2,3,4]; // indices into FACE_CHIPS for unidentified
+
+function openMomentB(unidIdx) {
+  const remaining = UNID_FACE_INDICES.filter(i => !state.identifiedFaces.find(x=>x.index===i-1));
+  if (remaining.length === 0) return;
+  currentMomentBIndex = remaining[0] - 1; // 0-based index into FACE_CHIPS slice
+  const sheet = document.getElementById('momB');
+  const ov = document.getElementById('momB-ov');
+  if (!sheet) return;
+  // Update face display
+  const faceDisp = document.getElementById('momB-face');
+  if (faceDisp) faceDisp.style.background = FACE_COLORS[remaining[0]];
+  const faceInit = document.getElementById('momB-initials');
+  if (faceInit) faceInit.textContent = '?';
+  const faceCount = document.getElementById('momB-count');
+  if (faceCount) faceCount.textContent = `This person appears in ${UNID_COUNTS[currentMomentBIndex]||5} of your photos.`;
+  const inp = document.getElementById('momB-input');
+  if (inp) { inp.value=''; inp.classList.remove('has-val'); }
+  ov.classList.add('open');
+  sheet.classList.add('open');
+  setTimeout(()=>{ const inp=document.getElementById('momB-input'); inp&&inp.focus(); }, 300);
+}
+
+function momentBSheet() {
+  const suggestions = ['Beulah','Kavitha','Mayank','Vishal','Anand'];
+  return `
+  <div class="sheet-ov" id="momB-ov" onclick="skipMomentB()"></div>
+  <div class="bsheet" id="momB" style="max-height:70%;">
+    <div class="sh-handle"></div>
+    <div style="padding:16px 20px;display:flex;flex-direction:column;align-items:center;">
+      <div id="momB-face" style="width:80px;height:80px;border-radius:50%;background:${P.ok};display:flex;align-items:center;justify-content:center;margin-bottom:10px;">
+        <span id="momB-initials" style="font-size:28px;font-weight:800;color:#fff;">?</span>
+      </div>
+      <div id="momB-count" style="font-size:13px;color:${P.ts};margin-bottom:16px;text-align:center;">This person appears in 9 of your photos.</div>
+      <div style="width:100%;position:relative;margin-bottom:12px;">
+        <input id="momB-input" type="text" autocomplete="off"
+          style="width:100%;height:52px;border:0.5px solid #F0EEEB;border-radius:10px;padding:20px 14px 7px;font-family:inherit;font-size:14px;color:#1A1917;background:#fff;outline:none;"
+          oninput="momBInputChange()"
+          onfocus="document.getElementById('momB-lbl').style.cssText='position:absolute;left:14px;top:0;transform:translateY(-50%);font-size:11px;font-weight:600;color:#1B4FD8;background:#fff;padding:0 4px;pointer-events:none;';this.style.border='1px solid #1B4FD8';"
+          onblur="if(!this.value){document.getElementById('momB-lbl').style.cssText='position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:14px;font-weight:400;color:#A8A49F;background:#fff;padding:0;pointer-events:none;';}this.style.border=this.value?'0.5px solid #C7D4FB':'0.5px solid #F0EEEB';"
+        >
+        <label id="momB-lbl" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:14px;font-weight:400;color:#A8A49F;background:#fff;padding:0;pointer-events:none;transition:all .15s;">Who is this?</label>
+      </div>
+      <div class="sug-chips">
+        ${suggestions.map(s=>`<button class="sug-chip" onclick="fillMomB('${s}')">${s}</button>`).join('')}
+      </div>
+    </div>
+    <div style="padding:0 20px 24px;display:flex;flex-direction:column;gap:10px;">
+      <button class="btn btn-p dis" id="momB-confirm" onclick="confirmMomentB()">Confirm</button>
+      <button class="btn btn-g" onclick="skipMomentB()">Skip</button>
+    </div>
+  </div>`;
+}
+
+// ─── 3-DOT MENU SHEET ────────────────────────────────────────
+function threeDotsSheet() {
+  return `
+  <div class="sheet-ov" id="dots-sheet-ov" onclick="closeSheet('dots-sheet')"></div>
+  <div class="bsheet" id="dots-sheet">
+    <div class="sh-handle"></div>
+    <div style="padding:8px 0 16px;">
+      ${[['Edit group','pencil'],['Share invite link','link'],['Delete group','trash-2']].map(([l,ic])=>`
+        <div onclick="${l==='Delete group'?`closeSheet('dots-sheet');showPopup('Everyone loses access to Mumbai — Karjat.','34 photos and all shared memories will no longer be shared.','Delete group','Keep the group',null,null);`:`closeSheet('dots-sheet');showToast('${l}');`}" style="padding:14px 20px;display:flex;align-items:center;gap:14px;cursor:pointer;">
+          ${icoSVG(ic,20,l==='Delete group'?P.al:P.t)}
+          <span style="font-size:14px;font-weight:500;color:${l==='Delete group'?P.al:P.t};">${l}</span>
+        </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+// ─── MEMBER LIST SHEET ───────────────────────────────────────
+function memberListSheet() {
+  const members = [
+    {n:'Varun',photos:12,status:'uploaded'},
+    {n:'Beulah',photos:8,status:'invited'},
+    {n:'Kavitha',photos:7,status:'uploaded'},
+    {n:'Mayank',photos:5,status:'uploaded'},
+    {n:'Vishal',photos:0,status:'invited'},
+    {n:'Anand',photos:2,status:'uploaded'},
+  ];
+  const colors = [P.blue,P.ok,P.al,P.am,P.ts,P.bdp];
+  return `
+  <div class="sheet-ov" id="mem-sheet-ov" onclick="closeSheet('mem-sheet')"></div>
+  <div class="bsheet" id="mem-sheet">
+    <div class="sh-handle"></div>
+    <div style="padding:12px 20px 4px;font-size:16px;font-weight:700;color:${P.t};">Members</div>
+    <div style="overflow-y:auto;max-height:360px;">
+      ${members.map((m,i)=>`
+        <div class="mem-row">
+          <div style="width:36px;height:36px;border-radius:50%;background:${colors[i]};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;">${m.n.substring(0,2).toUpperCase()}</div>
+          <div style="flex:1;"><div style="font-size:13px;font-weight:600;color:${P.t};">${m.n}</div>
+            <div style="font-size:11px;color:${m.photos===0?P.am:P.ts};margin-top:1px;">${m.photos===0?'0 photos — not yet joined':`${m.photos} photos`}</div>
+          </div>
+          ${m.photos===0?`<button onclick="showToast('Reminder sent to ${m.n}.');closeSheet('mem-sheet');" style="background:${P.bt};border:none;border-radius:8px;padding:5px 10px;font-family:inherit;font-size:12px;font-weight:600;color:${P.bd};cursor:pointer;">Nudge</button>`:`<span style="font-size:11px;font-weight:600;color:${P.ok};">✓ Joined</span>`}
+        </div>`).join('')}
+    </div>
+    <div style="padding:12px 20px 20px;"><button class="btn btn-g" onclick="closeSheet('mem-sheet')">Close</button></div>
+  </div>`;
+}
+
+// ─── OTP INPUT COMPONENT ─────────────────────────────────────
+function otpHTML(id='otp') {
+  // Per-box real inputs — most reliable across iOS Safari and Android
+  const boxes = Array.from({length:6},(_,i)=>`
+    <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="1"
+      id="${id}-${i}" class="otp-box"
+      style="width:40px;height:52px;border:0.5px solid #F0EEEB;border-radius:10px;background:#fff;font-size:24px;font-weight:800;color:#1B4FD8;text-align:center;font-family:inherit;outline:none;transition:border .15s,background .15s;caret-color:#1B4FD8;"
+      oninput="otpBoxInput('${id}',${i},this)"
+      onkeydown="otpBoxKeydown('${id}',${i},event)"
+      onfocus="this.style.border='1.5px solid #1B4FD8';"
+      onblur="this.style.border=this.value?'0.5px solid #C7D4FB':'0.5px solid #F0EEEB';"
+    />`).join('');
+  return `<div class="otp-row" id="${id}-row" style="height:52px;gap:8px;">${boxes}</div>`;
+}
+function otpBoxInput(id, i, el) {
+  const val = el.value.replace(/[^0-9]/g,'');
+  el.value = val ? val[val.length-1] : '';
+  if (el.value) {
+    el.style.background='#EEF2FD';
+    el.style.border='0.5px solid #C7D4FB';
+    // advance
+    const next = document.getElementById(id+'-'+(i+1));
+    if (next) next.focus(); else checkOTPComplete(id);
+  }
+}
+function otpBoxKeydown(id, i, e) {
+  if (e.key==='Backspace') {
+    const el = document.getElementById(id+'-'+i);
+    if (el && !el.value && i>0) {
+      const prev = document.getElementById(id+'-'+(i-1));
+      if (prev) { prev.value=''; prev.style.background='#fff'; prev.style.border='1.5px solid #1B4FD8'; prev.focus(); }
+    } else if (el) { el.style.background='#fff'; }
+  }
+}
+function checkOTPComplete(id) {
+  let val='';
+  for(let i=0;i<6;i++){
+    const b=document.getElementById(id+'-'+i);
+    if(!b||!b.value) return;
+    val+=b.value;
+  }
+  // All 6 filled — navigate
+  const real=document.getElementById(id+'-real-hidden');
+  if(real&&real._onComplete) setTimeout(real._onComplete,300);
+}
+function setupOTP(id, onComplete) {
+  const real = document.getElementById(`${id}-real`);
+  if (!real) return;
+  real.focus();
+  const row = document.getElementById(`${id}-row`);
+  if (row) row.addEventListener('click',()=>real.focus());
+  real._onComplete = onComplete;
+}
+// otpInput replaced by otpBoxInput
+
+// ─── PHOTO ILLUSTRATIONS for event cards ─────────────────────
+function eventCardSVG(colors) {
+  const [c1,c2] = colors;
+  return `<svg viewBox="0 0 358 140" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:140px;">
+    <defs><linearGradient id="ecg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="${c1}"/><stop offset="100%" stop-color="${c2}"/></linearGradient></defs>
+    <rect width="358" height="140" fill="url(#ecg)"/>
+    <circle cx="280" cy="40" r="30" fill="rgba(255,255,255,.1)"/>
+    <circle cx="60" cy="100" r="50" fill="rgba(0,0,0,.1)"/>
+    <circle cx="180" cy="70" r="80" fill="rgba(255,255,255,.05)"/>
+  </svg>`;
+}
+
+// ─── SCENE SETTER ────────────────────────────────────────────
+function sceneSetter(text, ctaLabel, onCTA) {
+  return `<div class="screen" id="scene">
+    ${switchPill()}
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;background:#fff;">
+      <div style="margin-bottom:32px;">${logo(32,24)}</div>
+      <div style="font-size:16px;font-weight:400;color:${P.ts};text-align:center;line-height:1.6;max-width:300px;margin-bottom:32px;">${text}</div>
+      <button class="btn btn-p" style="width:100%;" onclick="${onCTA}">${ctaLabel}</button>
+    </div>
+  </div>`;
+}
+
+// ─── SCREENS ─────────────────────────────────────────────────
+
+function screenEntry() {
+  const users = [
+    {id:'varun', init:'VR', col:P.blue, name:'Varun', desc:'PixSlay user. Creates the group for the Karjat trip.'},
+    {id:'beulah', init:'BE', col:P.ok, name:'Beulah', desc:'New to PixSlay. Discovers it when her photos arrive Sunday morning.'},
+    {id:'kavitha', init:'KA', col:P.al, name:'Kavitha', desc:'New to PixSlay. Installs during the trip when Varun shows her.'},
+    {id:'mayank', init:'MA', col:P.am, name:'Mayank', desc:'Existing PixSlay user. Joins the group automatically.'},
+    {id:'vishal', init:'VI', col:P.ts, name:'Vishal', desc:'New to PixSlay. Takes his time. Joins when Mayank nudges him.'},
+  ];
+  return `<div class="screen" id="s-entry">
+    <div class="scroll" style="background:${P.bg};">
+      ${sbar()}
+      <div style="padding:8px 16px 24px;display:flex;flex-direction:column;align-items:center;gap:8px;">
+        ${logo(28,22)}
+        <div style="background:${P.bt};border-radius:20px;padding:3px 12px;margin-top:4px;">
+          <span style="font-size:10px;font-weight:600;color:${P.bd};letter-spacing:.02em;">Interactive simulation</span>
+        </div>
+        <div style="text-align:center;margin-top:4px;margin-bottom:8px;">
+          <div style="font-size:22px;font-weight:800;color:${P.t};letter-spacing:-.5px;line-height:1.2;">An overnight trip to Karjat.<br>Five people. Five stories.</div>
+          <div style="font-size:13px;color:${P.ts};margin-top:8px;">Pick someone and see PixSlay through their eyes.</div>
+        </div>
+        ${users.map(u=>`
+          <div onclick="startJourney('${u.id}')" style="background:#fff;border:0.5px solid #F0EEEB;border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;width:100%;position:relative;transition:background .1s;" onmousedown="this.style.background='#F8F7F5'" onmouseup="this.style.background='#fff'" ontouchstart="this.style.background='#F8F7F5'" ontouchend="this.style.background='#fff'">
+            <div style="width:40px;height:40px;border-radius:50%;background:${u.col};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;">${u.init}</div>
+            <div style="flex:1;">
+              <div style="font-size:14px;font-weight:600;color:${P.t};">${u.name}</div>
+              <div style="font-size:11px;color:${P.ts};margin-top:2px;line-height:1.4;">${u.desc}</div>
+            </div>
+            ${icoSVG('chevron-right',16,P.tt)}
+            ${state.completed.includes(u.id)?`<div style="position:absolute;top:-5px;right:-5px;width:18px;height:18px;background:${P.ok};border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid #fff;">${icoSVG('check',10,'#fff',3)}</div>`:''}
+          </div>`).join('')}
+        <button onclick="copyShare()" class="btn" style="gap:6px;margin-top:8px;padding:8px 16px;">
+          ${icoSVG('share-2',16,P.tt)} <span style="font-size:12px;color:${P.tt};">Share this experience</span>
+        </button>
+      </div>
+    </div>
+  </div>`;
+}
+function copyShare() {
+  navigator.clipboard?.writeText(location.href);
+  showToast('Link copied! Share it with friends.');
+}
+
+function startJourney(id) {
+  state.journey = id;
+  state.identifiedFaces = [];
+  state.selectedPhotos = new Set();
+  state.sharedPhotos = new Set();
+  state.savedPhotos = new Set();
+  state.selectionMode = false;
+  state.activeFilters = {cat:null,sub:null,tab:'all'};
+  if (id==='varun') go('varun-scene');
+  else if (id==='beulah') go('beulah-scene');
+  else if (id==='kavitha') go('kavitha-reg');
+  else if (id==='mayank') go('mayank-scene');
+  else if (id==='vishal') go('vishal-scene');
+}
+
+// ─── VARUN SCREENS ───────────────────────────────────────────
+function screenVarunScene() {
+  return `<div class="screen" id="s-varun-scene">
+    ${switchPill()}
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;background:#fff;">
+      <div style="margin-bottom:32px;">${logo(32,24)}</div>
+      <div style="font-size:16px;font-weight:400;color:${P.ts};text-align:center;line-height:1.6;max-width:300px;margin-bottom:32px;">It's Friday evening. You're heading to Karjat with friends for the weekend. You want to make sure everyone gets their photos this time — no WhatsApp chaos.</div>
+      <button class="btn btn-p" style="width:100%;" onclick="go('varun-reg')">Open PixSlay</button>
+    </div>
+  </div>`;
+}
+
+function screenVarunReg() {
+  return `<div class="screen" id="s-varun-reg">
+    ${switchPill()}
+    <div style="flex:1;display:flex;flex-direction:column;background:${P.bg};">
+      ${sbar()}
+      <div style="flex:1;padding:20px 16px 0;">
+        <div style="margin-bottom:24px;">${logo(28,22)}</div>
+        <div style="font-size:24px;font-weight:800;color:${P.t};letter-spacing:-.5px;line-height:1.2;margin-bottom:8px;">Your photos from every gathering.</div>
+        <div style="font-size:13px;color:${P.ts};margin-bottom:28px;">Start with your number. We'll send a quick code.</div>
+        ${floatInput('Phone number','vreg-phone','9876543210','tel')}
+        <div style="font-size:11px;color:${P.tt};text-align:center;margin-top:4px;">We'll send a one-time code to verify.</div>
+      </div>
+      <div style="padding:0 16px 40px;display:flex;flex-direction:column;gap:10px;">
+        ${ibtn('arrow-left',`go('entry')`,P.blue)}
+        <button class="btn btn-p" onclick="go('varun-otp')">Continue</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function screenVarunOTP() {
+  return `<div class="screen" id="s-varun-otp">
+    ${switchPill()}
+    <div style="flex:1;display:flex;flex-direction:column;background:${P.bg};">
+      ${sbar()}
+      <div style="flex:1;padding:60px 16px 0;display:flex;flex-direction:column;">
+        <div style="display:flex;justify-content:center;margin-bottom:32px;">${logo(28,22)}</div>
+        <div style="font-size:24px;font-weight:800;color:${P.t};letter-spacing:-.5px;margin-bottom:8px;">Enter the code we sent you.</div>
+        <div style="font-size:13px;color:${P.ts};margin-bottom:32px;">Sent to <span style="font-weight:500;color:${P.t};cursor:pointer;" onclick="go('varun-reg')">+91 98765 43210</span></div>
+        ${otpHTML('votp')}
+        <div style="text-align:center;margin-top:20px;font-size:12px;color:${P.tt};">Didn't get it? <span id="votp-resend" style="color:${P.tt};font-weight:600;">Resend in 0:30</span></div>
+        <div style="margin-top:12px;background:#FFF8EC;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:600;color:${P.am};display:none;" id="votp-expired">That code has expired. We've sent you a fresh one.</div>
+      </div>
+      <div style="padding:0 16px 40px;">
+        <button class="btn btn-g" onclick="go('varun-reg')">← Back</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function screenVarunProfile() {
+  return `<div class="screen" id="s-varun-profile">
+    ${switchPill()}
+    <div style="flex:1;display:flex;flex-direction:column;background:${P.bg};">
+      ${sbar()}
+      <div class="pdots"><div class="pdot"></div><div class="pdot act"></div><div class="pdot"></div></div>
+      <div style="flex:1;padding:0 16px;">
+        <div style="font-size:24px;font-weight:800;color:${P.t};letter-spacing:-.5px;margin-bottom:8px;">What do we call you?</div>
+        <div style="font-size:13px;color:${P.ts};margin-bottom:24px;">Just the basics. You can always add more later.</div>
+        <div class="av-upload has-photo" style="cursor:default;" id="vav">
+          <div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,${P.blue},${P.ok});display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff;">VR</div>
+          <div class="av-edit">${icoSVG('camera',10,'#fff')}</div>
+        </div>
+        <div style="font-size:11px;color:${P.tt};text-align:center;margin-bottom:24px;">Add a photo so friends recognise you</div>
+        ${floatInput('Full name','vpro-name','Varun')}
+        ${floatInput('Email (optional)','vpro-email','','email')}
+      </div>
+      <div style="padding:0 16px 40px;">
+        <button class="btn btn-p" onclick="go('varun-home-empty')">Continue</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function screenVarunEmptyHome() {
+  return `<div class="screen" id="s-varun-home-empty">
+    ${switchPill()}
+    <div style="flex:1;display:flex;flex-direction:column;background:${P.bgw};">
+      ${sbar()}
+      <div class="tbar" style="background:${P.bg};">
+        <div class="tbar-l">${logo(20,16)}</div>
+        <div class="tbar-r">${ibtn('bell','',P.t)}</div>
+      </div>
+      <div class="scroll">
+        <div style="padding:16px 16px 0;">
+          <div style="background:#fff;border:0.5px solid ${P.bgs};border-radius:16px;padding:24px;text-align:center;">
+            <div class="hero-photos">
+              <div class="hp" style="background:${P.bb};transform:rotate(-8deg) translateX(-16px) translateY(4px);z-index:1;"></div>
+              <div class="hp" style="background:${P.bt};transform:rotate(5deg) translateX(0);z-index:2;"></div>
+              <div class="hp" style="background:${P.blue};z-index:3;display:flex;align-items:center;justify-content:center;transform:translateX(14px);">${logo(16,0)}</div>
+            </div>
+            <div style="font-size:20px;font-weight:800;color:${P.t};line-height:1.3;margin-bottom:8px;">Your photos from every gathering. All in one place.</div>
+            <div style="font-size:13px;color:${P.ts};line-height:1.5;">Start by creating a group for your next trip or outing.</div>
+          </div>
+          <div style="margin-top:16px;">
+            <button class="btn btn-p" onclick="go('varun-create-group')">Create a group</button>
+            <div style="text-align:center;margin-top:8px;font-size:11px;color:${P.tt};">Takes less than a minute.</div>
+          </div>
+        </div>
+      </div>
+      ${navbar('home','','',`go('varun-create-group')`)}
+    </div>
+  </div>`;
+}
+
+function screenVarunCreateGroup() {
+  const contacts = [
+    {id:'MA',col:P.blue,name:'Mayank',pixslay:true},
+    {id:'KA',col:P.al,name:'Kavitha'},
+    {id:'BE',col:P.ok,name:'Beulah'},
+    {id:'VI',col:P.ts,name:'Vishal'},
+    {id:'AN',col:P.bdp,name:'Anand'},
+  ];
+  return `<div class="screen" id="s-varun-create-group">
+    ${switchPill()}
+    <div style="flex:1;display:flex;flex-direction:column;background:${P.bg};">
+      ${sbar()}
+      ${tbar('New group', true, `go('varun-home-empty')`)}
+      <div class="scroll" style="padding:16px;">
+        ${floatInput('What are you calling this one?','cg-name','Mumbai — Karjat')}
+        ${floatInput('Destination (optional)','cg-dest','Karjat, Maharashtra')}
+        <div style="display:flex;gap:8px;">
+          ${floatInput('From','cg-from','Sat 24 May','text',false,true)}
+          ${floatInput('To','cg-to','Sun 25 May','text',false,true)}
+        </div>
+        ${floatInput('Accommodation (optional)','cg-stay','')}
+        <div style="height:0.5px;background:${P.bgs};margin:4px 0 12px;"></div>
+        <div class="slbl">Who's coming?</div>
+        <div style="display:flex;gap:14px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px;">
+          ${contacts.map((c,i)=>`
+            <div class="cchip" id="cc-${c.id}" onclick="toggleCContact('${c.id}')">
+              <div class="cchip-av sel" id="cca-${c.id}" style="background:${c.col};">
+                ${c.id}
+                <div class="cchip-chk">${icoSVG('check',7,'#fff',3)}</div>
+              </div>
+              <span class="cchip-name">${c.name}</span>
+            </div>`).join('')}
+        </div>
+        <div class="link-card" style="margin-bottom:16px;">
+          <div style="font-size:12px;font-weight:600;color:${P.bd};margin-bottom:2px;">Share a link instead</div>
+          <div style="font-size:11px;color:${P.bdp};margin-bottom:10px;">Anyone with this link can join the group.</div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-s" style="height:34px;font-size:11px;border-radius:8px;" onclick="showToast('Link copied!')">Copy link</button>
+            <button class="btn btn-s" style="height:34px;font-size:11px;border-radius:8px;" onclick="showToast('Opening WhatsApp...')">Share on WhatsApp</button>
+          </div>
+        </div>
+        <button class="btn btn-p" onclick="go('varun-sync')">Create group</button>
+        <div style="height:32px;"></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function toggleCContact(id) {
+  const av = document.getElementById(`cca-${id}`);
+  if (!av) return;
+  av.classList.toggle('sel');
+}
+
+function screenVarunSync() {
+  return `<div class="screen" id="s-varun-sync">
+    ${switchPill()}
+    <div style="flex:1;display:flex;flex-direction:column;background:${P.bg};">
+      ${sbar()}
+      ${tbar('Mumbai — Karjat', true, `go('varun-create-group')`, `<button class="ibtn btn" onclick="openSheet('dots-sheet')">${icoSVG('more-vertical',20,P.t)}</button>`)}
+      <div class="scroll" style="padding:16px;">
+        <div class="sync-card">
+          <div style="font-size:16px;font-weight:700;color:${P.t};margin-bottom:4px;">Finding your Karjat photos.</div>
+          <div style="font-size:13px;color:${P.ts};margin-bottom:16px;">We're looking at Sat 24 May 8:00am to Sun 25 May 6:00pm.</div>
+          <div class="prog-track"><div class="prog-fill" id="sync-prog"></div></div>
+          <div style="text-align:right;margin-top:4px;font-size:11px;color:${P.tt};" id="sync-scan-lbl">Scanning 0 photos...</div>
+          <div id="sync-results" style="display:none;margin-top:16px;">
+            <div style="display:flex;">
+              <div style="flex:1;text-align:center;"><div style="font-size:20px;font-weight:800;color:${P.t};">34</div><div style="font-size:11px;color:${P.ts};">Photos found</div></div>
+              <div style="flex:1;text-align:center;"><div style="font-size:20px;font-weight:800;color:${P.t};">2</div><div style="font-size:11px;color:${P.ts};">Videos found</div></div>
+              <div style="flex:1;text-align:center;"><div style="font-size:13px;font-weight:600;color:${P.t};">Sat 8am–Sun 6pm</div><div style="font-size:11px;color:${P.ts};">Time window</div></div>
+            </div>
+            <div style="height:0.5px;background:${P.bgs};margin:12px 0;"></div>
+            <div style="font-size:13px;color:${P.ts};text-align:center;">These are in your private space. Nobody can see them yet.</div>
+          </div>
+          <div id="sync-conn-banner" style="display:none;background:#FFF8EC;border-radius:8px;padding:8px 12px;margin-top:12px;font-size:12px;font-weight:600;color:${P.am};">Waiting for connection. Sync will resume automatically.</div>
+        </div>
+        <div class="perm-card" style="margin-top:16px;" id="sync-perm">
+          ${icoSVG('image',20,P.blue)}
+          <span style="font-size:13px;font-weight:500;color:${P.bd};flex:1;">Allow access to your photos to sync automatically.</span>
+          <button onclick="document.getElementById('sync-perm').style.opacity='0';document.getElementById('sync-perm').style.pointerEvents='none';showToast('Gallery access granted.');" style="background:none;border:none;font-family:inherit;font-size:11px;font-weight:600;color:${P.blue};cursor:pointer;">Allow</button>
+        </div>
+        <div style="margin-top:16px;display:flex;flex-direction:column;gap:10px;">
+          <button class="btn btn-p dis" id="sync-view-btn" onclick="go('varun-event')">View my photos</button>
+          <button class="btn btn-g" onclick="go('varun-home')">I'll do this later</button>
+        </div>
+      </div>
+      ${threeDotsSheet()}
+    </div>
+  </div>`;
+}
+
+function screenVarunHome() {
+  const events = [
+    {name:'Mumbai — Karjat',dates:'Sat 24 May — Sun 25 May',photos:34,members:6,live:true,cols:['#1B3A6B','#2D7DD2']},
+    {name:'Goa Trip',dates:'Mar 2025',photos:28,members:4,live:false,cols:['#2D5A27','#1B3A6B']},
+  ];
+  const mcolors = [P.blue,P.ok,P.al,P.am,P.ts,P.bdp];
+  const minits = ['VR','BE','KA','MA','VI','AN'];
+  return `<div class="screen" id="s-varun-home">
+    ${switchPill()}
+    <div style="flex:1;display:flex;flex-direction:column;background:${P.bgw};">
+      ${sbar()}
+      <div class="tbar" style="background:${P.bg};">
+        <div class="tbar-l">${logo(20,16)}</div>
+        <div class="tbar-r">
+          ${ibtn('search','')}
+          <div style="position:relative;">
+            ${ibtn('bell',`openSheet('notif-sheet')`,P.t)}
+            <div style="position:absolute;top:8px;right:6px;width:8px;height:8px;background:${P.al};border-radius:50%;border:1.5px solid #fff;"></div>
+          </div>
+        </div>
+      </div>
+      <div class="scroll" style="padding:12px 16px;">
+        ${events.map((ev,ei)=>`
+          <div class="ev-card" onclick="go('varun-event')">
+            <div class="ev-img">${eventCardSVG(ev.cols)}<div class="ev-grad"></div></div>
+            <div class="ev-info">
+              <div style="display:flex;align-items:center;gap:8px;">${ev.live?`<div class="ev-live"></div>`:''}<div class="ev-name">${ev.name}</div></div>
+              <div class="ev-date">${ev.dates} · ${ev.photos} photos</div>
+              <div class="ev-mems">
+                ${Array.from({length:Math.min(ev.members,5)},(_,i)=>`<div class="mav" style="background:${mcolors[i]};z-index:${5-i};">${minits[i]}</div>`).join('')}
+                ${ev.members>5?`<div class="mav" style="background:${P.bgs};color:${P.ts};z-index:0;">+${ev.members-5}</div>`:''}
+              </div>
+            </div>
+          </div>`).join('')}
+      </div>
+      ${navbar('home','','',`go('varun-create-group')`)}
+      <!-- NOTIF SHEET -->
+      <div class="sheet-ov" id="notif-sheet-ov" onclick="closeSheet('notif-sheet')"></div>
+      <div class="bsheet" id="notif-sheet">
+        <div class="sh-handle"></div>
+        <div style="padding:12px 20px 4px;font-size:16px;font-weight:700;color:${P.t};">Notifications</div>
+        ${[
+          {av:'MA',col:P.am,msg:'Mayank just joined Mumbai — Karjat.',time:'2m ago'},
+          {av:'SY',col:P.blue,msg:'Your Karjat photos are ready to view.',time:'5m ago'},
+          {av:'BE',col:P.ok,msg:'Beulah joined Mumbai — Karjat.',time:'1h ago'},
+        ].map(n=>`
+          <div style="padding:12px 20px;display:flex;align-items:center;gap:12px;border-bottom:0.5px solid ${P.bgs};cursor:pointer;" onclick="closeSheet('notif-sheet');go('varun-event');">
+            <div style="width:36px;height:36px;border-radius:50%;background:${n.col};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;">${n.av}</div>
+            <div style="flex:1;"><div style="font-size:13px;color:${P.t};line-height:1.4;">${n.msg}</div><div style="font-size:11px;color:${P.tt};margin-top:2px;">${n.time}</div></div>
+          </div>`).join('')}
+        <div style="height:12px;"></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function screenVarunEvent() {
+  const n = state.selectedPhotos.size;
+  const mainTab = state.activeFilters.mainTab || 'my';
+  return `<div class="screen" id="s-varun-event">
+    ${switchPill()}
+    <div style="flex:1;display:flex;flex-direction:column;background:${P.bgw};overflow:hidden;">
+      <!-- FIXED HEADER -->
+      <div style="background:${P.bg};flex-shrink:0;">
+        ${sbar()}
+        <!-- Top bar -->
+        <div class="tbar">
+          <div class="tbar-l">${ibtn('arrow-left',`go('varun-home')`,P.blue)}</div>
+          <div class="tbar-title" id="ev-tbar-title">Mumbai — Karjat</div>
+          <div class="tbar-r">
+            ${ibtn('search','')}
+            <button class="ibtn btn" onclick="openSheet('mem-sheet')">${icoSVG('users',20,P.t)}</button>
+            <button class="ibtn btn" onclick="openSheet('dots-sheet')">${icoSVG('more-vertical',20,P.t)}</button>
+            <button id="sel-cancel" style="display:none;background:none;border:none;font-family:inherit;font-size:14px;font-weight:500;color:${P.blue};cursor:pointer;padding:0 8px;height:44px;" onclick="cancelSelection()">Cancel</button>
+          </div>
+        </div>
+        <!-- Face chips row -->
+        ${faceChipsRow(state.identifiedFaces)}
+        <!-- My Photos | With Me MAIN TABS -->
+        <div style="display:flex;border-bottom:0.5px solid ${P.bgs};">
+          <button onclick="setMainTab('my')" style="flex:1;height:40px;border:none;background:none;font-family:inherit;font-size:14px;cursor:pointer;
+            font-weight:${mainTab==='my'?'600':'400'};color:${mainTab==='my'?P.t:P.tt};
+            border-bottom:2px solid ${mainTab==='my'?P.blue:'transparent'};margin-bottom:-0.5px;">My Photos</button>
+          <button onclick="setMainTab('with')" style="flex:1;height:40px;border:none;background:none;font-family:inherit;font-size:14px;cursor:pointer;
+            font-weight:${mainTab==='with'?'600':'400'};color:${mainTab==='with'?P.t:P.tt};
+            border-bottom:2px solid ${mainTab==='with'?P.blue:'transparent'};margin-bottom:-0.5px;">With Me</button>
+        </div>
+        <!-- Filter bar (only on My Photos tab) -->
+        ${mainTab==='my' ? filterBar(state.activeFilters.cat, state.activeFilters.sub) : ''}
+        <!-- Action tabs -->
+        ${mainTab==='my' ? actionTabs(state.activeFilters.tab) : ''}
+      </div>
+      <!-- SCROLLABLE GRID -->
+      <div class="scroll" id="ev-grid-scroll">
+        ${mainTab==='my'
+          ? photoGrid(34, state.selectionMode, state.selectedPhotos, state.sharedPhotos, state.savedPhotos, [], 'photoTap')
+          : `<div style="padding:0;">${photoGrid(14, false, new Set(), new Set([0,1,2,3,4,5,6,7,8,9,10,11,12,13]), new Set())}</div>`
+        }
+        <div style="height:80px;"></div>
+      </div>
+      <!-- Share FAB (in selection mode) -->
+      <div class="share-fab${state.selectionMode&&state.selectedPhotos.size>0?' vis':''}" id="share-fab" onclick="openShareSheet()">
+        ${icoSVG('share-2',22,'#fff',2)}
+      </div>
+      <!-- Bottom CTA -->
+      <div style="background:${P.bg};border-top:0.5px solid ${P.bgs};padding:12px 16px 24px;flex-shrink:0;${state.selectionMode?'display:none;':''}">
+        <button class="btn btn-p" onclick="go('varun-delivery')">Deliver photos to all guests</button>
+      </div>
+      ${momentASheet()}
+      ${momentBSheet()}
+      ${shareSheetHTML(state.selectedPhotos.size||1)}
+      ${specificPeopleSheetHTML()}
+      ${downloadSheetHTML()}
+      ${extShareSheetHTML()}
+      ${threeDotsSheet()}
+      ${memberListSheet()}
+    </div>
+  </div>`;
+}
+function setMainTab(t) {
+  state.activeFilters.mainTab = t;
+  state.activeFilters.cat = null;
+  state.activeFilters.sub = null;
+  render();
+}
+
+
+function screenVarunDelivery() {
+  return `<div class="screen" id="s-varun-delivery">
+    ${switchPill()}
+    <div style="flex:1;display:flex;flex-direction:column;background:${P.bg};">
+      ${sbar()}
+      ${tbar('Deliver photos', true, `go('varun-event')`)}
+      <div class="scroll" style="padding:16px;">
+        <div style="font-size:20px;font-weight:800;color:${P.t};margin-bottom:4px;">Mumbai — Karjat</div>
+        <div style="font-size:13px;color:${P.ts};margin-bottom:16px;">34 photos · 6 guests</div>
+        <div style="background:${P.bgw};border-radius:12px;border:0.5px solid ${P.bgs};overflow:hidden;margin-bottom:16px;">
+          ${[{n:'Beulah',ct:8},{n:'Kavitha',ct:7},{n:'Mayank',ct:5},{n:'Vishal',ct:0},{n:'Anand',ct:2}].map((m,i)=>`
+            <div class="del-row" style="border-bottom:0.5px solid ${P.bgs};">
+              <div style="width:36px;height:36px;border-radius:50%;background:${[P.ok,P.al,P.am,P.ts,P.bdp][i]};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;">${m.n.substring(0,2).toUpperCase()}</div>
+              <div style="flex:1;"><div style="font-size:13px;font-weight:600;color:${P.t};">${m.n}</div><div style="font-size:11px;color:${P.ts};">${m.ct} photos matched</div></div>
+              <div class="del-badge ${m.ct===0?'wait':''}">${m.ct===0?'Awaiting join':'Ready'}</div>
+            </div>`).join('')}
+        </div>
+        <div style="margin-bottom:8px;font-size:13px;color:${P.ts};" id="del-status">Ready to deliver 34 photos to 5 guests.</div>
+        <div class="prog-track" id="del-prog-track" style="display:none;"><div class="prog-fill" id="del-prog"></div></div>
+        <div style="margin-top:16px;display:flex;flex-direction:column;gap:10px;">
+          <button class="btn btn-p" id="del-btn" onclick="startDelivery()">Deliver now — it's free</button>
+          <button class="btn btn-g" onclick="go('varun-home')">Do this later</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function startDelivery() {
+  const btn = document.getElementById('del-btn');
+  const prog = document.getElementById('del-prog');
+  const track = document.getElementById('del-prog-track');
+  const status = document.getElementById('del-status');
+  if (!btn || !prog) return;
+  btn.classList.add('dis'); btn.textContent = 'Delivering...';
+  track.style.display = 'block';
+  let pct = 0;
+  const iv = setInterval(()=>{
+    pct = Math.min(100, pct+4);
+    prog.style.width = pct+'%';
+    if (pct >= 100) {
+      clearInterval(iv);
+      status.textContent = '✓ All photos delivered!';
+      status.style.color = P.ok;
+      btn.textContent = 'Done — back to events';
+      btn.classList.remove('dis');
+      btn.onclick = ()=>{ markComplete('varun'); };
+      showToast('6 guests have received their photos!');
+    }
+  }, 60);
+}
+
+// ─── BEULAH SCREENS ──────────────────────────────────────────
+function screenBeulahScene() {
+  return `<div class="screen" id="s-beulah-scene">
+    ${switchPill()}
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;background:#fff;">
+      <div style="margin-bottom:24px;">${logo(32,24)}</div>
+      <div style="font-size:16px;font-weight:400;color:${P.ts};text-align:center;margin-bottom:20px;">It's Sunday morning. Varun just sent you this.</div>
+      <div class="wa-chat" style="width:100%;max-width:340px;margin-bottom:24px;">
+        <div class="wa-label">WhatsApp — Varun Karjat</div>
+        <div class="wa-msg">
+          <div class="wa-av" style="background:${P.blue};">VR</div>
+          <div>
+            <div class="wa-bubble"><div class="wa-msg-text">Check out these Karjat photos — your pics are already there! 📸</div></div>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:6px;cursor:pointer;background:${P.bt};border-radius:8px;padding:8px 10px;" onclick="go('beulah-web')">
+              ${icoSVG('image',16,P.blue)} <span style="font-size:12px;font-weight:600;color:${P.blue};">pixslay.app/mumbai-karjat-beulah</span>
+            </div>
+            <div class="wa-msg-time">Sun, 9:41 AM</div>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-p" style="width:100%;" onclick="go('beulah-web')">Tap the link</button>
+    </div>
+  </div>`;
+}
+
+function screenBeulahWeb() {
+  return `<div class="screen" id="s-beulah-web">
+    ${switchPill()}
+    <div style="flex:1;display:flex;flex-direction:column;background:${P.bgw};">
+      <div style="background:#F0F0F0;padding:8px 12px;display:flex;align-items:center;gap:8px;">
+        <div style="flex:1;background:#fff;border-radius:6px;padding:6px 10px;font-size:11px;color:${P.ts};">pixslay.app/mumbai-karjat-beulah</div>
+      </div>
+      <div style="flex:1;background:#fff;display:flex;flex-direction:column;align-items:center;padding:32px 24px;">
+        ${logo(28,22)}
+        <div style="font-size:20px;font-weight:700;color:${P.t};text-align:center;line-height:1.3;margin:20px 0 8px;">Varun and Kavitha shared 14 photos of you from Mumbai — Karjat.</div>
+        <div style="font-size:13px;color:${P.ts};margin-bottom:20px;">3 of them are right here.</div>
+        <div class="blur-photos">
+          ${[0,8,20].map(i=>`<div class="blur-photo">${photoSVG(i,90)}</div>`).join('')}
+        </div>
+        <div style="font-size:13px;color:${P.ts};margin:16px 0 20px;text-align:center;">Install PixSlay to see all 14 photos — for free, forever.</div>
+        <button class="btn btn-p" style="width:100%;" onclick="go('beulah-reg')">See all 14 photos</button>
+        <button class="btn btn-g" style="width:100%;margin-top:8px;" onclick="go('beulah-photos')">Already have PixSlay?</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function screenBeulahReg() {
+  return `<div class="screen" id="s-beulah-reg">
+    ${switchPill()}
+    <div style="flex:1;display:flex;flex-direction:column;background:${P.bg};">
+      ${sbar()}
+      <div style="flex:1;padding:20px 16px 0;">
+        ${logo(28,22)}
+        <div style="font-size:20px;font-weight:700;color:${P.t};line-height:1.3;margin:20px 0 4px;">Varun and Kavitha shared 14 photos of you from Mumbai — Karjat.</div>
+        <div class="blur-photos" style="justify-content:flex-start;gap:4px;margin:12px 0;">
+          ${[0,8,20].map(i=>`<div class="blur-photo" style="width:70px;height:70px;">${photoSVG(i,70)}</div>`).join('')}
+        </div>
+        <div style="font-size:13px;color:${P.ts};margin-bottom:20px;">Sign up to see them all.</div>
+        ${floatInput('Phone number','breg-phone','9876543211','tel')}
+      </div>
+      <div style="padding:0 16px 40px;display:flex;flex-direction:column;gap:10px;">
+        <button class="btn btn-p" onclick="go('beulah-otp')">Continue</button>
+        <button class="btn btn-g" onclick="go('beulah-web')">← Back</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function screenBeulahOTP() {
+  return `<div class="screen" id="s-beulah-otp">
+    ${switchPill()}
+    <div style="flex:1;display:flex;flex-direction:column;background:${P.bg};">
+      ${sbar()}
+      <div style="flex:1;padding:60px 16px 0;display:flex;flex-direction:column;">
+        <div style="display:flex;justify-content:center;margin-bottom:32px;">${logo(28,22)}</div>
+        <div style="font-size:24px;font-weight:800;color:${P.t};letter-spacing:-.5px;margin-bottom:8px;">Enter the code we sent you.</div>
+        <div style="font-size:13px;color:${P.ts};margin-bottom:32px;">Sent to <span style="font-weight:500;color:${P.t};">+91 98765 43211</span></div>
+        ${otpHTML('botp')}
+        <div style="text-align:center;margin-top:20px;font-size:12px;color:${P.tt};">Didn't get it? <span style="color:${P.blue};font-weight:600;cursor:pointer;" onclick="showToast('Code resent.')">Resend code</span></div>
+      </div>
+      <div style="padding:0 16px 40px;"><button class="btn btn-g" onclick="go('beulah-reg')">← Back</button></div>
+    </div>
+  </div>`;
+}
+
+function screenBeulahPhotos() {
+  return `<div class="screen" id="s-beulah-photos">
+    ${switchPill()}
+    <div style="flex:1;display:flex;flex-direction:column;background:${P.bgw};overflow:hidden;">
+      <div style="background:${P.bg};flex-shrink:0;">
+        ${sbar()}
+        ${tbar('Mumbai — Karjat', true, `markComplete('beulah')`)}
+        <div style="display:flex;border-bottom:0.5px solid ${P.bgs};">
+          <button class="atab" style="flex:1;" onclick="">My photos</button>
+          <button class="atab on" style="flex:1;">With me</button>
+        </div>
+      </div>
+      <div class="scroll">
+        ${photoGrid(14,false,new Set(),new Set([0,1,2,3,4,5,6,7,8,9,10,11,12,13]))}
+        <div style="height:20px;"></div>
+      </div>
+      <!-- One-time overlay -->
+      <div class="sheet-ov open" id="beulah-ov-bg"></div>
+      <div class="bsheet open" id="beulah-ov">
+        <div class="sh-handle"></div>
+        <div style="padding:20px;text-align:center;">
+          <div style="width:60px;height:60px;background:${P.bt};border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">${icoSVG('image',28,P.blue)}</div>
+          <div style="font-size:16px;font-weight:700;color:${P.t};margin-bottom:8px;line-height:1.4;">These are photos others took of you from Mumbai — Karjat. They're yours now.</div>
+          <div style="font-size:13px;color:${P.ts};margin-bottom:20px;line-height:1.5;">No one else can see them unless you choose to share.</div>
+          <button class="btn btn-p" onclick="closeBeulaOverlay()">Got it</button>
+        </div>
+      </div>
+      ${momentASheet('Beulah')}
+      ${momentBSheet()}
+    </div>
+  </div>`;
+}
+function closeBeulaOverlay() {
+  document.getElementById('beulah-ov')?.classList.remove('open');
+  document.getElementById('beulah-ov-bg')?.classList.remove('open');
+  setTimeout(()=>openSheet('momA'), 500);
+}
+
+// ─── KAVITHA SCREENS ─────────────────────────────────────────
+function screenKavithaReg() {
+  return `<div class="screen" id="s-kavitha-reg">
+    ${switchPill()}
+    <div style="flex:1;display:flex;flex-direction:column;background:${P.bg};">
+      ${sbar()}
+      <div style="flex:1;padding:20px 16px 0;">
+        ${logo(28,22)}
+        <div style="font-size:24px;font-weight:800;color:${P.t};letter-spacing:-.5px;line-height:1.2;margin:20px 0 8px;">Your photos from every gathering.</div>
+        <div style="font-size:13px;color:${P.ts};margin-bottom:28px;">Start with your number. We'll send a quick code.</div>
+        ${floatInput('Phone number','kreg-phone','9876543212','tel')}
+      </div>
+      <div style="padding:0 16px 40px;display:flex;flex-direction:column;gap:10px;">
+        <button class="btn btn-p" onclick="go('kavitha-otp')">Continue</button>
+        <button class="btn btn-g" onclick="go('entry')">← Back</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function screenKavithaOTP() {
+  return `<div class="screen" id="s-kavitha-otp">
+    ${switchPill()}
+    <div style="flex:1;display:flex;flex-direction:column;background:${P.bg};">
+      ${sbar()}
+      <div style="flex:1;padding:60px 16px 0;display:flex;flex-direction:column;">
+        <div style="display:flex;justify-content:center;margin-bottom:32px;">${logo(28,22)}</div>
+        <div style="font-size:24px;font-weight:800;color:${P.t};letter-spacing:-.5px;margin-bottom:8px;">Enter the code we sent you.</div>
+        <div style="font-size:13px;color:${P.ts};margin-bottom:32px;">Sent to <span style="font-weight:500;color:${P.t};">+91 98765 43212</span></div>
+        ${otpHTML('kotp')}
+        <div style="text-align:center;margin-top:20px;font-size:12px;color:${P.tt};">Didn't get it? <span style="color:${P.blue};font-weight:600;cursor:pointer;" onclick="showToast('Code resent.')">Resend code</span></div>
+      </div>
+      <div style="padding:0 16px 40px;"><button class="btn btn-g" onclick="go('kavitha-reg')">← Back</button></div>
+    </div>
+  </div>`;
+}
+
+function screenKavithaProfile() {
+  return `<div class="screen" id="s-kavitha-profile">
+    ${switchPill()}
+    <div style="flex:1;display:flex;flex-direction:column;background:${P.bg};">
+      ${sbar()}
+      <div class="pdots"><div class="pdot"></div><div class="pdot act"></div><div class="pdot"></div></div>
+      <div style="flex:1;padding:0 16px;">
+        <div style="font-size:24px;font-weight:800;color:${P.t};margin-bottom:8px;">What do we call you?</div>
+        <div style="font-size:13px;color:${P.ts};margin-bottom:24px;">Just the basics. You can always add more later.</div>
+        <div class="av-upload has-photo" style="cursor:default;">
+          <div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,${P.al},${P.am});display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff;">KA</div>
+          <div class="av-edit">${icoSVG('camera',10,'#fff')}</div>
+        </div>
+        <div style="font-size:11px;color:${P.tt};text-align:center;margin-bottom:24px;">Add a photo so friends recognise you</div>
+        ${floatInput('Full name','kpro-name','Kavitha')}
+        ${floatInput('Email (optional)','kpro-email','','email')}
+      </div>
+      <div style="padding:0 16px 40px;">
+        <button class="btn btn-p" onclick="go('kavitha-gallery')">Continue</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function screenKavithaGallery() {
+  return `<div class="screen" id="s-kavitha-gallery">
+    ${switchPill()}
+    <div style="flex:1;display:flex;flex-direction:column;background:${P.bg};">
+      ${sbar()}
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;">
+        ${logo(28,22)}
+        <div style="font-size:24px;font-weight:800;color:${P.t};text-align:center;line-height:1.2;margin:24px 0 8px;">Let PixSlay find your Karjat photos.</div>
+        <div style="font-size:13px;color:${P.ts};text-align:center;line-height:1.5;margin-bottom:32px;">You're already in the group. Grant access and your photos sync while you enjoy the trip.</div>
+        <div style="background:${P.bt};border-radius:16px;padding:20px;width:100%;text-align:center;margin-bottom:24px;">
+          ${icoSVG('image',32,P.blue)}
+          <div style="font-size:14px;font-weight:600;color:${P.bd};margin:10px 0 6px;">Access your photo library</div>
+          <div style="font-size:12px;color:${P.bdp};line-height:1.4;">Karjat photos are identified by date and location. Nothing else is accessed.</div>
+        </div>
+        <button class="btn btn-p" style="width:100%;" onclick="kavithaAllow()">Allow access</button>
+        <button class="btn btn-g" style="width:100%;margin-top:8px;" onclick="go('kavitha-home')">Not now</button>
+      </div>
+    </div>
+  </div>`;
+}
+function kavithaAllow() {
+  showToast('Syncing in background — enjoy the trip!');
+  setTimeout(()=>go('kavitha-home'), 1000);
+}
+
+function screenKavithaHome() {
+  return `<div class="screen" id="s-kavitha-home">
+    ${switchPill()}
+    <div style="flex:1;display:flex;flex-direction:column;background:${P.bgw};">
+      ${sbar()}
+      <div class="tbar" style="background:${P.bg};">
+        <div class="tbar-l">${logo(20,16)}</div>
+        <div class="tbar-r">${ibtn('bell','',P.t)}</div>
+      </div>
+      <div class="scroll" style="padding:12px 16px;">
+        <div class="ev-card" onclick="go('kavitha-event')">
+          <div class="ev-img">${eventCardSVG(['#1B3A6B','#2D7DD2'])}<div class="ev-grad"></div></div>
+          <div class="ev-info">
+            <div class="ev-name">Mumbai — Karjat</div>
+            <div class="ev-date">Sat 24 May — Sun 25 May · Syncing...</div>
+            <div class="ev-mems">
+              ${['VR','BE','KA','MA','VI','AN'].map((init,i)=>`<div class="mav" style="background:${[P.blue,P.ok,P.al,P.am,P.ts,P.bdp][i]};z-index:${6-i};">${init}</div>`).join('')}
+            </div>
+          </div>
+          <div class="ev-sync"><div class="ev-sync-fill anim"></div></div>
+        </div>
+      </div>
+      ${navbar('home','','','')}
+    </div>
+  </div>`;
+}
+
+function screenKavithaEvent() {
+  const mainTab = state.activeFilters.mainTab || 'my';
+  return `<div class="screen" id="s-kavitha-event">
+    ${switchPill()}
+    <div style="flex:1;display:flex;flex-direction:column;background:${P.bgw};overflow:hidden;">
+      <div style="background:${P.bg};flex-shrink:0;">
+        ${sbar()}
+        ${tbar('Mumbai — Karjat', true, `markComplete('kavitha')`, `${ibtn('search','')}${ibtn('more-vertical',"openSheet('dots-sheet')",P.t)}`)}
+        ${faceChipsRow(state.identifiedFaces)}
+        <div style="display:flex;border-bottom:0.5px solid ${P.bgs};">
+          <button onclick="setMainTab('my')" style="flex:1;height:40px;border:none;background:none;font-family:inherit;font-size:14px;cursor:pointer;font-weight:${mainTab==='my'?'600':'400'};color:${mainTab==='my'?P.t:P.tt};border-bottom:2px solid ${mainTab==='my'?P.blue:'transparent'};margin-bottom:-0.5px;">My Photos</button>
+          <button onclick="setMainTab('with')" style="flex:1;height:40px;border:none;background:none;font-family:inherit;font-size:14px;cursor:pointer;font-weight:${mainTab==='with'?'600':'400'};color:${mainTab==='with'?P.t:P.tt};border-bottom:2px solid ${mainTab==='with'?P.blue:'transparent'};margin-bottom:-0.5px;">With Me</button>
+        </div>
+        ${mainTab==='my' ? filterBar(state.activeFilters.cat, state.activeFilters.sub) : ''}
+        ${mainTab==='my' ? actionTabs(state.activeFilters.tab) : ''}
+        <div style="padding:4px 16px 2px;font-size:11px;color:${P.tt};" id="k-sync-lbl">Syncing — <span id="k-pct">0</span>% complete</div>
+        <div style="margin:0 16px 6px;" class="prog-track"><div class="prog-fill" id="k-prog"></div></div>
+      </div>
+      <div class="scroll">
+        ${mainTab==='my'
+          ? photoGrid(34, false, new Set(), state.sharedPhotos, state.savedPhotos, [], 'photoTap')
+          : photoGrid(8, false, new Set(), new Set([0,1,2,3,4,5,6,7]))
+        }
+        <div style="height:20px;"></div>
+      </div>
+      ${momentASheet('Kavitha')}
+      ${momentBSheet()}
+      ${shareSheetHTML(1)}
+      ${specificPeopleSheetHTML()}
+      ${downloadSheetHTML()}
+      ${threeDotsSheet()}
+    </div>
+  </div>`;
+}
+
+
+function screenMayankScene() {
+  return `<div class="screen" id="s-mayank-scene">
+    ${switchPill()}
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;background:#fff;">
+      <div style="margin-bottom:24px;">${logo(32,24)}</div>
+      <div style="font-size:16px;font-weight:400;color:${P.ts};text-align:center;margin-bottom:24px;">It's Saturday morning. Your phone was off during the trip planning. You woke up to this.</div>
+      <div style="width:100%;background:${P.t};border-radius:16px;padding:14px 16px;margin-bottom:24px;display:flex;gap:12px;align-items:flex-start;">
+        <div style="width:40px;height:40px;border-radius:10px;background:${P.blue};display:flex;align-items:center;justify-content:center;flex-shrink:0;">${icoSVG('image',20,'#fff')}</div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:2px;">PixSlay</div>
+          <div style="font-size:13px;color:rgba(255,255,255,.85);line-height:1.4;">Mumbai — Karjat · Varun added you to the group. Your photos are syncing.</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:4px;">now</div>
+        </div>
+      </div>
+      <button class="btn btn-p" style="width:100%;" onclick="go('mayank-home')">Tap the notification</button>
+    </div>
+  </div>`;
+}
+
+function screenMayankHome() {
+  return `<div class="screen" id="s-mayank-home">
+    ${switchPill()}
+    <div style="flex:1;display:flex;flex-direction:column;background:${P.bgw};">
+      ${sbar()}
+      <div class="tbar" style="background:${P.bg};">
+        <div class="tbar-l" style="font-size:16px;font-weight:700;color:${P.t};">My events</div>
+        <div class="tbar-r">${ibtn('bell','')}</div>
+      </div>
+      <!-- New event banner -->
+      <div style="background:${P.bt};margin:10px 16px 0;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;">
+        <div style="flex:1;font-size:12px;font-weight:600;color:${P.bd};line-height:1.4;">You were added to Mumbai — Karjat while you were away.</div>
+        <button onclick="go('mayank-event')" style="background:${P.blue};border:none;border-radius:8px;padding:6px 12px;color:#fff;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;">View trip</button>
+      </div>
+      <div class="scroll" style="padding:10px 16px;">
+        ${[{name:'Goa Trip',dates:'Mar 2025',photos:28,cols:['#2D5A27','#1B3A6B']},{name:'Office Lunch',dates:'Apr 2025',photos:12,cols:['#D2691E','#185FA5']}].map(ev=>`
+          <div class="ev-card" onclick="go('mayank-event')">
+            <div class="ev-img" style="opacity:.7;">${eventCardSVG(ev.cols)}<div class="ev-grad"></div></div>
+            <div class="ev-info"><div class="ev-name">${ev.name}</div><div class="ev-date">${ev.dates} · ${ev.photos} photos</div></div>
+          </div>`).join('')}
+      </div>
+      ${navbar('home','','','')}
+    </div>
+  </div>`;
+}
+
+function screenMayankEvent() {
+  const allId = [{index:0,name:'Beulah'},{index:1,name:'Kavitha'},{index:2,name:'Mayank'},{index:3,name:'Vishal'},{index:4,name:'Anand'}];
+  const mainTab = state.activeFilters.mainTab || 'my';
+  return `<div class="screen" id="s-mayank-event">
+    ${switchPill()}
+    <div style="flex:1;display:flex;flex-direction:column;background:${P.bgw};overflow:hidden;">
+      <div style="background:${P.bg};flex-shrink:0;">
+        ${sbar()}
+        ${tbar('Mumbai — Karjat', true, `markComplete('mayank')`, `${ibtn('search','')}${ibtn('more-vertical',"openSheet('dots-sheet')",P.t)}`)}
+        ${faceChipsRow(allId, true)}
+        <div style="display:flex;border-bottom:0.5px solid ${P.bgs};">
+          <button onclick="setMainTab('my')" style="flex:1;height:40px;border:none;background:none;font-family:inherit;font-size:14px;cursor:pointer;font-weight:${mainTab==='my'?'600':'400'};color:${mainTab==='my'?P.t:P.tt};border-bottom:2px solid ${mainTab==='my'?P.blue:'transparent'};margin-bottom:-0.5px;">My Photos</button>
+          <button onclick="setMainTab('with')" style="flex:1;height:40px;border:none;background:none;font-family:inherit;font-size:14px;cursor:pointer;font-weight:${mainTab==='with'?'600':'400'};color:${mainTab==='with'?P.t:P.tt};border-bottom:2px solid ${mainTab==='with'?P.blue:'transparent'};margin-bottom:-0.5px;">With Me</button>
+        </div>
+        ${mainTab==='my' ? filterBar(state.activeFilters.cat, state.activeFilters.sub) : ''}
+        ${mainTab==='my' ? actionTabs(state.activeFilters.tab) : ''}
+      </div>
+      <div style="background:${P.bg};padding:4px 16px;flex-shrink:0;" id="m-sync-wrap">
+        <div class="prog-track"><div class="prog-fill" id="m-prog" style="width:60%;"></div></div>
+        <div style="font-size:11px;color:${P.tt};margin-top:3px;" id="m-sync-lbl">Syncing your Karjat photos — 60% complete</div>
+      </div>
+      <div class="scroll">
+        ${mainTab==='my'
+          ? photoGrid(34, state.selectionMode, state.selectedPhotos, state.sharedPhotos, state.savedPhotos, [], 'photoTap')
+          : photoGrid(12, false, new Set(), new Set([0,1,2,3,4,5,6,7,8,9,10,11]))
+        }
+        <div style="height:20px;"></div>
+      </div>
+      <div class="share-fab${state.selectionMode&&state.selectedPhotos.size>0?' vis':''}" id="share-fab" onclick="openShareSheet()">
+        ${icoSVG('share-2',22,'#fff',2)}
+      </div>
+      ${shareSheetHTML(state.selectedPhotos.size||1)}
+      ${specificPeopleSheetHTML()}
+      ${downloadSheetHTML()}
+      ${extShareSheetHTML()}
+      ${threeDotsSheet()}
+      ${memberListSheet()}
+    </div>
+  </div>`;
+}
+
+
+function screenVishalScene() {
+  return `<div class="screen" id="s-vishal-scene">
+    ${switchPill()}
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 20px;background:#fff;">
+      <div style="margin-bottom:20px;">${logo(32,24)}</div>
+      <div style="font-size:16px;font-weight:400;color:${P.ts};text-align:center;margin-bottom:16px;">It's Sunday afternoon. You finally gave in.</div>
+      <div class="wa-chat" style="width:100%;margin-bottom:20px;">
+        <div class="wa-label">WhatsApp — Varun, Mayank +3</div>
+        <div class="wa-msg">
+          <div class="wa-av" style="background:${P.blue};">VR</div>
+          <div>
+            <div class="wa-bubble"><div class="wa-msg-text">Bhai install PixSlay kar — sab photos wahan hain</div></div>
+            <div class="wa-msg-sender">— Varun</div>
+            <div class="wa-msg-time">Sat, 11:42 AM</div>
+          </div>
+        </div>
+        <div class="wa-msg" style="margin-top:8px;">
+          <div class="wa-av" style="background:${P.am};">MA</div>
+          <div>
+            <div class="wa-bubble"><div class="wa-msg-text">Vishal seriously install kar — tera bhi bahut photos hain</div></div>
+            <div class="wa-msg-sender">— Mayank</div>
+            <div class="wa-msg-time">Sun, 9:15 AM</div>
+          </div>
+        </div>
+        <div class="wa-msg me" style="margin-top:8px;">
+          <div>
+            <div class="wa-bubble"><div class="wa-msg-text">Ok ok installing now 😄</div></div>
+            <div class="wa-msg-time">Sun, 2:30 PM</div>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-p" style="width:100%;" onclick="go('vishal-web')">Tap the link</button>
+    </div>
+  </div>`;
+}
+
+function screenVishalWeb() {
+  return `<div class="screen" id="s-vishal-web">
+    ${switchPill()}
+    <div style="flex:1;display:flex;flex-direction:column;background:${P.bgw};">
+      <div style="background:#F0F0F0;padding:8px 12px;">
+        <div style="background:#fff;border-radius:6px;padding:6px 10px;font-size:11px;color:${P.ts};">pixslay.app/mumbai-karjat-vishal</div>
+      </div>
+      <div style="flex:1;background:#fff;display:flex;flex-direction:column;align-items:center;padding:32px 24px;">
+        ${logo(28,22)}
+        <div style="font-size:20px;font-weight:700;color:${P.t};text-align:center;line-height:1.3;margin:20px 0 8px;">Varun shared 8 photos of you from Mumbai — Karjat.</div>
+        <div style="font-size:13px;color:${P.ts};margin-bottom:20px;">They've been waiting since Saturday.</div>
+        <div class="blur-photos">
+          ${[3,16,25].map(i=>`<div class="blur-photo">${photoSVG(i,90)}</div>`).join('')}
+        </div>
+        <div style="font-size:13px;color:${P.ts};margin:16px 0 20px;text-align:center;">Install PixSlay to see all 8 photos — free.</div>
+        <button class="btn btn-p" style="width:100%;" onclick="go('vishal-reg')">See all 8 photos</button>
+        <button class="btn btn-g" style="width:100%;margin-top:8px;" onclick="go('vishal-photos')">Already have PixSlay?</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function screenVishalReg() {
+  return `<div class="screen" id="s-vishal-reg">
+    ${switchPill()}
+    <div style="flex:1;display:flex;flex-direction:column;background:${P.bg};">
+      ${sbar()}
+      <div style="flex:1;padding:20px 16px 0;">
+        ${logo(28,22)}
+        <div style="font-size:20px;font-weight:700;color:${P.t};line-height:1.3;margin:20px 0 8px;">Varun shared 8 photos of you from Mumbai — Karjat.</div>
+        <div style="font-size:13px;color:${P.ts};margin-bottom:20px;">Sign up in 30 seconds. Your photos are waiting.</div>
+        ${floatInput('Phone number','vreg2-phone','9876543213','tel')}
+      </div>
+      <div style="padding:0 16px 40px;display:flex;flex-direction:column;gap:10px;">
+        <button class="btn btn-p" onclick="go('vishal-otp')">Continue</button>
+        <button class="btn btn-g" onclick="go('vishal-web')">← Back</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function screenVishalOTP() {
+  return `<div class="screen" id="s-vishal-otp">
+    ${switchPill()}
+    <div style="flex:1;display:flex;flex-direction:column;background:${P.bg};">
+      ${sbar()}
+      <div style="flex:1;padding:60px 16px 0;display:flex;flex-direction:column;">
+        <div style="display:flex;justify-content:center;margin-bottom:32px;">${logo(28,22)}</div>
+        <div style="font-size:24px;font-weight:800;color:${P.t};letter-spacing:-.5px;margin-bottom:8px;">Enter the code we sent you.</div>
+        <div style="font-size:13px;color:${P.ts};margin-bottom:32px;">Sent to <span style="font-weight:500;color:${P.t};">+91 98765 43213</span></div>
+        ${otpHTML('viotp')}
+        <div style="text-align:center;margin-top:20px;font-size:12px;color:${P.tt};">Didn't get it? <span style="color:${P.blue};font-weight:600;cursor:pointer;" onclick="showToast('Code resent.')">Resend code</span></div>
+      </div>
+      <div style="padding:0 16px 40px;"><button class="btn btn-g" onclick="go('vishal-reg')">← Back</button></div>
+    </div>
+  </div>`;
+}
+
+function screenVishalPhotos() {
+  return `<div class="screen" id="s-vishal-photos">
+    ${switchPill()}
+    <div style="flex:1;display:flex;flex-direction:column;background:${P.bgw};overflow:hidden;">
+      <div style="background:${P.bg};flex-shrink:0;">
+        ${sbar()}
+        ${tbar('Mumbai — Karjat', true, `markComplete('vishal')`)}
+        <div style="display:flex;border-bottom:0.5px solid ${P.bgs};">
+          <button class="atab" style="flex:1;">My photos</button>
+          <button class="atab on" style="flex:1;">With me</button>
+        </div>
+      </div>
+      <!-- Offline banner -->
+      <div id="vi-offline" class="amber-banner" style="display:flex;align-items:center;gap:8px;">
+        ${icoSVG('wifi-off',14,P.am)} You're offline. Your photos will be here when you reconnect.
+      </div>
+      <!-- Sync your photos row -->
+      <div style="background:${P.bt};padding:10px 16px;display:flex;align-items:center;gap:8px;flex-shrink:0;border-bottom:0.5px solid ${P.bb};">
+        ${icoSVG('image',16,P.blue)}
+        <span style="font-size:13px;font-weight:600;color:${P.bd};flex:1;">Sync your 22 Karjat photos</span>
+        <button onclick="showToast('Syncing your photos in background.');" style="background:none;border:none;font-family:inherit;font-size:13px;font-weight:600;color:${P.blue};cursor:pointer;">Add yours</button>
+      </div>
+      <div class="scroll">
+        ${photoGrid(8,false,new Set(),new Set([0,1,2,3,4,5,6,7]))}
+        <div style="height:20px;"></div>
+      </div>
+      <!-- One-time overlay -->
+      <div class="sheet-ov open" id="vi-ov-bg"></div>
+      <div class="bsheet open" id="vi-ov">
+        <div class="sh-handle"></div>
+        <div style="padding:20px;text-align:center;">
+          <div style="width:60px;height:60px;background:${P.bt};border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">${icoSVG('image',28,P.blue)}</div>
+          <div style="font-size:16px;font-weight:700;color:${P.t};margin-bottom:8px;line-height:1.4;">These are photos Varun took of you from Mumbai — Karjat. They're yours now.</div>
+          <div style="font-size:13px;color:${P.ts};margin-bottom:20px;">8 photos. Delivered automatically because you were there.</div>
+          <button class="btn btn-p" onclick="closeVishalOverlay()">Got it</button>
+        </div>
+      </div>
+      ${momentASheet('Vishal')}
+    </div>
+  </div>`;
+}
+function closeVishalOverlay() {
+  document.getElementById('vi-ov')?.classList.remove('open');
+  document.getElementById('vi-ov-bg')?.classList.remove('open');
+  // Hide offline banner after 2s
+  setTimeout(()=>{
+    const b = document.getElementById('vi-offline');
+    if (b) b.style.opacity = '0';
+    setTimeout(()=>{ if (b) b.style.display='none'; }, 500);
+  }, 2000);
+  setTimeout(()=>openSheet('momA'), 600);
+}
+
+// ─── FULL SCREEN PHOTO ───────────────────────────────────────
+function screenPhotoFull() {
+  const i = state.currentPhoto || 0;
+  const total = state.photoCount || 34;
+  const prev = state.prevScreen || 'varun-event';
+  const cfg = PHOTO_CONFIGS[i % PHOTO_CONFIGS.length];
+  const [c1,c2,type,people] = cfg;
+  return `<div class="screen" id="s-photo-full" style="background:#000;">
+    ${switchPill()}
+    <!-- Full screen photo -->
+    <div style="flex:1;position:relative;overflow:hidden;" id="photo-full-container">
+      <!-- Photo fills screen -->
+      <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
+        ${photoSVG(i, 390)}
+      </div>
+      <!-- Top bar overlay -->
+      <div style="position:absolute;top:0;left:0;right:0;padding:44px 8px 12px;background:linear-gradient(to bottom,rgba(0,0,0,.6),transparent);display:flex;align-items:center;">
+        <button class="ibtn btn" onclick="go('${prev}')" style="color:#fff;">${icoSVG('arrow-left',20,'#fff',1.8)}</button>
+        <span style="flex:1;text-align:center;font-size:14px;font-weight:600;color:#fff;">${i+1} of ${total}</span>
+        <button class="ibtn btn" onclick="showToast('More options')" style="color:#fff;">${icoSVG('more-horizontal',20,'#fff',1.8)}</button>
+      </div>
+      <!-- Face chips on photo -->
+      <div style="position:absolute;top:120px;left:12px;display:flex;gap:6px;flex-wrap:wrap;">
+        ${people.slice(0,3).map(p=>`<div style="background:rgba(27,79,216,.9);border-radius:20px;padding:4px 10px;font-size:11px;font-weight:600;color:#fff;">${p}</div>`).join('')}
+      </div>
+      <!-- Attribution -->
+      <div style="position:absolute;bottom:80px;left:0;right:0;text-align:center;font-size:11px;color:rgba(255,255,255,.7);">Taken by Varun · Sat 24 May, 3:42 PM</div>
+      <!-- Swipe hint arrows -->
+      ${i>0?`<button onclick="prevPhoto()" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.4);border:none;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;">${icoSVG('arrow-left',18,'#fff',2)}</button>`:''}
+      ${i<total-1?`<button onclick="nextPhoto()" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.4);border:none;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;">${icoSVG('chevron-right',18,'#fff',2)}</button>`:''}
+    </div>
+    <!-- Bottom action bar -->
+    <div style="height:72px;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:space-around;padding:0 8px;flex-shrink:0;">
+      <button class="ibtn btn" onclick="showToast('Saved to your phone. Free.')" style="display:flex;flex-direction:column;align-items:center;gap:4px;width:auto;padding:0 12px;">
+        ${icoSVG('download',22,'#fff',1.5)}
+        <span style="font-size:9px;color:rgba(255,255,255,.7);">Download</span>
+      </button>
+      <button class="ibtn btn" onclick="showToast('Saved to PixSlay.')" style="display:flex;flex-direction:column;align-items:center;gap:4px;width:auto;padding:0 12px;">
+        ${icoSVG('bookmark',22,'#fff',1.5)}
+        <span style="font-size:9px;color:rgba(255,255,255,.7);">Save</span>
+      </button>
+      <button class="ibtn btn" onclick="state.selectionMode=true;state.selectedPhotos=new Set([${i}]);go('${prev}');setTimeout(()=>openShareSheet(),100);" style="display:flex;flex-direction:column;align-items:center;gap:4px;width:auto;padding:0 12px;background:rgba(27,79,216,.8);border-radius:12px;height:48px;">
+        ${icoSVG('share-2',22,'#fff',1.5)}
+        <span style="font-size:9px;color:#fff;font-weight:600;">Share</span>
+      </button>
+      <button class="ibtn btn" onclick="showToast('₹5 per photo — payment opens here.','warn')" style="display:flex;flex-direction:column;align-items:center;gap:4px;width:auto;padding:0 12px;">
+        ${icoSVG('star',22,'#F5A623',1.5)}
+        <span style="font-size:9px;color:#F5A623;">Hi-res ₹5</span>
+      </button>
+    </div>
+  </div>`;
+}
+function prevPhoto() {
+  if (state.currentPhoto > 0) { state.currentPhoto--; render(); }
+}
+function nextPhoto() {
+  if (state.currentPhoto < (state.photoCount||34)-1) { state.currentPhoto++; render(); }
+}
+
+// ─── RENDER ───────────────────────────────────────────────────
+const SCREEN_MAP = {
+  'entry': screenEntry,
+  'varun-scene': screenVarunScene,
+  'varun-reg': screenVarunReg,
+  'varun-otp': screenVarunOTP,
+  'varun-profile': screenVarunProfile,
+  'varun-home-empty': screenVarunEmptyHome,
+  'varun-create-group': screenVarunCreateGroup,
+  'varun-sync': screenVarunSync,
+  'varun-home': screenVarunHome,
+  'varun-event': screenVarunEvent,
+  'varun-delivery': screenVarunDelivery,
+  'beulah-scene': screenBeulahScene,
+  'beulah-web': screenBeulahWeb,
+  'beulah-reg': screenBeulahReg,
+  'beulah-otp': screenBeulahOTP,
+  'beulah-photos': screenBeulahPhotos,
+  'kavitha-reg': screenKavithaReg,
+  'kavitha-otp': screenKavithaOTP,
+  'kavitha-profile': screenKavithaProfile,
+  'kavitha-gallery': screenKavithaGallery,
+  'kavitha-home': screenKavithaHome,
+  'kavitha-event': screenKavithaEvent,
+  'mayank-scene': screenMayankScene,
+  'mayank-home': screenMayankHome,
+  'mayank-event': screenMayankEvent,
+  'vishal-scene': screenVishalScene,
+  'vishal-web': screenVishalWeb,
+  'vishal-reg': screenVishalReg,
+  'vishal-otp': screenVishalOTP,
+  'vishal-photos': screenVishalPhotos,
+  'photo-full': screenPhotoFull,
+};
+
+function render() {
+  const phone = document.getElementById('phone');
+  // Remove old screens (keep toast and popup)
+  const oldScreens = phone.querySelectorAll('.screen');
+  oldScreens.forEach(s=>s.remove());
+
+  const fn = SCREEN_MAP[state.screen];
+  if (!fn) { state.screen='entry'; render(); return; }
+  const html = fn();
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  const screen = tmp.firstElementChild;
+  phone.appendChild(screen);
+
+  // Post-render hooks
+  postRender();
+}
+
+function postRender() {
+  // OTP: focus box-0 of whichever OTP screen is active, set completion callbacks
+  const otpScreens = {votp:'varun-profile', botp:'beulah-photos', kotp:'kavitha-profile', viotp:'vishal-photos'};
+  Object.entries(otpScreens).forEach(([id, dest])=>{
+    const box0 = document.getElementById(`${id}-0`);
+    if (!box0) return;
+    // Store completion destination on a hidden marker element
+    let marker = document.getElementById(`${id}-real-hidden`);
+    if (!marker) {
+      marker = document.createElement('span');
+      marker.id = `${id}-real-hidden`;
+      marker.style.display='none';
+      box0.parentElement.appendChild(marker);
+    }
+    marker._onComplete = ()=>go(dest);
+    // Focus first box after paint
+    setTimeout(()=>{ try{ box0.focus(); }catch(e){} }, 150);
+  });
+
+  // Photo Sync animation
+  if (state.screen === 'varun-sync') {
+    let pct = 0; let scanning = 0;
+    const prog = document.getElementById('sync-prog');
+    const lbl = document.getElementById('sync-scan-lbl');
+    const results = document.getElementById('sync-results');
+    const connBanner = document.getElementById('sync-conn-banner');
+    const viewBtn = document.getElementById('sync-view-btn');
+    let paused = false;
+
+    const iv = setInterval(()=>{
+      if (paused) return;
+      pct = Math.min(100, pct + 1.5);
+      scanning = Math.round(pct / 100 * 847);
+      if (prog) prog.style.width = pct+'%';
+      if (lbl) lbl.textContent = `Scanning ${scanning} photos...`;
+
+      // Connection drop at 60%
+      if (pct >= 60 && pct < 63 && connBanner && connBanner.style.display==='none') {
+        paused = true;
+        connBanner.style.display = 'block';
+        setTimeout(()=>{ connBanner.style.display='none'; paused=false; }, 1800);
+      }
+
+      if (pct >= 100) {
+        clearInterval(iv);
+        if (lbl) lbl.style.display='none';
+        if (results) results.style.display='block';
+        if (viewBtn) { viewBtn.classList.remove('dis'); viewBtn.removeAttribute('disabled'); }
+      }
+    }, 60);
+  }
+
+  // Kavitha event progressive sync
+  if (state.screen === 'kavitha-event') {
+    let kpct = 0;
+    const kprog = document.getElementById('k-prog');
+    const klbl = document.getElementById('k-pct');
+    const ksync = document.getElementById('k-sync-lbl');
+    const ksynclbl = ksync?.parentElement;
+    if (kprog) {
+      const iv = setInterval(()=>{
+        kpct = Math.min(100, kpct + 2);
+        kprog.style.width = kpct+'%';
+        if (klbl) klbl.textContent = kpct;
+        if (kpct >= 100) {
+          clearInterval(iv);
+          if (ksynclbl) ksynclbl.style.display='none';
+          showToast('All your Karjat photos are here.');
+          setTimeout(()=>openSheet('momA'), 1500);
+        }
+      }, 80);
+    }
+  }
+
+  // Mayank progressive sync
+  if (state.screen === 'mayank-event') {
+    let mpct = 60;
+    const mprog = document.getElementById('m-prog');
+    const mlbl = document.getElementById('m-sync-lbl');
+    const mwrap = document.getElementById('m-sync-wrap');
+    if (mprog) {
+      const iv = setInterval(()=>{
+        mpct = Math.min(100, mpct + 2);
+        mprog.style.width = mpct+'%';
+        if (mlbl) mlbl.textContent = `Syncing your Karjat photos — ${mpct}% complete`;
+        if (mpct >= 100) {
+          clearInterval(iv);
+          if (mwrap) mwrap.style.display='none';
+          showToast('All your Karjat photos are here. Everyone\'s already identified.');
+        }
+      }, 80);
+    }
+  }
+
+  // Long-press on photos
+  setupLongPress();
+
+  // Moment A auto-trigger on varun-event (after 1s)
+  if (state.screen === 'varun-event' && state.identifiedFaces.length === 0) {
+    setTimeout(()=>{
+      const sheet = document.getElementById('momA');
+      if (sheet && !sheet.classList.contains('open')) openSheet('momA');
+    }, 1200);
+  }
+}
+
+function setupLongPress() {
+  const cells = document.querySelectorAll('.pcell');
+  cells.forEach((cell, i) => {
+    let timer;
+    cell.addEventListener('touchstart', (e)=>{
+      timer = setTimeout(()=>{ longPressPhoto(i); }, 600);
+    }, {passive:true});
+    cell.addEventListener('touchend', ()=>clearTimeout(timer));
+    cell.addEventListener('mousedown', ()=>{ timer=setTimeout(()=>longPressPhoto(i), 600); });
+    cell.addEventListener('mouseup', ()=>clearTimeout(timer));
+    cell.addEventListener('mouseleave', ()=>clearTimeout(timer));
+  });
+}
+
+// ─── INIT ─────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>function fillMomB(name) {
+  const inp = document.getElementById('momB-input');
+  const lbl = document.getElementById('momB-lbl');
+  if (inp) {
+    inp.value = name;
+    inp.style.border = '0.5px solid #C7D4FB';
+    if (lbl) lbl.style.cssText = 'position:absolute;left:14px;top:0;transform:translateY(-50%);font-size:11px;font-weight:600;color:#A8A49F;background:#fff;padding:0 4px;pointer-events:none;transition:all .15s;';
+    momBInputChange();
+  }
+}
+
+function momBInputChange() {
+  const inp = document.getElementById('momB-input');
+  const btn = document.getElementById('momB-confirm');
+  if (!inp||!btn) return;
+  if (inp.value.trim().length>0) btn.classList.remove('dis'); else btn.classList.add('dis');
+}
+function confirmMomentB() {
+  const inp = document.getElementById('momB-input');
+  const name = inp?.value.trim();
+  if (!name) return;
+  state.identifiedFaces.push({index:currentMomentBIndex, name});
+  closeSheet('momB');
+  showToast(name+' identified!');
+  setTimeout(()=>{
+    const remaining = UNID_FACE_INDICES.filter(i => !state.identifiedFaces.find(x=>x.index===i-1));
+    if (remaining.length > 0) openMomentB(0);
+  }, 1000);
+}
+function skipMomentB() {
+  state.identifiedFaces.push({index:currentMomentBIndex, name:''});
+  closeSheet('momB');
+  setTimeout(()=>{
+    const remaining = UNID_FACE_INDICES.filter(i => !state.identifiedFaces.find(x=>x.index===i-1));
+    if (remaining.length > 0) openMomentB(0);
+  }, 500);
+}
+
