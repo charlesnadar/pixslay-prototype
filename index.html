@@ -1,0 +1,1721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PixSlay Prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* Desktop — phone frame centered on warm background */
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: #E8E4DF;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow: hidden;
+      margin: 0;
+    }
+    .phone {
+      width: 390px;
+      height: 844px;
+      background: #F8F7F5;
+      border-radius: 50px;
+      overflow: hidden;
+      position: relative;
+      flex-shrink: 0;
+      box-shadow: 0 0 0 8px #2E2A26, 0 0 0 10px #1A1610, 0 32px 64px rgba(0,0,0,.35);
+    }
+
+    /* Mobile — fills the real screen edge to edge like a native app */
+    @media (max-width: 500px) {
+      body {
+        padding: 0;
+        background: #F8F7F5;
+        align-items: flex-start;
+        overflow: hidden;
+      }
+      .phone {
+        width: 100vw;
+        height: 100svh;  /* svh = small viewport height, excludes browser chrome */
+        border-radius: 0;
+        box-shadow: none;
+      }
+      .notch { display: none; }
+    }
+
+    /* Fallback for browsers that don't support svh */
+    @supports not (height: 100svh) {
+      @media (max-width: 500px) {
+        .phone { height: 100vh; }
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="phone" class="phone">
+    <!-- Screens will be inserted here -->
+  </div>
+  <script>
+    // Design tokens
+    const T = {
+      blue:    '#1B4FD8',
+      blueH:   '#2960F5',
+      blueTint:'#EEF2FD',
+      blueBdr: '#C7D4FB',
+      blueDk:  '#0C447C',
+      blueDp:  '#185FA5',
+      white:   '#FFFFFF',
+      bgWarm:  '#F8F7F5',
+      bgSub:   '#F0EEEB',
+      text:    '#1A1917',
+      textS:   '#6B6864',
+      textT:   '#A8A49F',
+      textD:   '#D4D1CC',
+      ok:      '#0F9E6E',
+      alert:   '#E8490F',
+      amber:   '#F5A623',
+    };
+
+    // State management
+    const state = {
+      screen:     'entry',
+      journey:    null,
+      completed:  [],
+      identifiedFaces: [],      // [{index: 0-4, name: 'Beulah'}]
+      selectionMode:   false,
+      selectedPhotos:  new Set(),
+      sharedPhotos:    new Set(),
+      savedPhotos:     new Set(),
+      activeFilters: {
+        mainTab: 'my',          // 'my' | 'with'
+        cat:     null,          // 'People' | 'Scene' | 'Format' | 'Time'
+        sub:     null,          // active sub-filter string
+        tab:     'all',         // 'all' | 'shared' | 'received' | 'saved' | 'downloaded'
+      },
+      currentPhoto: 0,
+      prevScreen:   null,
+    };
+
+    function go(screenName) {
+      state.screen = screenName;
+      render();
+    }
+
+    function markComplete(journey) {
+      if (!state.completed.includes(journey)) state.completed.push(journey);
+      // Reset journey-specific state
+      state.identifiedFaces  = [];
+      state.selectedPhotos   = new Set();
+      state.sharedPhotos     = new Set();
+      state.savedPhotos      = new Set();
+      state.selectionMode    = false;
+      state.activeFilters    = { mainTab:'my', cat:null, sub:null, tab:'all' };
+      go('entry');
+    }
+
+    // Utility functions
+    function toast(message, type='ok') {
+      const bg = type === 'ok' ? T.ok : T.alert;
+      const iconName = type === 'ok' ? 'check' : 'alert-circle';
+      const el = document.createElement('div');
+      el.innerHTML = `
+        <div style="position:fixed;top:16px;left:50%;transform:translateX(-50%);
+                    z-index:10000;background:${bg};color:#fff;border-radius:12px;
+                    padding:12px 16px;font-size:13px;font-weight:600;display:flex;
+                    align-items:center;gap:8px;min-width:200px;justify-content:center;
+                    box-shadow:0 4px 12px rgba(0,0,0,.15);">
+          ${icon(iconName, 16, '#fff')}
+          ${message}
+        </div>`;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 3000);
+    }
+
+    function popup(headline, copy, leftBtn, rightBtn) {
+      const id = 'popup-' + Date.now();
+      const el = document.createElement('div');
+      el.innerHTML = `
+        <div id="${id}-overlay" onclick="closeSheet('${id}')"
+          style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;
+                 display:flex;align-items:center;justify-content:center;">
+          <div onclick="event.stopPropagation()"
+            style="width:280px;background:#fff;border-radius:16px;padding:24px;
+                   display:flex;flex-direction:column;gap:8px;">
+            <div style="font-size:18px;font-weight:800;color:${T.text};text-align:center;">
+              ${headline}
+            </div>
+            <div style="font-size:13px;font-weight:400;color:${T.textS};text-align:center;">
+              ${copy}
+            </div>
+            <div style="display:flex;gap:8px;margin-top:20px;">
+              <button onclick="${leftBtn.action}; closeSheet('${id}');"
+                style="flex:1;height:44px;border-radius:10px;border:0.5px solid ${T.alert};
+                       background:#fff;color:${T.alert};font-size:13px;font-weight:600;">
+                ${leftBtn.label}
+              </button>
+              <button onclick="${rightBtn.action}; closeSheet('${id}');"
+                style="flex:1;height:44px;border-radius:10px;border:none;
+                       background:${T.blue};color:#fff;font-size:13px;font-weight:600;">
+                ${rightBtn.label}
+              </button>
+            </div>
+          </div>
+        </div>`;
+      document.body.appendChild(el);
+    }
+
+    function icon(name, size=20, color=T.text) {
+      // Simplified icon function - in real implementation, use actual SVG paths
+      const icons = {
+        'home': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>',
+        'user': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+        'plus': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+        'arrow-left': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12,19 5,12 12,5"/></svg>',
+        'chevron-right': '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="9 18 15 12 9 6"/></svg>',
+        'search': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
+        'more-horizontal': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>',
+        'check': '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20,6 9,17 4,12"/></svg>',
+        'alert-circle': '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+        'share-2': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.59 13.51 6.83 3.98"/><path d="m15.41 6.51-6.82 3.98"/></svg>',
+        'download': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+        'bookmark': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>',
+        'trash-2': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3,6 5,6 21,6"/><path d="M19,6v14a2,2 0 0,1-2,2H7a2,2 0 0,1-2-2V6m3,0V4a2,2 0 0,1,2-2h4a2,2 0 0,1,2,2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>',
+        'image': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>',
+        'bell': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>',
+        'calendar': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+        'users': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+        'star': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>',
+        'log-out': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>',
+        'camera': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>',
+        'report': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10,9 9,9 8,9"/></svg>',
+        'photo-info': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
+      };
+      return icons[name] || '<svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>';
+    }
+
+    function logo(size=28) {
+      return `
+        <div style="display:flex;align-items:center;gap:4px;">
+          <div style="width:${size}px;height:${size}px;border-radius:6px;background:${T.blue};display:flex;align-items:center;justify-content:center;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <circle cx="9" cy="9" r="2"/>
+              <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+            </svg>
+          </div>
+          <span style="font-size:${size-8}px;font-weight:800;color:${T.text};">Pixslay</span>
+        </div>`;
+    }
+
+    // Shared component functions
+    function floatInput(label, id, value='', type='text') {
+      const filled = value.length > 0;
+      const FLOATED = `top:0;transform:translateY(-50%);font-size:11px;font-weight:600;padding:0 4px;`;
+      const RESTING = `top:50%;transform:translateY(-50%);font-size:14px;font-weight:400;padding:0;`;
+      const initLblStyle = filled
+        ? `position:absolute;left:14px;background:#fff;pointer-events:none;transition:all .15s;${FLOATED}color:${T.textT};`
+        : `position:absolute;left:14px;background:#fff;pointer-events:none;transition:all .15s;${RESTING}color:${T.textT};`;
+      const initBorder = filled ? `0.5px solid ${T.blueBdr}` : `0.5px solid ${T.bgSub}`;
+      return `
+        <div style="position:relative;margin-bottom:12px;">
+          <input id="${id}" type="${type}" value="${value}"
+            style="width:100%;height:52px;border:${initBorder};border-radius:10px;padding:20px 14px 7px;font-family:inherit;font-size:14px;color:${T.text};background:#fff;outline:none;transition:border .15s;"
+            onfocus="
+              var l=document.getElementById('${id}-lbl');
+              if(l) l.style.cssText='position:absolute;left:14px;background:#fff;pointer-events:none;transition:all .15s;${FLOATED}color:${T.blue};';
+              this.style.border='1px solid ${T.blue}';"
+            onblur="
+              var l=document.getElementById('${id}-lbl');
+              if(this.value) {
+                if(l) l.style.cssText='position:absolute;left:14px;background:#fff;pointer-events:none;transition:all .15s;${FLOATED}color:${T.textT};';
+                this.style.border='0.5px solid ${T.blueBdr}';
+              } else {
+                if(l) l.style.cssText='position:absolute;left:14px;background:#fff;pointer-events:none;transition:all .15s;${RESTING}color:${T.textT};';
+                this.style.border='0.5px solid ${T.bgSub}';
+              }"
+          >
+          <label id="${id}-lbl" style="${initLblStyle}">${label}</label>
+        </div>`;
+    }
+
+    function otpRow(id, dest) {
+      const boxes = Array.from({length:6}, (_,i) => `
+        <input type="tel" inputmode="numeric" maxlength="1" id="${id}-${i}"
+          style="width:40px;height:52px;border:0.5px solid ${T.bgSub};border-radius:10px;background:#fff;font-size:24px;font-weight:800;color:${T.blue};text-align:center;font-family:inherit;outline:none;transition:border .1s, background .1s;"
+          onfocus="this.style.border='1.5px solid ${T.blue}'; this.select();"
+          onblur="this.style.border=this.value?'0.5px solid ${T.blueBdr}':'0.5px solid ${T.bgSub}';"
+          oninput="otpInput('${id}',${i},'${dest}',this)"
+          onkeydown="otpBack('${id}',${i},event)"
+        />`).join('');
+      return `<div style="display:flex;gap:8px;justify-content:center;">${boxes}</div>`;
+    }
+
+    function otpInput(id, i, dest, el) {
+      el.value = el.value.replace(/[^0-9]/g,'').slice(-1);
+      if(el.value) {
+        el.style.background = T.blueTint;
+        el.style.border = `0.5px solid ${T.blueBdr}`;
+        const next = document.getElementById(`${id}-${(i+1)}`);
+        if(next) next.focus();
+        else setTimeout(()=>go(dest), 300);
+      }
+    }
+
+    function otpBack(id, i, e) {
+      if(e.key==='Backspace') {
+        const el = document.getElementById(`${id}-${i}`);
+        if(!el.value && i>0) {
+          const prev = document.getElementById(`${id}-${(i-1)}`);
+          prev.value='';
+          prev.style.background='#fff';
+          prev.focus();
+        }
+      }
+    }
+
+    function primaryBtn(label, action, disabled=false) {
+      const bg = disabled ? T.bgSub : T.blue;
+      const color = disabled ? T.textD : '#fff';
+      return `<button onclick="${disabled ? '' : action}" style="width:100%;height:50px;border-radius:12px;border:none;background:${bg};color:${color};font-size:15px;font-weight:600;font-family:inherit;outline:none;transition:background .1s;" ${disabled ? 'disabled' : ''}>${label}</button>`;
+    }
+
+    function secondaryBtn(label, action) {
+      return `<button onclick="${action}" style="width:100%;height:44px;border-radius:12px;border:0.5px solid ${T.blueBdr};background:#fff;color:${T.blue};font-size:13px;font-weight:600;font-family:inherit;outline:none;">${label}</button>`;
+    }
+
+    function ghostBtn(label, action) {
+      return `<button onclick="${action}" style="width:100%;height:44px;border:none;background:transparent;color:${T.textS};font-size:13px;font-weight:500;font-family:inherit;outline:none;">${label}</button>`;
+    }
+
+    function sbar() {
+      return `<div style="height:44px;background:#fff;display:flex;align-items:center;padding:0 16px;font-size:13px;font-weight:600;color:${T.text};">9:41</div>`;
+    }
+
+    function tbar(backAction, title, rightIcon='', rightAction='') {
+      return `
+        <div style="height:44px;background:#fff;display:flex;align-items:center;padding:0 16px;border-bottom:0.5px solid ${T.bgSub};">
+          <button onclick="${backAction}" style="width:44px;height:44px;border:none;background:none;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+            ${icon('arrow-left', 20, T.blue)}
+          </button>
+          <div style="flex:1;text-align:center;font-size:16px;font-weight:700;color:${T.text};">${title}</div>
+          ${rightIcon ? `<button onclick="${rightAction}" style="width:44px;height:44px;border:none;background:none;display:flex;align-items:center;justify-content:center;cursor:pointer;">${icon(rightIcon, 20, T.text)}</button>` : '<div style="width:44px;"></div>'}
+        </div>`;
+    }
+
+    function navbar(activeTab, onHome, onProfile, onFab) {
+      return `
+        <div style="height:56px;background:#fff;border-top:0.5px solid ${T.bgSub};display:flex;align-items:center;padding:0 40px;position:relative;flex-shrink:0;">
+          <div onclick="${onHome}" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;">
+            ${icon('home', 22, activeTab==='home' ? T.blue : T.textT)}
+            <span style="font-size:9px;font-weight:500;color:${activeTab==='home' ? T.blue : T.textT};">Home</span>
+          </div>
+          <div style="flex:1;"></div>
+          <div onclick="${onProfile}" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;">
+            ${icon('user', 22, activeTab==='profile' ? T.blue : T.textT)}
+            <span style="font-size:9px;font-weight:500;color:${activeTab==='profile' ? T.blue : T.textT};">Profile</span>
+          </div>
+          <button onclick="${onFab}" style="position:absolute;bottom:28px;left:50%;transform:translateX(-50%);width:52px;height:52px;background:${T.blue};border-radius:50%;border:3px solid #fff;box-shadow:0 4px 12px rgba(27,79,216,.3);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:10;">
+            ${icon('plus', 22, '#fff')}
+          </button>
+        </div>`;
+    }
+
+    function switchPill() {
+      return `<button onclick="go('entry')" style="position:absolute;top:6px;left:50%;transform:translateX(-50%);z-index:9999;background:#fff;border:0.5px solid ${T.blue};border-radius:20px;padding:4px 12px;font-family:inherit;font-size:10px;font-weight:500;color:${T.blue};cursor:pointer;white-space:nowrap;">Switch journey</button>`;
+    }
+
+    function faceChip(name, count, identified=true, isYou=false) {
+      const bg = identified ? T.blue : T.bgSub;
+      const color = identified ? '#fff' : T.textS;
+      const initials = name.split(' ').map(n => n[0]).join('').toUpperCase();
+      const label = isYou ? `${initials} — You` : name;
+      return `
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:20px;background:${bg};color:${color};font-size:13px;font-weight:600;min-width:80px;">
+          <div style="width:20px;height:20px;border-radius:50%;background:${identified ? '#fff' : T.textD};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:${identified ? T.blue : '#fff'};">${initials}</div>
+          <span>${label}</span>
+          ${count ? `<span style="font-size:11px;font-weight:500;color:${identified ? '#fff' : T.textT};">${count}</span>` : ''}
+        </div>`;
+    }
+
+    function faceChipsRow() {
+      // Simplified - will be populated based on state
+      return `
+        <div style="padding:16px 16px 8px;display:flex;gap:8px;overflow-x:auto;">
+          ${faceChip('Varun', null, true, true)}
+          ${faceChip('?', 14, false)}
+          ${faceChip('?', 9, false)}
+          ${faceChip('?', 7, false)}
+          ${faceChip('?', 6, false)}
+        </div>`;
+    }
+
+    function filterBar(activeCat, activeSub) {
+      const categories = ['People', 'Scene', 'Format', 'Time'];
+      const subOptions = {
+        People: ['Varun','Beulah','Kavitha','Mayank','Vishal','Anand'],
+        Scene:  ['Bonfire','Waterfall','Group shot','Night sky','Forest','Food','Lakeside'],
+        Format: ['Selfie','Group','Portrait','Landscape','Video'],
+        Time:   ['Day 1 (Sat)','Day 2 (Sun)','Morning','Evening','Night'],
+      };
+      const subs = activeCat ? subOptions[activeCat] : [];
+      return `
+        <div style="background:#fff;border-bottom:0.5px solid ${T.bgSub};flex-shrink:0;">
+          <div style="display:flex;gap:8px;padding:8px 16px;overflow-x:auto;">
+            ${categories.map(cat => `
+              <button onclick="filterCatClick('${cat}')" style="height:32px;border-radius:16px;padding:0 14px;border:none;font-family:inherit;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;flex-shrink:0;background:${activeCat===cat ? T.blue : T.bgSub};color:${activeCat===cat ? '#fff' : T.textS};">
+                ${cat}
+              </button>`).join('')}
+          </div>
+          ${subs.length > 0 ? `
+            <div style="display:flex;gap:8px;padding:0 16px 8px;overflow-x:auto;">
+              ${subs.map(sub => `
+                <button onclick="filterSubClick('${sub}')" style="height:30px;border-radius:15px;padding:0 12px;border:none;font-family:inherit;font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap;flex-shrink:0;background:${activeSub===sub ? T.blue : T.bgSub};color:${activeSub===sub ? '#fff' : T.textS};">
+                  ${sub}
+                </button>`).join('')}
+            </div>` : ''}
+        </div>`;
+    }
+
+    function actionTabs(activeTab) {
+      const tabs = ['all', 'shared', 'received', 'saved', 'downloaded'];
+      const labels = {all:'All', shared:'Shared', received:'Received', saved:'Saved', downloaded:'Downloaded'};
+      return `
+        <div style="display:flex;border-bottom:0.5px solid ${T.bgSub};background:#fff;flex-shrink:0;">
+          ${tabs.map(tab => `
+            <button onclick="actionTabClick('${tab}')" style="flex:1;padding:12px 8px;text-align:center;font-size:13px;font-weight:${activeTab===tab ? 600 : 400};color:${activeTab===tab ? T.text : T.textT};border:none;background:none;border-bottom:${activeTab===tab ? `2px solid ${T.blue}` : 'none'};cursor:pointer;">
+              ${labels[tab]}
+            </button>`).join('')}
+        </div>`;
+    }
+
+    function photoIllustration(index) {
+      // Simplified placeholder - in real implementation, use actual illustrations
+      const colors = ['#2D5A27', '#1B3A6B', '#F5A623', '#0D1B0D', '#D2691E'];
+      const bg = colors[index % colors.length];
+      return `<div style="width:100%;aspect-ratio:1;background:${bg};border-radius:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:800;">${index+1}</div>`;
+    }
+
+    function photoCell(index, selected=false, shared=false, saved=false, downloaded=false) {
+      const markers = [];
+      if (shared) markers.push(`<div style="position:absolute;top:4px;right:4px;width:18px;height:18px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;">${icon('check', 10, T.blue)}</div>`);
+      if (saved) markers.push(`<div style="position:absolute;bottom:4px;left:4px;width:8px;height:8px;border-radius:50%;background:${T.ok};"></div>`);
+      if (downloaded) markers.push(`<div style="position:absolute;bottom:4px;left:16px;width:8px;height:8px;border-radius:50%;background:${T.blue};"></div>`);
+      return `
+        <div class="photo-cell" onclick="photoTap(${index})" style="position:relative;aspect-ratio:1;border-radius:0;overflow:hidden;cursor:pointer;${selected ? `border:2px solid ${T.blue};` : ''}">
+          ${photoIllustration(index)}
+          ${markers.join('')}
+        </div>`;
+    }
+
+    function photoGrid(photos, columns=3) {
+      return `
+        <div style="display:grid;grid-template-columns:repeat(${columns},1fr);gap:2px;padding:0 16px;">
+          ${photos.map((_, i) => photoCell(i)).join('')}
+        </div>`;
+    }
+
+    function bottomSheet(id, content) {
+      return `
+        <div id="${id}-overlay" onclick="closeSheet('${id}')" style="position:absolute;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:flex-end;">
+          <div onclick="event.stopPropagation()" style="width:100%;background:#fff;border-radius:20px 20px 0 0;padding-bottom:24px;z-index:201;">
+            <div style="width:40px;height:4px;background:${T.bgSub};border-radius:2px;margin:8px auto 0;"></div>
+            ${content}
+          </div>
+        </div>`;
+    }
+
+    function eventCard(title, dates, members, photos, live=false) {
+      return `
+        <div style="background:#fff;border-radius:16px;border:0.5px solid ${T.bgSub};padding:16px;margin:0 16px 16px;overflow:hidden;">
+          <div style="height:120px;background:#C7D4FB;border-radius:8px;margin-bottom:12px;display:flex;align-items:flex-end;padding:12px;">
+            <div style="color:#fff;font-size:16px;font-weight:700;">${title}</div>
+            ${live ? `<div style="position:absolute;top:8px;right:8px;width:8px;height:8px;border-radius:50%;background:${T.ok};"></div>` : ''}
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:13px;color:${T.textS};">${dates}</div>
+            <div style="display:flex;-webkit-box-align:center;align-items:center;gap:4px;">
+              <div style="width:20px;height:20px;border-radius:50%;background:${T.blue};"></div>
+              <span style="font-size:11px;color:${T.textT};">${members} members</span>
+            </div>
+          </div>
+          <div style="margin-top:8px;font-size:11px;color:${T.textT};">${photos} photos</div>
+        </div>`;
+    }
+
+    // Filter functions
+    function filterCatClick(cat) {
+      state.activeFilters.cat = state.activeFilters.cat === cat ? null : cat;
+      state.activeFilters.sub = null;
+      render();
+    }
+
+    function filterSubClick(sub) {
+      state.activeFilters.sub = state.activeFilters.sub === sub ? null : sub;
+      render();
+      // Apply filter effect
+      setTimeout(() => {
+        const cells = document.querySelectorAll('.photo-cell');
+        cells.forEach((cell, i) => {
+          cell.style.opacity = (i % 3 === 0 || i % 5 === 0) ? '1' : '0.2';
+          cell.style.transition = 'opacity .3s';
+        });
+      }, 100);
+    }
+
+    function actionTabClick(tab) {
+      state.activeFilters.tab = tab;
+      render();
+    }
+
+    // Photo tap functions
+    function photoTap(index) {
+      if (state.selectionMode) {
+        if (state.selectedPhotos.has(index)) state.selectedPhotos.delete(index);
+        else state.selectedPhotos.add(index);
+        render();
+        return;
+      }
+      state.currentPhoto = index;
+      state.prevScreen = state.screen;
+      go('photo-full');
+    }
+
+    function enterSelectionMode(index) {
+      state.selectionMode = true;
+      state.selectedPhotos = new Set([index]);
+      render();
+    }
+
+    function setupLongPress() {
+      document.querySelectorAll('.photo-cell').forEach((cell, i) => {
+        let timer;
+        const start = () => { timer = setTimeout(() => enterSelectionMode(i), 600); };
+        const cancel = () => clearTimeout(timer);
+        cell.addEventListener('touchstart', start, { passive: true });
+        cell.addEventListener('touchend', cancel);
+        cell.addEventListener('touchmove', cancel);
+        cell.addEventListener('mousedown', start);
+        cell.addEventListener('mouseup', cancel);
+        cell.addEventListener('mouseleave', cancel);
+      });
+    }
+
+    // Sheet functions
+    function openSheet(id) {
+      const el = document.getElementById(id + '-overlay');
+      if (el) el.style.display = 'flex';
+    }
+
+    function closeSheet(id) {
+      const el = document.getElementById(id + '-overlay');
+      if (el) el.style.display = 'none';
+    }
+
+    // Screen functions
+    function screenEntry() {
+      const users = [
+        { id: 'varun', name: 'VR — Varun', desc: 'PixSlay user. Creates the group for the Karjat trip.', completed: state.completed.includes('varun') },
+        { id: 'beulah', name: 'BE — Beulah', desc: 'New to PixSlay. Discovers it when her photos arrive Sunday morning.', completed: state.completed.includes('beulah') },
+        { id: 'kavitha', name: 'KA — Kavitha', desc: 'New to PixSlay. Installs during the trip when Varun shows her.', completed: state.completed.includes('kavitha') },
+        { id: 'mayank', name: 'MA — Mayank', desc: 'Existing PixSlay user. Joins the group automatically.', completed: state.completed.includes('mayank') },
+        { id: 'vishal', name: 'VI — Vishal', desc: 'New to PixSlay. Takes his time. Joins when Mayank nudges him.', completed: state.completed.includes('vishal') },
+      ];
+
+      return `
+        <div class="screen" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F8F7F5;">
+          ${switchPill()}
+          <div style="flex:1;display:flex;flex-direction:column;">
+            <div style="padding:60px 16px 24px;text-align:center;">
+              ${logo(28)}
+              <div style="margin-top:24px;">
+                <div style="background:${T.blueTint};border-radius:20px;padding:4px 12px;display:inline-block;">
+                  <span style="font-size:10px;font-weight:600;color:${T.blueDk};">Interactive simulation</span>
+                </div>
+              </div>
+              <h1 style="font-size:22px;font-weight:800;color:${T.text};margin:16px 0 8px;">An overnight trip to Karjat. Five people. Five stories.</h1>
+              <p style="font-size:13px;font-weight:400;color:${T.textS};">Pick someone and see PixSlay through their eyes.</p>
+            </div>
+            <div style="flex:1;padding:0 16px;">
+              ${users.map(user => {
+                const initials = user.name.split(' — ')[0];
+                const fullName = user.name;
+                const startScreen = user.id === 'varun' ? 'varun-scene' :
+                                   user.id === 'beulah' ? 'beulah-discovery' :
+                                   user.id === 'kavitha' ? 'kavitha-intro' :
+                                   user.id === 'mayank' ? 'mayank-home' :
+                                   user.id === 'vishal' ? 'vishal-nudge' : 'entry';
+                return `
+                <div onclick="state.journey='${user.id}'; go('${startScreen}')" style="background:#fff;border:0.5px solid ${T.bgSub};border-radius:12px;padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px;cursor:pointer;">
+                  <div style="width:40px;height:40px;border-radius:50%;background:${T.blue};display:flex;align-items:center;justify-content:center;">
+                    <span style="font-size:12px;font-weight:700;color:#fff;">${initials}</span>
+                  </div>
+                  <div style="flex:1;">
+                    <div style="font-size:14px;font-weight:600;color:${T.text};margin-bottom:2px;">${fullName}</div>
+                    <div style="font-size:11px;font-weight:400;color:${T.textT};">${user.desc}</div>
+                  </div>
+                  ${user.completed ? `<div style="width:20px;height:20px;border-radius:50%;background:${T.ok};display:flex;align-items:center;justify-content:center;">${icon('check', 12, '#fff')}</div>` : `<div style="width:16px;height:16px;display:flex;align-items:center;justify-content:center;">${icon('chevron-right', 16, T.textT)}</div>`}
+                </div>`;
+              }).join('')}
+            </div>
+                    <div style="font-size:11px;font-weight:400;color:${T.textT};">Existing PixSlay user. Joins the group automatically.</div>
+                  </div>
+                  ${user.completed ? `<div style="width:20px;height:20px;border-radius:50%;background:${T.ok};display:flex;align-items:center;justify-content:center;">${icon('check', 12, '#fff')}</div>` : `<div style="width:16px;height:16px;display:flex;align-items:center;justify-content:center;">${icon('chevron-right', 16, T.textT)}</div>`}
+                </div>`).join('')}
+                <div onclick="state.journey='vishal'; go('vishal-nudge')" style="background:#fff;border:0.5px solid ${T.bgSub};border-radius:12px;padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px;cursor:pointer;">
+                  <div style="width:40px;height:40px;border-radius:50%;background:${T.blue};display:flex;align-items:center;justify-content:center;">
+                    <span style="font-size:12px;font-weight:700;color:#fff;">VI</span>
+                  </div>
+                  <div style="flex:1;">
+                    <div style="font-size:14px;font-weight:600;color:${T.text};margin-bottom:2px;">VI — Vishal</div>
+                    <div style="font-size:11px;font-weight:400;color:${T.textT};">New to PixSlay. Takes his time. Joins when Mayank nudges him.</div>
+                  </div>
+                  ${user.completed ? `<div style="width:20px;height:20px;border-radius:50%;background:${T.ok};display:flex;align-items:center;justify-content:center;">${icon('check', 12, '#fff')}</div>` : `<div style="width:16px;height:16px;display:flex;align-items:center;justify-content:center;">${icon('chevron-right', 16, T.textT)}</div>`}
+                </div>`).join('')}
+            </div>
+            <div style="padding:0 16px 24px;">
+              <button onclick="shareExperience()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;border:0.5px solid ${T.bgSub};background:#fff;font-size:12px;font-weight:500;color:${T.textS};cursor:pointer;">
+                ${icon('share-2', 16, T.textS)}
+                Share this experience
+              </button>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function screenVarunScene() {
+      return `
+        <div class="screen" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#fff;">
+          ${switchPill()}
+          <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 16px;text-align:center;">
+            ${logo(28)}
+            <div style="margin-top:32px;">
+              <p style="font-size:16px;font-weight:400;color:${T.textS};line-height:1.5;">
+                It's Friday evening. You're heading to Karjat with friends for the weekend. You want to make sure everyone gets their photos this time — no WhatsApp chaos.
+              </p>
+            </div>
+            <div style="margin-top:48px;">
+              ${primaryBtn('Open PixSlay', "go('varun-reg')")}
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function screenVarunReg() {
+      return `
+        <div class="screen" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#fff;">
+          ${switchPill()}
+          <div style="flex:1;display:flex;flex-direction:column;">
+            <div style="padding:60px 16px 0;">
+              ${logo(28)}
+            </div>
+            <div style="padding:32px 16px 0;">
+              <h1 style="font-size:24px;font-weight:800;color:${T.text};margin-bottom:8px;">Your photos from every gathering.</h1>
+              <p style="font-size:13px;font-weight:400;color:${T.textS};">Start with your number. We'll send a quick code.</p>
+            </div>
+            <div style="padding:24px 16px;">
+              ${floatInput('Your phone number', 'phone', '+91')}
+            </div>
+            <div style="flex:1;"></div>
+            <div style="padding:0 16px 24px;">
+              ${primaryBtn('Continue', "go('varun-otp')", true)}
+              <p style="font-size:11px;font-weight:400;color:${T.textT};text-align:center;margin-top:12px;">We'll send a one-time code to verify.</p>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function screenVarunOtp() {
+      return `
+        <div class="screen" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#fff;">
+          ${switchPill()}
+          <div style="flex:1;display:flex;flex-direction:column;">
+            <div style="padding:60px 16px 0;">
+              ${logo(28)}
+            </div>
+            <div style="padding:32px 16px 0;text-align:center;">
+              <h1 style="font-size:24px;font-weight:800;color:${T.text};margin-bottom:16px;">Enter the code we sent you.</h1>
+              <p style="font-size:13px;font-weight:500;color:${T.text};margin-bottom:8px;">Sent to +91 98765 43210</p>
+              <button onclick="go('varun-reg')" style="font-size:13px;font-weight:500;color:${T.blue};background:none;border:none;cursor:pointer;">Change number</button>
+            </div>
+            <div style="padding:32px 16px;">
+              ${otpRow('otp', 'varun-profile')}
+            </div>
+            <div style="flex:1;"></div>
+            <div style="padding:0 16px 24px;text-align:center;">
+              <p style="font-size:11px;font-weight:400;color:${T.textT};margin-bottom:8px;">Didn't receive the code?</p>
+              <button onclick="resendOtp()" style="font-size:13px;font-weight:600;color:${T.blue};background:none;border:none;cursor:pointer;">Resend code</button>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function screenVarunProfile() {
+      return `
+        <div class="screen" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#fff;">
+          ${switchPill()}
+          <div style="flex:1;display:flex;flex-direction:column;">
+            <div style="padding:44px 16px 0;">
+              <div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-bottom:32px;">
+                <div style="width:6px;height:6px;border-radius:50%;background:${T.blue};"></div>
+                <div style="width:6px;height:6px;border-radius:50%;background:${T.blue};"></div>
+                <div style="width:18px;height:6px;border-radius:3px;background:${T.blue};"></div>
+              </div>
+              <h1 style="font-size:24px;font-weight:800;color:${T.text};text-align:center;margin-bottom:8px;">What do we call you?</h1>
+              <p style="font-size:13px;font-weight:400;color:${T.textS};text-align:center;">Just the basics. You can always add more later.</p>
+            </div>
+            <div style="padding:24px 16px;text-align:center;">
+              <div style="width:72px;height:72px;border-radius:50%;background:${T.blueTint};border:1.5px dashed ${T.blueBdr};display:flex;align-items:center;justify-content:center;margin:0 auto 12px;cursor:pointer;">
+                ${icon('user', 24, T.blueBdr)}
+              </div>
+              <p style="font-size:11px;font-weight:400;color:${T.textT};">Add a photo so friends recognise you</p>
+            </div>
+            <div style="padding:0 16px;">
+              ${floatInput('Full name', 'name', 'Varun')}
+              ${floatInput('Email (optional)', 'email', '', 'email')}
+            </div>
+            <div style="flex:1;"></div>
+            <div style="padding:0 16px 24px;">
+              ${primaryBtn('Continue', "go('varun-home-empty')")}
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function screenVarunHomeEmpty() {
+      return `
+        <div class="screen" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F8F7F5;">
+          ${switchPill()}
+          <div style="flex:1;display:flex;flex-direction:column;">
+            <div style="padding:44px 16px 0;">
+              ${tbar("go('entry')", logo(16).replace('gap:4px', 'gap:2px').replace('28px', '16px').replace('22px', '16px'), 'bell', "toast('No notifications yet', 'ok')")}
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 16px;">
+              <div style="background:#fff;border:0.5px solid ${T.bgSub};border-radius:16px;padding:24px;text-align:center;">
+                <div style="display:flex;justify-content:center;margin-bottom:16px;">
+                  <div style="width:88px;height:88px;position:relative;">
+                    <div style="width:88px;height:88px;border-radius:8px;background:${T.blueBdr};transform:rotate(-8deg);position:absolute;"></div>
+                    <div style="width:88px;height:88px;border-radius:8px;background:${T.blueTint};transform:rotate(5deg);position:absolute;"></div>
+                    <div style="width:88px;height:88px;border-radius:8px;background:${T.blue};display:flex;align-items:center;justify-content:center;position:absolute;">
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        <circle cx="9" cy="9" r="2"/>
+                        <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+                <h2 style="font-size:20px;font-weight:800;color:${T.text};margin-bottom:8px;">Your photos from every gathering. All in one place.</h2>
+                <p style="font-size:13px;font-weight:400;color:${T.textS};">Start by creating a group for your next trip or outing.</p>
+              </div>
+            </div>
+            <div style="padding:24px 16px;">
+              ${primaryBtn('Create a group', "go('varun-create-group')")}
+              <p style="font-size:11px;font-weight:400;color:${T.textT};text-align:center;margin-top:8px;">Takes less than a minute.</p>
+            </div>
+          </div>
+          ${navbar('home', "go('varun-home-empty')", "go('varun-profile')", "go('varun-create-group')")}
+        </div>`;
+    }
+
+    function screenVarunCreateGroup() {
+      return `
+        <div class="screen" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#fff;">
+          ${switchPill()}
+          <div style="flex:1;display:flex;flex-direction:column;">
+            ${tbar("go('varun-home-empty')", 'New group')}
+            <div style="flex:1;overflow-y:auto;padding:16px;">
+              <div style="width:56px;height:56px;border-radius:50%;background:${T.blueTint};border:1.5px dashed ${T.blueBdr};display:flex;align-items:center;justify-content:center;margin:0 auto 24px;cursor:pointer;">
+                ${icon('camera', 24, T.blueBdr)}
+              </div>
+              ${floatInput('Group name', 'group-name', 'Mumbai — Karjat')}
+              ${floatInput('Destination (optional)', 'destination', 'Karjat, Maharashtra')}
+              <div style="display:flex;gap:8px;margin-bottom:12px;">
+                ${floatInput('From', 'from-date', 'Sat 24 May', 'date').replace('margin-bottom:12px', '')}
+                ${floatInput('To', 'to-date', 'Sun 25 May', 'date').replace('margin-bottom:12px', '')}
+              </div>
+              ${floatInput('Accommodation (optional)', 'accommodation')}
+              <div style="height:0.5px;background:${T.bgSub};margin:24px 0;"></div>
+              <p style="font-size:11px;font-weight:600;color:${T.textT};text-transform:uppercase;letter-spacing:0.04em;margin-bottom:12px;">Who's coming?</p>
+              <div style="background:${T.blueTint};border-radius:10px;padding:12px 14px;margin-bottom:16px;">
+                <p style="font-size:12px;font-weight:600;color:${T.blueDk};margin-bottom:4px;">Share a link instead</p>
+                <p style="font-size:11px;font-weight:400;color:${T.blueDp};">Anyone with this link can join the group.</p>
+                <div style="display:flex;gap:8px;margin-top:12px;">
+                  ${secondaryBtn('Copy link', "toast('Link copied!', 'ok')")}
+                  ${secondaryBtn('Share on WhatsApp', "toast('WhatsApp opened', 'ok')")}
+                </div>
+              </div>
+            </div>
+            <div style="padding:0 16px 24px;">
+              ${primaryBtn('Create group', "go('varun-sync')")}
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function screenVarunSync() {
+      return `
+        <div class="screen" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#fff;">
+          ${switchPill()}
+          <div style="flex:1;display:flex;flex-direction:column;">
+            ${tbar("go('varun-create-group')", 'Mumbai — Karjat', 'more', "openSheet('group-menu')")}
+            <div style="padding:20px 16px;">
+              <div style="background:#fff;border:0.5px solid ${T.bgSub};border-radius:16px;padding:20px;">
+                <h2 style="font-size:16px;font-weight:700;color:${T.text};margin-bottom:8px;">Finding your Karjat photos.</h2>
+                <p style="font-size:13px;font-weight:400;color:${T.textS};margin-bottom:16px;">We're looking at Sat 24 May 8:00am to Sun 25 May 6:00pm.</p>
+                <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
+                  <div style="flex:1;height:4px;background:${T.blueTint};border-radius:2px;overflow:hidden;">
+                    <div id="sync-progress" style="width:0%;height:100%;background:${T.blue};border-radius:2px;transition:width 0.1s;"></div>
+                  </div>
+                  <span style="font-size:11px;font-weight:400;color:${T.textT};">Scanning 847 photos...</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:16px;">
+                  <div style="text-align:center;">
+                    <div style="font-size:20px;font-weight:800;color:${T.text};">34</div>
+                    <div style="font-size:11px;font-weight:400;color:${T.textT};">Photos found</div>
+                  </div>
+                  <div style="text-align:center;">
+                    <div style="font-size:20px;font-weight:800;color:${T.text};">2</div>
+                    <div style="font-size:11px;font-weight:400;color:${T.textT};">Videos found</div>
+                  </div>
+                  <div style="text-align:center;">
+                    <div style="font-size:20px;font-weight:800;color:${T.text};">Sat 8am — Sun 6pm</div>
+                    <div style="font-size:11px;font-weight:400;color:${T.textT};">Time window</div>
+                  </div>
+                </div>
+                <p style="font-size:13px;font-weight:400;color:${T.textS};text-align:center;">These are in your private space. Nobody can see them yet.</p>
+              </div>
+              <div style="background:${T.blueTint};border-radius:12px;padding:14px;margin-top:16px;">
+                ${icon('image', 20, T.blue)}
+                <p style="font-size:13px;font-weight:500;color:${T.blueDk};margin:8px 0 0 28px;">Allow access to your photos to sync automatically.</p>
+                <div style="margin-top:12px;margin-left:28px;">
+                  ${primaryBtn('Allow', "startSync()")}
+                </div>
+              </div>
+            </div>
+            <div style="flex:1;"></div>
+            <div style="padding:0 16px 24px;">
+              ${primaryBtn("View my photos", "go('varun-home')", true)}
+              <div style="margin-top:12px;">
+                ${ghostBtn("I'll do this later", "go('varun-home-empty')")}
+              </div>
+            </div>
+          </div>
+          ${bottomSheet('group-menu', `
+            <div style="padding:16px;">
+              <button onclick="closeSheet('group-menu')" style="width:100%;padding:12px;text-align:left;font-size:14px;font-weight:500;color:${T.text};background:none;border:none;border-bottom:0.5px solid ${T.bgSub};cursor:pointer;">Edit group</button>
+              <button onclick="closeSheet('group-menu')" style="width:100%;padding:12px;text-align:left;font-size:14px;font-weight:500;color:${T.text};background:none;border:none;border-bottom:0.5px solid ${T.bgSub};cursor:pointer;">Share invite link</button>
+              <button onclick="popup({label:'Delete group', action:'go(\\'entry\\')'}, {label:'Keep the group', action:''}); closeSheet('group-menu')" style="width:100%;padding:12px;text-align:left;font-size:14px;font-weight:500;color:${T.alert};background:none;border:none;cursor:pointer;">Delete group</button>
+            </div>
+          `)}
+        </div>`;
+    }
+
+    function screenVarunHome() {
+      return `
+        <div class="screen" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F8F7F5;">
+          ${switchPill()}
+          <div style="flex:1;display:flex;flex-direction:column;">
+            ${tbar("go('entry')", logo(16).replace('gap:4px', 'gap:2px').replace('28px', '16px').replace('22px', '16px'), 'bell', "openSheet('notifications')")}
+            <div style="padding:16px;">
+              ${eventCard('Mumbai — Karjat', 'Sat 24 May — Sun 25 May', 6, 34, true)}
+            </div>
+          </div>
+          ${navbar('home', "go('varun-home')", "go('varun-profile')", "go('varun-create-group')")}
+          ${bottomSheet('notifications', `
+            <div style="padding:16px;">
+              <div style="padding:12px;border-bottom:0.5px solid ${T.bgSub};display:flex;gap:12px;">
+                <div style="width:32px;height:32px;border-radius:50%;background:${T.blue};display:flex;align-items:center;justify-content:center;">
+                  <span style="font-size:10px;font-weight:700;color:#fff;">MA</span>
+                </div>
+                <div style="flex:1;">
+                  <p style="font-size:13px;font-weight:500;color:${T.text};">Mayank just joined Mumbai — Karjat.</p>
+                  <p style="font-size:11px;font-weight:400;color:${T.textT};">2m ago</p>
+                </div>
+              </div>
+              <div style="padding:12px;border-bottom:0.5px solid ${T.bgSub};display:flex;gap:12px;">
+                <div style="width:32px;height:32px;border-radius:50%;background:#fff;border:2px solid ${T.blue};display:flex;align-items:center;justify-content:center;">
+                  ${icon('bell', 16, T.blue)}
+                </div>
+                <div style="flex:1;">
+                  <p style="font-size:13px;font-weight:500;color:${T.text};">Your Karjat photos are ready to view.</p>
+                  <p style="font-size:11px;font-weight:400;color:${T.textT};">5m ago</p>
+                </div>
+              </div>
+            </div>
+          `)}
+        </div>`;
+    }
+
+    function screenVarunEvent() {
+      const photos = Array.from({length:34}, (_,i) => i);
+      return `
+        <div class="screen" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F8F7F5;">
+          ${switchPill()}
+          <div style="flex:1;display:flex;flex-direction:column;">
+            ${tbar("go('varun-home')", 'Mumbai — Karjat', 'search', '')}
+            ${faceChipsRow()}
+            <div style="display:flex;border-bottom:0.5px solid ${T.bgSub};background:#fff;flex-shrink:0;">
+              <button onclick="state.activeFilters.mainTab='my'; render()" style="flex:1;padding:12px;text-align:center;font-size:13px;font-weight:${state.activeFilters.mainTab==='my' ? 600 : 400};color:${state.activeFilters.mainTab==='my' ? T.text : T.textT};border:none;background:none;border-bottom:${state.activeFilters.mainTab==='my' ? `2px solid ${T.blue}` : 'none'};cursor:pointer;">My Photos</button>
+              <button onclick="state.activeFilters.mainTab='with'; render()" style="flex:1;padding:12px;text-align:center;font-size:13px;font-weight:${state.activeFilters.mainTab==='with' ? 600 : 400};color:${state.activeFilters.mainTab==='with' ? T.text : T.textT};border:none;background:none;border-bottom:${state.activeFilters.mainTab==='with' ? `2px solid ${T.blue}` : 'none'};cursor:pointer;">With Me</button>
+            </div>
+            ${filterBar(state.activeFilters.cat, state.activeFilters.sub)}
+            ${actionTabs(state.activeFilters.tab)}
+            <div style="flex:1;overflow-y:auto;">
+              ${photoGrid(photos)}
+            </div>
+            <div style="padding:16px;">
+              ${primaryBtn('Deliver photos', "go('varun-delivery')")}
+            </div>
+          </div>
+          ${navbar('home', "go('varun-home')", "go('varun-profile')", "go('varun-create-group')")}
+        </div>`;
+    }
+
+    function screenPhotoFull() {
+      const photo = photoIllustration(state.currentPhoto);
+      return `
+        <div class="screen" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#000;">
+          ${switchPill()}
+          <div style="flex:1;display:flex;align-items:center;justify-content:center;position:relative;">
+            <div style="position:absolute;top:44px;left:16px;">
+              <button onclick="go(state.prevScreen)" style="width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;">
+                ${icon('arrow-left', 20, '#fff')}
+              </button>
+            </div>
+            <div style="position:absolute;top:44px;right:16px;">
+              <button onclick="openSheet('photo-menu')" style="width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;">
+                ${icon('more-horizontal', 20, '#fff')}
+              </button>
+            </div>
+            <div style="position:absolute;bottom:120px;left:16px;right:16px;">
+              <div style="background:rgba(0,0,0,0.5);border-radius:12px;padding:8px 12px;display:inline-block;">
+                <span style="font-size:11px;font-weight:400;color:#fff;">Taken by Varun</span>
+              </div>
+            </div>
+            <div style="max-width:100%;max-height:100%;">${photo}</div>
+          </div>
+          <div style="height:56px;background:#fff;display:flex;align-items:center;padding:0 16px;">
+            <button onclick="openSheet('download-sheet')" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:none;cursor:pointer;">
+              ${icon('download', 22, T.textS)}
+              <span style="font-size:9px;font-weight:500;color:${T.textT};">Download</span>
+            </button>
+            <button onclick="toast('Saved to PixSlay!', 'ok')" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:none;cursor:pointer;">
+              ${icon('bookmark', 22, T.textS)}
+              <span style="font-size:9px;font-weight:500;color:${T.textT};">Save</span>
+            </button>
+            <button onclick="openSheet('share-sheet')" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:none;cursor:pointer;">
+              ${icon('share-2', 22, T.blue)}
+              <span style="font-size:9px;font-weight:500;color:${T.blue};">Share</span>
+            </button>
+            <button onclick="openSheet('photo-info')" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:none;cursor:pointer;">
+              ${icon('more-horizontal', 22, T.textS)}
+              <span style="font-size:9px;font-weight:500;color:${T.textT};">More</span>
+            </button>
+          </div>
+          ${bottomSheet('photo-menu', `
+            <div style="padding:16px;">
+              <button onclick="closeSheet('photo-menu')" style="width:100%;padding:12px;text-align:left;font-size:14px;font-weight:500;color:${T.alert};background:none;border:none;cursor:pointer;">Remove from my photos</button>
+              <button onclick="closeSheet('photo-menu')" style="width:100%;padding:12px;text-align:left;font-size:14px;font-weight:500;color:${T.text};background:none;border:none;cursor:pointer;">Report</button>
+              <button onclick="closeSheet('photo-menu'); openSheet('photo-info')" style="width:100%;padding:12px;text-align:left;font-size:14px;font-weight:500;color:${T.text};background:none;border:none;cursor:pointer;">Photo info</button>
+            </div>
+          `)}
+          ${bottomSheet('download-sheet', `
+            <div style="padding:16px;">
+              <h3 style="font-size:16px;font-weight:700;color:${T.text};margin-bottom:16px;">Download photo</h3>
+              <div style="display:flex;gap:12px;margin-bottom:16px;">
+                <div style="flex:1;text-align:center;padding:12px;border:0.5px solid ${T.bgSub};border-radius:8px;">
+                  <div style="font-size:14px;font-weight:600;color:${T.text};margin-bottom:4px;">Low-res</div>
+                  <div style="font-size:11px;font-weight:400;color:${T.textT};">Free</div>
+                </div>
+                <div style="flex:1;text-align:center;padding:12px;border:1px solid ${T.amber};border-radius:8px;background:${T.blueTint};">
+                  <div style="font-size:14px;font-weight:600;color:${T.text};margin-bottom:4px;">Hi-res</div>
+                  <div style="font-size:11px;font-weight:400;color:${T.textT};">₹5</div>
+                </div>
+              </div>
+              <div style="background:${T.blueTint};border-radius:8px;padding:12px;margin-bottom:16px;">
+                <div style="font-size:12px;font-weight:600;color:${T.blueDk};margin-bottom:4px;">Group subscription</div>
+                <div style="font-size:11px;font-weight:400;color:${T.blueDp};">Unlimited hi-res for all 6 members</div>
+                <div style="font-size:13px;font-weight:600;color:${T.blue};margin-top:8px;">₹149</div>
+              </div>
+              <button onclick="closeSheet('download-sheet'); toast('Downloaded!', 'ok')" style="width:100%;padding:12px;background:${T.blue};color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">Download</button>
+            </div>
+          `)}
+          ${bottomSheet('share-sheet', `
+            <div style="padding:16px;">
+              <h3 style="font-size:16px;font-weight:700;color:${T.text};margin-bottom:16px;">Share photo</h3>
+              <div style="padding:12px;border:0.5px solid ${T.bgSub};border-radius:8px;margin-bottom:12px;">
+                ${icon('users', 20, T.blue)}
+                <div style="margin-left:32px;">
+                  <div style="font-size:14px;font-weight:500;color:${T.text};margin-bottom:2px;">Everyone in Mumbai — Karjat</div>
+                  <div style="font-size:12px;font-weight:400;color:${T.textT};">All 6 members will see this</div>
+                </div>
+                ${icon('chevron-right', 16, T.textT)}
+              </div>
+              <div style="padding:12px;border:0.5px solid ${T.bgSub};border-radius:8px;margin-bottom:12px;">
+                ${icon('user', 20, T.blue)}
+                <div style="margin-left:32px;">
+                  <div style="font-size:14px;font-weight:500;color:${T.text};margin-bottom:2px;">Choose specific people</div>
+                  <div style="font-size:12px;font-weight:400;color:${T.textT};">Only they will see this</div>
+                </div>
+                ${icon('chevron-right', 16, T.textT)}
+              </div>
+              <div style="height:0.5px;background:${T.bgSub};margin:12px 0;"></div>
+              <button onclick="closeSheet('share-sheet'); toast('Shared!', 'ok')" style="width:100%;padding:12px;background:${T.blue};color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;margin-bottom:8px;cursor:pointer;">Share</button>
+              <div style="font-size:11px;font-weight:400;color:${T.textT};text-align:center;">Watermark applied to external shares</div>
+            </div>
+          `)}
+          ${bottomSheet('photo-info', `
+            <div style="padding:16px;">
+              <h3 style="font-size:16px;font-weight:700;color:${T.text};margin-bottom:16px;">Photo info</h3>
+              <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                <span style="font-size:13px;font-weight:400;color:${T.textS};">File size</span>
+                <span style="font-size:13px;font-weight:500;color:${T.text};">4.2 MB</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                <span style="font-size:13px;font-weight:400;color:${T.textS};">Dimensions</span>
+                <span style="font-size:13px;font-weight:500;color:${T.text};">4032 x 3024</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                <span style="font-size:13px;font-weight:400;color:${T.textS};">Taken by</span>
+                <span style="font-size:13px;font-weight:500;color:${T.text};">Varun</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;">
+                <span style="font-size:13px;font-weight:400;color:${T.textS};">Timestamp</span>
+                <span style="font-size:13px;font-weight:500;color:${T.text};">Sat 24 May, 3:42 PM</span>
+              </div>
+            </div>
+          `)}
+        </div>`;
+    }
+
+    function screenVarunDelivery() {
+      return `
+        <div class="screen" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F8F7F5;">
+          ${switchPill()}
+          <div style="flex:1;display:flex;flex-direction:column;padding:16px;">
+            <h1 style="font-size:24px;font-weight:800;color:${T.text};margin-bottom:24px;">Deliver photos to everyone</h1>
+            <div style="background:#fff;border:0.5px solid ${T.bgSub};border-radius:12px;padding:16px;margin-bottom:16px;">
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+                <div style="width:32px;height:32px;border-radius:50%;background:${T.ok};display:flex;align-items:center;justify-content:center;">
+                  ${icon('check', 16, '#fff')}
+                </div>
+                <div>
+                  <div style="font-size:14px;font-weight:600;color:${T.text};">Varun (You)</div>
+                  <div style="font-size:11px;font-weight:400;color:${T.textT};">34 photos • Ready</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+                <div style="width:32px;height:32px;border-radius:50%;background:${T.ok};display:flex;align-items:center;justify-content:center;">
+                  ${icon('check', 16, '#fff')}
+                </div>
+                <div>
+                  <div style="font-size:14px;font-weight:600;color:${T.text};">Mayank</div>
+                  <div style="font-size:11px;font-weight:400;color:${T.textT};">12 photos • Ready</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+                <div style="width:32px;height:32px;border-radius:50%;background:${T.amber};display:flex;align-items:center;justify-content:center;">
+                  <span style="font-size:12px;font-weight:700;color:#fff;">?</span>
+                </div>
+                <div>
+                  <div style="font-size:14px;font-weight:600;color:${T.text};">Kavitha</div>
+                  <div style="font-size:11px;font-weight:400;color:${T.textT};">0 photos • Awaiting</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+                <div style="width:32px;height:32px;border-radius:50%;background:${T.amber};display:flex;align-items:center;justify-content:center;">
+                  <span style="font-size:12px;font-weight:700;color:#fff;">?</span>
+                </div>
+                <div>
+                  <div style="font-size:14px;font-weight:600;color:${T.text};">Beulah</div>
+                  <div style="font-size:11px;font-weight:400;color:${T.textT};">0 photos • Awaiting</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;">
+                <div style="width:32px;height:32px;border-radius:50%;background:${T.amber};display:flex;align-items:center;justify-content:center;">
+                  <span style="font-size:12px;font-weight:700;color:#fff;">?</span>
+                </div>
+                <div>
+                  <div style="font-size:14px;font-weight:600;color:${T.text};">Vishal</div>
+                  <div style="font-size:11px;font-weight:400;color:${T.textT};">0 photos • Awaiting</div>
+                </div>
+              </div>
+            </div>
+            <div style="background:#fff;border:0.5px solid ${T.bgSub};border-radius:12px;padding:16px;margin-bottom:24px;">
+              <div style="font-size:13px;font-weight:400;color:${T.textS};margin-bottom:12px;">Photos will be delivered to everyone who joined the group. It's completely free.</div>
+              <div style="height:4px;background:${T.blueTint};border-radius:2px;overflow:hidden;">
+                <div id="delivery-progress" style="width:0%;height:100%;background:${T.blue};border-radius:2px;"></div>
+              </div>
+            </div>
+            <div style="flex:1;"></div>
+            ${primaryBtn('Deliver now — it\'s free', "startDelivery()", true)}
+          </div>
+        </div>`;
+    }
+
+    function shareExperience() {
+      toast('Link copied to clipboard!', 'ok');
+    }
+
+    function resendOtp() {
+      toast('Code resent!', 'ok');
+    }
+
+    function startSync() {
+      const progress = document.getElementById('sync-progress');
+      if (!progress) return;
+      let width = 0;
+      const interval = setInterval(() => {
+        width += 2;
+        progress.style.width = width + '%';
+        if (width >= 100) {
+          clearInterval(interval);
+          document.querySelector('button[onclick*="View my photos"]').disabled = false;
+          document.querySelector('button[onclick*="View my photos"]').style.background = T.blue;
+          document.querySelector('button[onclick*="View my photos"]').style.color = '#fff';
+          toast('Sync complete!', 'ok');
+        }
+      }, 50);
+    }
+
+    function startDelivery() {
+      const progress = document.getElementById('delivery-progress');
+      if (!progress) return;
+      let width = 0;
+      const interval = setInterval(() => {
+        width += 5;
+        progress.style.width = width + '%';
+        if (width >= 100) {
+          clearInterval(interval);
+          setTimeout(() => {
+            toast('All photos delivered!', 'ok');
+            markComplete('varun');
+          }, 500);
+        }
+      }, 100);
+    }
+
+    // Beulah's journey screens
+    function screenBeulahDiscovery() {
+      return `
+        <div class="screen" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F8F7F5;">
+          ${switchPill()}
+          <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 16px;text-align:center;">
+            <div style="background:#fff;border:0.5px solid ${T.bgSub};border-radius:16px;padding:24px;margin-bottom:32px;">
+              <div style="display:flex;justify-content:center;margin-bottom:16px;">
+                <div style="width:48px;height:48px;border-radius:50%;background:${T.blue};display:flex;align-items:center;justify-content:center;">
+                  ${icon('camera', 24, '#fff')}
+                </div>
+              </div>
+              <h2 style="font-size:18px;font-weight:700;color:${T.text};margin-bottom:8px;">Your Karjat photos are ready!</h2>
+              <p style="font-size:13px;font-weight:400;color:${T.textS};margin-bottom:16px;">Varun delivered 28 photos from your weekend trip.</p>
+              <div style="background:${T.blueTint};border-radius:8px;padding:12px;text-align:left;">
+                <div style="font-size:12px;font-weight:600;color:${T.blueDk};margin-bottom:4px;">PixSlay</div>
+                <div style="font-size:11px;font-weight:400;color:${T.blueDp};">Photos from every gathering. All in one place.</div>
+              </div>
+            </div>
+            <div style="margin-bottom:48px;">
+              ${primaryBtn('Download PixSlay', "go('beulah-install')")}
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function screenBeulahInstall() {
+      return `
+        <div class="screen" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#fff;">
+          ${switchPill()}
+          <div style="flex:1;display:flex;flex-direction:column;">
+            <div style="padding:60px 16px 0;">
+              ${logo(28)}
+            </div>
+            <div style="padding:32px 16px 0;text-align:center;">
+              <h1 style="font-size:24px;font-weight:800;color:${T.text};margin-bottom:16px;">Welcome to PixSlay</h1>
+              <p style="font-size:13px;font-weight:400;color:${T.textS};margin-bottom:32px;">Your photos from every gathering, all in one place.</p>
+              <div style="background:#fff;border:0.5px solid ${T.bgSub};border-radius:12px;padding:16px;margin-bottom:24px;">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+                  <div style="width:32px;height:32px;border-radius:50%;background:${T.ok};display:flex;align-items:center;justify-content:center;">
+                    ${icon('check', 16, '#fff')}
+                  </div>
+                  <div>
+                    <div style="font-size:14px;font-weight:600;color:${T.text};">Download complete</div>
+                    <div style="font-size:11px;font-weight:400;color:${T.textT};">Installing PixSlay...</div>
+                  </div>
+                </div>
+                <div style="height:4px;background:${T.blueTint};border-radius:2px;overflow:hidden;">
+                  <div id="install-progress" style="width:0%;height:100%;background:${T.blue};border-radius:2px;transition:width 0.1s;"></div>
+                </div>
+              </div>
+            </div>
+            <div style="flex:1;"></div>
+            <div style="padding:0 16px 24px;">
+              ${primaryBtn('Continue', "startInstall('beulah-onboard')", true)}
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function screenBeulahOnboard() {
+      return `
+        <div class="screen" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#fff;">
+          ${switchPill()}
+          <div style="flex:1;display:flex;flex-direction:column;">
+            <div style="padding:44px 16px 0;">
+              <div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-bottom:32px;">
+                <div style="width:6px;height:6px;border-radius:50%;background:${T.blue};"></div>
+                <div style="width:6px;height:6px;border-radius:50%;background:${T.blue};"></div>
+                <div style="width:18px;height:6px;border-radius:3px;background:${T.blue};"></div>
+              </div>
+              <h1 style="font-size:24px;font-weight:800;color:${T.text};text-align:center;margin-bottom:8px;">What do we call you?</h1>
+              <p style="font-size:13px;font-weight:400;color:${T.textS};text-align:center;">Just the basics. You can always add more later.</p>
+            </div>
+            <div style="padding:24px 16px;text-align:center;">
+              <div style="width:72px;height:72px;border-radius:50%;background:${T.blueTint};border:1.5px dashed ${T.blueBdr};display:flex;align-items:center;justify-content:center;margin:0 auto 12px;cursor:pointer;">
+                ${icon('user', 24, T.blueBdr)}
+              </div>
+              <p style="font-size:11px;font-weight:400;color:${T.textT};">Add a photo so friends recognise you</p>
+            </div>
+            <div style="padding:0 16px;">
+              ${floatInput('Full name', 'name', 'Beulah')}
+              ${floatInput('Email (optional)', 'email', '', 'email')}
+            </div>
+            <div style="flex:1;"></div>
+            <div style="padding:0 16px 24px;">
+              ${primaryBtn('Continue', "go('beulah-home')")}
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function screenBeulahHome() {
+      return `
+        <div class="screen" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F8F7F5;">
+          ${switchPill()}
+          <div style="flex:1;display:flex;flex-direction:column;">
+            ${tbar("go('entry')", logo(16).replace('gap:4px', 'gap:2px').replace('28px', '16px').replace('22px', '16px'), 'bell', "openSheet('notifications')")}
+            <div style="padding:16px;">
+              ${eventCard('Mumbai — Karjat', 'Sat 24 May — Sun 25 May', 6, 28, true)}
+            </div>
+          </div>
+          ${navbar('home', "go('beulah-home')", "go('beulah-onboard')", "go('beulah-event')")}
+          ${bottomSheet('notifications', `
+            <div style="padding:16px;">
+              <div style="padding:12px;border-bottom:0.5px solid ${T.bgSub};display:flex;gap:12px;">
+                <div style="width:32px;height:32px;border-radius:50%;background:${T.blue};display:flex;align-items:center;justify-content:center;">
+                  <span style="font-size:10px;font-weight:700;color:#fff;">VR</span>
+                </div>
+                <div style="flex:1;">
+                  <p style="font-size:13px;font-weight:500;color:${T.text};">Varun delivered your Karjat photos!</p>
+                  <p style="font-size:11px;font-weight:400;color:${T.textT};">Just now</p>
+                </div>
+              </div>
+            </div>
+          `)}
+        </div>`;
+    }
+
+    function screenBeulahEvent() {
+      const photos = Array.from({length:28}, (_,i) => i);
+      return `
+        <div class="screen" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F8F7F5;">
+          ${switchPill()}
+          <div style="flex:1;display:flex;flex-direction:column;">
+            ${tbar("go('beulah-home')", 'Mumbai — Karjat', 'search', '')}
+            ${faceChipsRow()}
+            <div style="display:flex;border-bottom:0.5px solid ${T.bgSub};background:#fff;flex-shrink:0;">
+              <button onclick="state.activeFilters.mainTab='my'; render()" style="flex:1;padding:12px;text-align:center;font-size:13px;font-weight:${state.activeFilters.mainTab==='my' ? 600 : 400};color:${state.activeFilters.mainTab==='my' ? T.text : T.textT};border:none;background:none;border-bottom:${state.activeFilters.mainTab==='my' ? `2px solid ${T.blue}` : 'none'};cursor:pointer;">My Photos</button>
+              <button onclick="state.activeFilters.mainTab='with'; render()" style="flex:1;padding:12px;text-align:center;font-size:13px;font-weight:${state.activeFilters.mainTab==='with' ? 600 : 400};color:${state.activeFilters.mainTab==='with' ? T.text : T.textT};border:none;background:none;border-bottom:${state.activeFilters.mainTab==='with' ? `2px solid ${T.blue}` : 'none'};cursor:pointer;">With Me</button>
+            </div>
+            ${filterBar(state.activeFilters.cat, state.activeFilters.sub)}
+            ${actionTabs(state.activeFilters.tab)}
+            <div style="flex:1;overflow-y:auto;">
+              ${photoGrid(photos)}
+            </div>
+          </div>
+          ${navbar('home', "go('beulah-home')", "go('beulah-onboard')", "go('beulah-event')")}
+        </div>`;
+    }
+
+    // Kavitha's journey screens
+    function screenKavithaIntro() {
+      return `
+        <div class="screen" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F8F7F5;">
+          ${switchPill()}
+          <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 16px;text-align:center;">
+            <div style="background:#fff;border:0.5px solid ${T.bgSub};border-radius:16px;padding:24px;margin-bottom:32px;">
+              <div style="display:flex;justify-content:center;margin-bottom:16px;">
+                <div style="width:48px;height:48px;border-radius:50%;background:${T.blue};display:flex;align-items:center;justify-content:center;">
+                  <span style="font-size:12px;font-weight:700;color:#fff;">VR</span>
+                </div>
+              </div>
+              <p style="font-size:16px;font-weight:400;color:${T.textS};line-height:1.5;margin-bottom:16px;">
+                "Hey Kavitha, check this out. PixSlay automatically collects everyone's photos from our trips. No more WhatsApp chaos!"
+              </p>
+              <div style="background:${T.blueTint};border-radius:8px;padding:12px;text-align:left;">
+                <div style="font-size:12px;font-weight:600;color:${T.blueDk};margin-bottom:4px;">PixSlay</div>
+                <div style="font-size:11px;font-weight:400;color:${T.blueDp};">Photos from every gathering. All in one place.</div>
+              </div>
+            </div>
+            <div style="margin-bottom:48px;">
+              ${primaryBtn('Download PixSlay', "go('kavitha-install')")}
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function screenKavithaInstall() {
+      return `
+        <div class="screen" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#fff;">
+          ${switchPill()}
+          <div style="flex:1;display:flex;flex-direction:column;">
+            <div style="padding:60px 16px 0;">
+              ${logo(28)}
+            </div>
+            <div style="padding:32px 16px 0;text-align:center;">
+              <h1 style="font-size:24px;font-weight:800;color:${T.text};margin-bottom:16px;">Welcome to PixSlay</h1>
+              <p style="font-size:13px;font-weight:400;color:${T.textS};margin-bottom:32px;">Your photos from every gathering, all in one place.</p>
+              <div style="background:#fff;border:0.5px solid ${T.bgSub};border-radius:12px;padding:16px;margin-bottom:24px;">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+                  <div style="width:32px;height:32px;border-radius:50%;background:${T.ok};display:flex;align-items:center;justify-content:center;">
+                    ${icon('check', 16, '#fff')}
+                  </div>
+                  <div>
+                    <div style="font-size:14px;font-weight:600;color:${T.text};">Download complete</div>
+                    <div style="font-size:11px;font-weight:400;color:${T.textT};">Installing PixSlay...</div>
+                  </div>
+                </div>
+                <div style="height:4px;background:${T.blueTint};border-radius:2px;overflow:hidden;">
+                  <div id="install-progress" style="width:0%;height:100%;background:${T.blue};border-radius:2px;transition:width 0.1s;"></div>
+                </div>
+              </div>
+            </div>
+            <div style="flex:1;"></div>
+            <div style="padding:0 16px 24px;">
+              ${primaryBtn('Continue', "startInstall('kavitha-onboard')", true)}
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function screenKavithaOnboard() {
+      return `
+        <div class="screen" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#fff;">
+          ${switchPill()}
+          <div style="flex:1;display:flex;flex-direction:column;">
+            <div style="padding:44px 16px 0;">
+              <div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-bottom:32px;">
+                <div style="width:6px;height:6px;border-radius:50%;background:${T.blue};"></div>
+                <div style="width:6px;height:6px;border-radius:50%;background:${T.blue};"></div>
+                <div style="width:18px;height:6px;border-radius:3px;background:${T.blue};"></div>
+              </div>
+              <h1 style="font-size:24px;font-weight:800;color:${T.text};text-align:center;margin-bottom:8px;">What do we call you?</h1>
+              <p style="font-size:13px;font-weight:400;color:${T.textS};text-align:center;">Just the basics. You can always add more later.</p>
+            </div>
+            <div style="padding:24px 16px;text-align:center;">
+              <div style="width:72px;height:72px;border-radius:50%;background:${T.blueTint};border:1.5px dashed ${T.blueBdr};display:flex;align-items:center;justify-content:center;margin:0 auto 12px;cursor:pointer;">
+                ${icon('user', 24, T.blueBdr)}
+              </div>
+              <p style="font-size:11px;font-weight:400;color:${T.textT};">Add a photo so friends recognise you</p>
+            </div>
+            <div style="padding:0 16px;">
+              ${floatInput('Full name', 'name', 'Kavitha')}
+              ${floatInput('Email (optional)', 'email', '', 'email')}
+            </div>
+            <div style="flex:1;"></div>
+            <div style="padding:0 16px 24px;">
+              ${primaryBtn('Continue', "go('kavitha-home')")}
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function screenKavithaHome() {
+      return `
+        <div class="screen" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F8F7F5;">
+          ${switchPill()}
+          <div style="flex:1;display:flex;flex-direction:column;">
+            ${tbar("go('entry')", logo(16).replace('gap:4px', 'gap:2px').replace('28px', '16px').replace('22px', '16px'), 'bell', "openSheet('notifications')")}
+            <div style="padding:16px;">
+              ${eventCard('Mumbai — Karjat', 'Sat 24 May — Sun 25 May', 6, 18, true)}
+            </div>
+          </div>
+          ${navbar('home', "go('kavitha-home')", "go('kavitha-onboard')", "go('kavitha-event')")}
+          ${bottomSheet('notifications', `
+            <div style="padding:16px;">
+              <div style="padding:12px;border-bottom:0.5px solid ${T.bgSub};display:flex;gap:12px;">
+                <div style="width:32px;height:32px;border-radius:50%;background:${T.blue};display:flex;align-items:center;justify-content:center;">
+                  <span style="font-size:10px;font-weight:700;color:#fff;">VR</span>
+                </div>
+                <div style="flex:1;">
+                  <p style="font-size:13px;font-weight:500;color:${T.text};">Varun added you to Mumbai — Karjat!</p>
+                  <p style="font-size:11px;font-weight:400;color:${T.textT};">2h ago</p>
+                </div>
+              </div>
+            </div>
+          `)}
+        </div>`;
+    }
+
+    function screenKavithaEvent() {
+      const photos = Array.from({length:18}, (_,i) => i);
+      return `
+        <div class="screen" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F8F7F5;">
+          ${switchPill()}
+          <div style="flex:1;display:flex;flex-direction:column;">
+            ${tbar("go('kavitha-home')", 'Mumbai — Karjat', 'search', '')}
+            ${faceChipsRow()}
+            <div style="display:flex;border-bottom:0.5px solid ${T.bgSub};background:#fff;flex-shrink:0;">
+              <button onclick="state.activeFilters.mainTab='my'; render()" style="flex:1;padding:12px;text-align:center;font-size:13px;font-weight:${state.activeFilters.mainTab==='my' ? 600 : 400};color:${state.activeFilters.mainTab==='my' ? T.text : T.textT};border:none;background:none;border-bottom:${state.activeFilters.mainTab==='my' ? `2px solid ${T.blue}` : 'none'};cursor:pointer;">My Photos</button>
+              <button onclick="state.activeFilters.mainTab='with'; render()" style="flex:1;padding:12px;text-align:center;font-size:13px;font-weight:${state.activeFilters.mainTab==='with' ? 600 : 400};color:${state.activeFilters.mainTab==='with' ? T.text : T.textT};border:none;background:none;border-bottom:${state.activeFilters.mainTab==='with' ? `2px solid ${T.blue}` : 'none'};cursor:pointer;">With Me</button>
+            </div>
+            ${filterBar(state.activeFilters.cat, state.activeFilters.sub)}
+            ${actionTabs(state.activeFilters.tab)}
+            <div style="flex:1;overflow-y:auto;">
+              ${photoGrid(photos)}
+            </div>
+          </div>
+          ${navbar('home', "go('kavitha-home')", "go('kavitha-onboard')", "go('kavitha-event')")}
+        </div>`;
+    }
+
+    // Mayank's journey screens
+    function screenMayankHome() {
+      return `
+        <div class="screen" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F8F7F5;">
+          ${switchPill()}
+          <div style="flex:1;display:flex;flex-direction:column;">
+            ${tbar("go('entry')", logo(16).replace('gap:4px', 'gap:2px').replace('28px', '16px').replace('22px', '16px'), 'bell', "openSheet('notifications')")}
+            <div style="padding:16px;">
+              <div style="background:#fff;border:0.5px solid ${T.bgSub};border-radius:12px;padding:16px;margin-bottom:16px;display:flex;gap:12px;">
+                <div style="width:40px;height:40px;border-radius:50%;background:${T.blue};display:flex;align-items:center;justify-content:center;">
+                  <span style="font-size:12px;font-weight:700;color:#fff;">VR</span>
+                </div>
+                <div style="flex:1;">
+                  <div style="font-size:14px;font-weight:600;color:${T.text};margin-bottom:4px;">Varun invited you to join</div>
+                  <div style="font-size:13px;font-weight:400;color:${T.textS};margin-bottom:8px;">Mumbai — Karjat</div>
+                  <div style="font-size:11px;font-weight:400;color:${T.textT};">Sat 24 May — Sun 25 May • 6 members</div>
+                </div>
+                <div style="width:16px;height:16px;display:flex;align-items:center;justify-content:center;">
+                  ${icon('chevron-right', 16, T.textT)}
+                </div>
+              </div>
+              ${eventCard('Birthday Dinner', 'Last Friday', 4, 12, false)}
+            </div>
+          </div>
+          ${navbar('home', "go('mayank-home')", "go('mayank-join')", "go('mayank-event')")}
+          ${bottomSheet('notifications', `
+            <div style="padding:16px;">
+              <div style="padding:12px;border-bottom:0.5px solid ${T.bgSub};display:flex;gap:12px;">
+                <div style="width:32px;height:32px;border-radius:50%;background:${T.blue};display:flex;align-items:center;justify-content:center;">
+                  <span style="font-size:10px;font-weight:700;color:#fff;">VR</span>
+                </div>
+                <div style="flex:1;">
+                  <p style="font-size:13px;font-weight:500;color:${T.text};">Varun invited you to Mumbai — Karjat</p>
+                  <p style="font-size:11px;font-weight:400;color:${T.textT};">3h ago</p>
+                </div>
+              </div>
+            </div>
+          `)}
+        </div>`;
+    }
+
+    function screenMayankJoin() {
+      return `
+        <div class="screen" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#fff;">
+          ${switchPill()}
+          <div style="flex:1;display:flex;flex-direction:column;">
+            ${tbar("go('mayank-home')", 'Join group')}
+            <div style="padding:16px;">
+              <div style="background:#fff;border:0.5px solid ${T.bgSub};border-radius:12px;padding:16px;margin-bottom:24px;">
+                <div style="display:flex;gap:12px;margin-bottom:16px;">
+                  <div style="width:48px;height:48px;border-radius:50%;background:${T.blue};display:flex;align-items:center;justify-content:center;">
+                    <span style="font-size:12px;font-weight:700;color:#fff;">VR</span>
+                  </div>
+                  <div style="flex:1;">
+                    <div style="font-size:16px;font-weight:700;color:${T.text};margin-bottom:4px;">Mumbai — Karjat</div>
+                    <div style="font-size:13px;font-weight:400;color:${T.textS};margin-bottom:8px;">Sat 24 May — Sun 25 May</div>
+                    <div style="font-size:11px;font-weight:400;color:${T.textT};">Created by Varun • 5 members</div>
+                  </div>
+                </div>
+                <div style="background:${T.blueTint};border-radius:8px;padding:12px;margin-bottom:16px;">
+                  <div style="font-size:12px;font-weight:600;color:${T.blueDk};margin-bottom:4px;">What happens when you join?</div>
+                  <div style="font-size:11px;font-weight:400;color:${T.blueDp};">• Your photos from this trip will be added automatically<br>• Everyone gets access to all photos<br>• You can leave anytime</div>
+                </div>
+                <div style="background:${T.blueTint};border-radius:8px;padding:12px;">
+                  <div style="font-size:12px;font-weight:600;color:${T.blueDk};margin-bottom:4px;">Privacy</div>
+                  <div style="font-size:11px;font-weight:400;color:${T.blueDp};">Photos stay private within the group. No one else can see them.</div>
+                </div>
+              </div>
+            </div>
+            <div style="flex:1;"></div>
+            <div style="padding:0 16px 24px;">
+              ${primaryBtn('Join Mumbai — Karjat', "go('mayank-event')")}
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function screenMayankEvent() {
+      const photos = Array.from({length:24}, (_,i) => i);
+      return `
+        <div class="screen" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F8F7F5;">
+          ${switchPill()}
+          <div style="flex:1;display:flex;flex-direction:column;">
+            ${tbar("go('mayank-home')", 'Mumbai — Karjat', 'search', '')}
+            ${faceChipsRow()}
+            <div style="display:flex;border-bottom:0.5px solid ${T.bgSub};background:#fff;flex-shrink:0;">
+              <button onclick="state.activeFilters.mainTab='my'; render()" style="flex:1;padding:12px;text-align:center;font-size:13px;font-weight:${state.activeFilters.mainTab==='my' ? 600 : 400};color:${state.activeFilters.mainTab==='my' ? T.text : T.textT};border:none;background:none;border-bottom:${state.activeFilters.mainTab==='my' ? `2px solid ${T.blue}` : 'none'};cursor:pointer;">My Photos</button>
+              <button onclick="state.activeFilters.mainTab='with'; render()" style="flex:1;padding:12px;text-align:center;font-size:13px;font-weight:${state.activeFilters.mainTab==='with' ? 600 : 400};color:${state.activeFilters.mainTab==='with' ? T.text : T.textT};border:none;background:none;border-bottom:${state.activeFilters.mainTab==='with' ? `2px solid ${T.blue}` : 'none'};cursor:pointer;">With Me</button>
+            </div>
+            ${filterBar(state.activeFilters.cat, state.activeFilters.sub)}
+            ${actionTabs(state.activeFilters.tab)}
+            <div style="flex:1;overflow-y:auto;">
+              ${photoGrid(photos)}
+            </div>
+          </div>
+          ${navbar('home', "go('mayank-home')", "go('mayank-join')", "go('mayank-event')")}
+        </div>`;
+    }
+
+    // Vishal's journey screens
+    function screenVishalNudge() {
+      return `
+        <div class="screen" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F8F7F5;">
+          ${switchPill()}
+          <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 16px;text-align:center;">
+            <div style="background:#fff;border:0.5px solid ${T.bgSub};border-radius:16px;padding:24px;margin-bottom:32px;">
+              <div style="display:flex;justify-content:center;margin-bottom:16px;">
+                <div style="width:48px;height:48px;border-radius:50%;background:${T.blue};display:flex;align-items:center;justify-content:center;">
+                  <span style="font-size:12px;font-weight:700;color:#fff;">MA</span>
+                </div>
+              </div>
+              <p style="font-size:16px;font-weight:400;color:${T.textS};line-height:1.5;margin-bottom:16px;">
+                "Hey Vishal, you should download PixSlay. Varun set up a group for our Karjat trip and everyone's photos are there automatically."
+              </p>
+              <div style="background:${T.blueTint};border-radius:8px;padding:12px;text-align:left;">
+                <div style="font-size:12px;font-weight:600;color:${T.blueDk};margin-bottom:4px;">PixSlay</div>
+                <div style="font-size:11px;font-weight:400;color:${T.blueDp};">Photos from every gathering. All in one place.</div>
+              </div>
+            </div>
+            <div style="margin-bottom:48px;">
+              ${primaryBtn('Download PixSlay', "go('vishal-install')")}
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function screenVishalInstall() {
+      return `
+        <div class="screen" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#fff;">
+          ${switchPill()}
+          <div style="flex:1;display:flex;flex-direction:column;">
+            <div style="padding:60px 16px 0;">
+              ${logo(28)}
+            </div>
+            <div style="padding:32px 16px 0;text-align:center;">
+              <h1 style="font-size:24px;font-weight:800;color:${T.text};margin-bottom:16px;">Welcome to PixSlay</h1>
+              <p style="font-size:13px;font-weight:400;color:${T.textS};margin-bottom:32px;">Your photos from every gathering, all in one place.</p>
+              <div style="background:#fff;border:0.5px solid ${T.bgSub};border-radius:12px;padding:16px;margin-bottom:24px;">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+                  <div style="width:32px;height:32px;border-radius:50%;background:${T.ok};display:flex;align-items:center;justify-content:center;">
+                    ${icon('check', 16, '#fff')}
+                  </div>
+                  <div>
+                    <div style="font-size:14px;font-weight:600;color:${T.text};">Download complete</div>
+                    <div style="font-size:11px;font-weight:400;color:${T.textT};">Installing PixSlay...</div>
+                  </div>
+                </div>
+                <div style="height:4px;background:${T.blueTint};border-radius:2px;overflow:hidden;">
+                  <div id="install-progress" style="width:0%;height:100%;background:${T.blue};border-radius:2px;transition:width 0.1s;"></div>
+                </div>
+              </div>
+            </div>
+            <div style="flex:1;"></div>
+            <div style="padding:0 16px 24px;">
+              ${primaryBtn('Continue', "startInstall('vishal-onboard')", true)}
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function screenVishalOnboard() {
+      return `
+        <div class="screen" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#fff;">
+          ${switchPill()}
+          <div style="flex:1;display:flex;flex-direction:column;">
+            <div style="padding:44px 16px 0;">
+              <div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-bottom:32px;">
+                <div style="width:6px;height:6px;border-radius:50%;background:${T.blue};"></div>
+                <div style="width:6px;height:6px;border-radius:50%;background:${T.blue};"></div>
+                <div style="width:18px;height:6px;border-radius:3px;background:${T.blue};"></div>
+              </div>
+              <h1 style="font-size:24px;font-weight:800;color:${T.text};text-align:center;margin-bottom:8px;">What do we call you?</h1>
+              <p style="font-size:13px;font-weight:400;color:${T.textS};text-align:center;">Just the basics. You can always add more later.</p>
+            </div>
+            <div style="padding:24px 16px;text-align:center;">
+              <div style="width:72px;height:72px;border-radius:50%;background:${T.blueTint};border:1.5px dashed ${T.blueBdr};display:flex;align-items:center;justify-content:center;margin:0 auto 12px;cursor:pointer;">
+                ${icon('user', 24, T.blueBdr)}
+              </div>
+              <p style="font-size:11px;font-weight:400;color:${T.textT};">Add a photo so friends recognise you</p>
+            </div>
+            <div style="padding:0 16px;">
+              ${floatInput('Full name', 'name', 'Vishal')}
+              ${floatInput('Email (optional)', 'email', '', 'email')}
+            </div>
+            <div style="flex:1;"></div>
+            <div style="padding:0 16px 24px;">
+              ${primaryBtn('Continue', "go('vishal-home')")}
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function screenVishalHome() {
+      return `
+        <div class="screen" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F8F7F5;">
+          ${switchPill()}
+          <div style="flex:1;display:flex;flex-direction:column;">
+            ${tbar("go('entry')", logo(16).replace('gap:4px', 'gap:2px').replace('28px', '16px').replace('22px', '16px'), 'bell', "openSheet('notifications')")}
+            <div style="padding:16px;">
+              <div style="background:#fff;border:0.5px solid ${T.bgSub};border-radius:12px;padding:16px;margin-bottom:16px;display:flex;gap:12px;">
+                <div style="width:40px;height:40px;border-radius:50%;background:${T.blue};display:flex;align-items:center;justify-content:center;">
+                  <span style="font-size:12px;font-weight:700;color:#fff;">MA</span>
+                </div>
+                <div style="flex:1;">
+                  <div style="font-size:14px;font-weight:600;color:${T.text};margin-bottom:4px;">Mayank invited you to join</div>
+                  <div style="font-size:13px;font-weight:400;color:${T.textS};margin-bottom:8px;">Mumbai — Karjat</div>
+                  <div style="font-size:11px;font-weight:400;color:${T.textT};">Sat 24 May — Sun 25 May • 6 members</div>
+                </div>
+                <div style="width:16px;height:16px;display:flex;align-items:center;justify-content:center;">
+                  ${icon('chevron-right', 16, T.textT)}
+                </div>
+              </div>
+              ${eventCard('Office Party', 'Last month', 8, 45, false)}
+            </div>
+          </div>
+          ${navbar('home', "go('vishal-home')", "go('vishal-onboard')", "go('vishal-event')")}
+          ${bottomSheet('notifications', `
+            <div style="padding:16px;">
+              <div style="padding:12px;border-bottom:0.5px solid ${T.bgSub};display:flex;gap:12px;">
+                <div style="width:32px;height:32px;border-radius:50%;background:${T.blue};display:flex;align-items:center;justify-content:center;">
+                  <span style="font-size:10px;font-weight:700;color:#fff;">MA</span>
+                </div>
+                <div style="flex:1;">
+                  <p style="font-size:13px;font-weight:500;color:${T.text};">Mayank invited you to Mumbai — Karjat</p>
+                  <p style="font-size:11px;font-weight:400;color:${T.textT};">1h ago</p>
+                </div>
+              </div>
+            </div>
+          `)}
+        </div>`;
+    }
+
+    function screenVishalEvent() {
+      const photos = Array.from({length:16}, (_,i) => i);
+      return `
+        <div class="screen" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F8F7F5;">
+          ${switchPill()}
+          <div style="flex:1;display:flex;flex-direction:column;">
+            ${tbar("go('vishal-home')", 'Mumbai — Karjat', 'search', '')}
+            ${faceChipsRow()}
+            <div style="display:flex;border-bottom:0.5px solid ${T.bgSub};background:#fff;flex-shrink:0;">
+              <button onclick="state.activeFilters.mainTab='my'; render()" style="flex:1;padding:12px;text-align:center;font-size:13px;font-weight:${state.activeFilters.mainTab==='my' ? 600 : 400};color:${state.activeFilters.mainTab==='my' ? T.text : T.textT};border:none;background:none;border-bottom:${state.activeFilters.mainTab==='my' ? `2px solid ${T.blue}` : 'none'};cursor:pointer;">My Photos</button>
+              <button onclick="state.activeFilters.mainTab='with'; render()" style="flex:1;padding:12px;text-align:center;font-size:13px;font-weight:${state.activeFilters.mainTab==='with' ? 600 : 400};color:${state.activeFilters.mainTab==='with' ? T.text : T.textT};border:none;background:none;border-bottom:${state.activeFilters.mainTab==='with' ? `2px solid ${T.blue}` : 'none'};cursor:pointer;">With Me</button>
+            </div>
+            ${filterBar(state.activeFilters.cat, state.activeFilters.sub)}
+            ${actionTabs(state.activeFilters.tab)}
+            <div style="flex:1;overflow-y:auto;">
+              ${photoGrid(photos)}
+            </div>
+          </div>
+          ${navbar('home', "go('vishal-home')", "go('vishal-onboard')", "go('vishal-event')")}
+        </div>`;
+    }
+
+    function startInstall(nextScreen) {
+      const progress = document.getElementById('install-progress');
+      if (!progress) return;
+      let width = 0;
+      const interval = setInterval(() => {
+        width += 3;
+        progress.style.width = width + '%';
+        if (width >= 100) {
+          clearInterval(interval);
+          setTimeout(() => {
+            go(nextScreen);
+          }, 500);
+        }
+      }, 30);
+    }
+
+    // SCREEN_MAP
+    const SCREEN_MAP = {
+      'entry': () => screenEntry(),
+      'varun-scene': () => screenVarunScene(),
+      'varun-reg': () => screenVarunReg(),
+      'varun-otp': () => screenVarunOtp(),
+      'varun-profile': () => screenVarunProfile(),
+      'varun-home-empty': () => screenVarunHomeEmpty(),
+      'varun-create-group': () => screenVarunCreateGroup(),
+      'varun-sync': () => screenVarunSync(),
+      'varun-home': () => screenVarunHome(),
+      'varun-event': () => screenVarunEvent(),
+      'photo-full': () => screenPhotoFull(),
+      'varun-delivery': () => screenVarunDelivery(),
+      'beulah-discovery': () => screenBeulahDiscovery(),
+      'beulah-install': () => screenBeulahInstall(),
+      'beulah-onboard': () => screenBeulahOnboard(),
+      'beulah-home': () => screenBeulahHome(),
+      'beulah-event': () => screenBeulahEvent(),
+      'kavitha-intro': () => screenKavithaIntro(),
+      'kavitha-install': () => screenKavithaInstall(),
+      'kavitha-onboard': () => screenKavithaOnboard(),
+      'kavitha-home': () => screenKavithaHome(),
+      'kavitha-event': () => screenKavithaEvent(),
+      'mayank-home': () => screenMayankHome(),
+      'mayank-join': () => screenMayankJoin(),
+      'mayank-event': () => screenMayankEvent(),
+      'vishal-nudge': () => screenVishalNudge(),
+      'vishal-install': () => screenVishalInstall(),
+      'vishal-onboard': () => screenVishalOnboard(),
+      'vishal-home': () => screenVishalHome(),
+      'vishal-event': () => screenVishalEvent(),
+    };
+
+    // Render function
+    function render() {
+      const phone = document.getElementById('phone');
+      const old = phone.querySelector('.screen');
+      if (old) old.remove();
+      const fn = SCREEN_MAP[state.screen];
+      if (!fn) { state.screen = 'entry'; render(); return; }
+      const tmp = document.createElement('div');
+      tmp.innerHTML = fn();
+      const screen = tmp.firstElementChild;
+      phone.appendChild(screen);
+      postRender();
+    }
+
+    // Post-render function
+    function postRender() {
+      // Setup long press for photo cells if they exist
+      if (document.querySelector('.photo-cell')) {
+        setupLongPress();
+      }
+      // Focus first OTP box if exists
+      const firstOtp = document.getElementById('otp-0');
+      if (firstOtp) {
+        setTimeout(() => firstOtp.focus(), 150);
+      }
+    }
+
+    // Initial render
+    render();
+  </script>
+</body>
+</html>
