@@ -1,3 +1,4 @@
+[CONTEXT.md](https://github.com/user-attachments/files/27370855/CONTEXT.md)
 # PixSlay — CONTEXT.md
 *Product context for Claude Design. Read this before building any screens.*
 
