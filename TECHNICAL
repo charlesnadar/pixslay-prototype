@@ -1,0 +1,1110 @@
+# PixSlay — Technical Implementation Guide
+
+Read this file alongside CONTEXT.md, DESIGN.md, and SCREENS.md before writing any code.
+This file captures every hard-won lesson from previous build attempts.
+Follow every rule here exactly — these are not preferences, they are fixes for known failures.
+
+---
+
+## Stack
+
+Single standalone HTML file. Vanilla HTML + CSS + JavaScript only.
+No frameworks. No build tools. No npm. No React. No Vue.
+Google Fonts CDN import in `<head>` for Plus Jakarta Sans.
+No other external dependencies.
+Must work by double-clicking in a browser or dropping on Netlify.
+Must fill the screen on a real mobile phone like a native app.
+
+---
+
+## File Structure
+
+One file: `index.html`
+
+Inside the `<script>` tag, organise code in this order:
+1. Design tokens object
+2. State object + go() function
+3. Utility functions (toast, popup, icon, logo)
+4. Shared component functions (sbar, tbar, navbar, switchPill, floatInput, otpRow, buttons, faceChip, filterBar, actionTabs, photoCell, photoGrid, bottomSheet, eventCard, photoIllustration)
+5. Screen functions (one function per screen, named screenVarunReg, screenVarunOTP, etc.)
+6. SCREEN_MAP object (maps screen name strings to screen functions)
+7. render() function
+8. postRender() function (animations, timers, event listeners added after DOM insert)
+9. Initial render call
+
+---
+
+## Global CSS Classes
+
+Two reusable utility classes are defined in `<style>` and used throughout:
+
+### `.hscroll` — horizontal scroll rows
+Hides the scrollbar on any horizontally-scrolling container (people row, category pills, tabs, contact chips, etc.).
+```css
+.hscroll { -ms-overflow-style:none; scrollbar-width:none; }
+.hscroll::-webkit-scrollbar { display:none; }
+```
+
+### `.pscroll` — primary photo browsing scroll containers
+**Design rule:** Primary photo browsing experiences should use visually hidden scrollbars for a cleaner and more immersive experience.
+
+Applies to: `#tagging-grid` (My Photos / Group / Saved / Downloaded tabs), and any future immersive photo grid container.
+Momentum scrolling is preserved via `-webkit-overflow-scrolling:touch`.
+Scrollability is communicated naturally through partially-visible content, continuous grid flow, and touch interaction — not by a visible scrollbar rail.
+```css
+.pscroll { -ms-overflow-style:none; scrollbar-width:none;
+           -webkit-overflow-scrolling:touch; }
+.pscroll::-webkit-scrollbar { display:none; }
+```
+
+Do **not** apply `.pscroll` to form/content screens (registration, profile, OTP, home, sync). Those are not immersive browsing experiences.
+
+---
+
+## Design Tokens
+
+Define one object at the top. Reference only this object throughout — never hardcode hex values inline.
+
+```javascript
+const T = {
+  blue:    '#1B4FD8',
+  blueH:   '#2960F5',
+  blueTint:'#EEF2FD',
+  blueBdr: '#C7D4FB',
+  blueDk:  '#0C447C',
+  blueDp:  '#185FA5',
+  white:   '#FFFFFF',
+  bgWarm:  '#F8F7F5',
+  bgSub:   '#F0EEEB',
+  text:    '#1A1917',
+  textS:   '#6B6864',
+  textT:   '#A8A49F',
+  textD:   '#D4D1CC',
+  ok:      '#0F9E6E',
+  alert:   '#E8490F',
+  amber:   '#F5A623',
+};
+```
+
+---
+
+## State Management
+
+Single global state object. One render() function. Full screen swap on every state change.
+Never patch innerHTML on a live screen — always call render() to replace the whole screen.
+
+```javascript
+const state = {
+  screen:     'entry',
+  journey:    null,
+  completed:  [],
+  identifiedFaces: [],      // [{index: 0-4, name: 'Beulah'}]
+  selectionMode:   false,
+  selectedPhotos:  new Set(),
+  sharedPhotos:    new Set(),
+  savedPhotos:     new Set(),
+  activeFilters: {
+    mainTab: 'my',          // 'my' | 'with'
+    cat:     null,          // 'People' | 'Scene' | 'Format' | 'Time'
+    sub:     null,          // active sub-filter string
+    tab:     'all',         // 'all' | 'shared' | 'received' | 'saved' | 'downloaded'
+  },
+  currentPhoto: 0,
+  prevScreen:   null,
+};
+
+function go(screenName) {
+  state.screen = screenName;
+  render();
+}
+
+function markComplete(journey) {
+  if (!state.completed.includes(journey)) state.completed.push(journey);
+  // Reset journey-specific state
+  state.identifiedFaces  = [];
+  state.selectedPhotos   = new Set();
+  state.sharedPhotos     = new Set();
+  state.savedPhotos      = new Set();
+  state.selectionMode    = false;
+  state.activeFilters    = { mainTab:'my', cat:null, sub:null, tab:'all' };
+  go('entry');
+}
+```
+
+---
+
+## Floating Label Inputs — CRITICAL, DO NOT USE CSS SELECTORS
+
+### Why CSS fails here
+CSS `~` sibling selectors (`.fi:focus ~ .fi-lbl`) do not reliably trigger
+on HTML that is injected via innerHTML or template literals in all browsers.
+The label either never floats or only floats after a page reload.
+
+### The correct approach — inline JS only
+
+Every input uses direct `style` manipulation via `onfocus` and `onblur`.
+The label position is also set correctly at render time based on whether the field has a value.
+
+```javascript
+function floatInput(label, id, value='', type='text') {
+  const filled = value.length > 0;
+
+  const FLOATED = `top:0;transform:translateY(-50%);font-size:11px;font-weight:600;padding:0 4px;`;
+  const RESTING = `top:50%;transform:translateY(-50%);font-size:14px;font-weight:400;padding:0;`;
+
+  // Set initial label style based on whether field is pre-filled
+  const initLblStyle = filled
+    ? `position:absolute;left:14px;background:#fff;pointer-events:none;transition:all .15s;${FLOATED}color:${T.textT};`
+    : `position:absolute;left:14px;background:#fff;pointer-events:none;transition:all .15s;${RESTING}color:${T.textT};`;
+
+  const initBorder = filled ? `0.5px solid ${T.blueBdr}` : `0.5px solid ${T.bgSub}`;
+
+  return `
+    <div style="position:relative;margin-bottom:12px;">
+      <input
+        id="${id}"
+        type="${type}"
+        value="${value}"
+        autocomplete="off"
+        style="width:100%;height:52px;border:${initBorder};border-radius:10px;
+               padding:20px 14px 7px;font-family:inherit;font-size:14px;
+               font-weight:400;color:${T.text};background:#fff;outline:none;
+               transition:border .15s;"
+        onfocus="
+          var l=document.getElementById('${id}-lbl');
+          if(l) l.style.cssText='position:absolute;left:14px;background:#fff;pointer-events:none;transition:all .15s;${FLOATED}color:${T.blue};';
+          this.style.border='1px solid ${T.blue}';"
+        onblur="
+          var l=document.getElementById('${id}-lbl');
+          if(this.value) {
+            if(l) l.style.cssText='position:absolute;left:14px;background:#fff;pointer-events:none;transition:all .15s;${FLOATED}color:${T.textT};';
+            this.style.border='0.5px solid ${T.blueBdr}';
+          } else {
+            if(l) l.style.cssText='position:absolute;left:14px;background:#fff;pointer-events:none;transition:all .15s;${RESTING}color:${T.textT};';
+            this.style.border='0.5px solid ${T.bgSub}';
+          }"
+      >
+      <label
+        id="${id}-lbl"
+        for="${id}"
+        style="${initLblStyle}"
+      >${label}</label>
+    </div>`;
+}
+```
+
+### Test this before moving on
+After rendering any screen with a floatInput:
+- Tap an empty field → label must immediately float to top
+- Type something → label stays at top, border turns blue
+- Tab away (blur) → label stays at top, border turns to light blue
+- Render a pre-filled field → label must already be at top on first paint, no jump
+
+---
+
+## OTP Input — CRITICAL, DO NOT USE A HIDDEN SINGLE INPUT
+
+### Why a hidden input fails
+A single opacity:0 input of 1px×1px cannot receive touch events reliably on iOS Safari.
+`element.focus()` called programmatically without a direct user gesture is silently ignored by iOS.
+The visual boxes on top block the hidden input from receiving taps.
+
+### The correct approach — 6 real inputs
+
+```javascript
+function otpRow(id, dest) {
+  const boxes = Array.from({length:6}, (_,i) => `
+    <input
+      type="tel"
+      inputmode="numeric"
+      maxlength="1"
+      id="${id}-${i}"
+      style="width:40px;height:52px;border:0.5px solid ${T.bgSub};border-radius:10px;
+             background:#fff;font-size:24px;font-weight:800;color:${T.blue};
+             text-align:center;font-family:inherit;outline:none;
+             transition:border .1s, background .1s;"
+      onfocus="this.style.border='1.5px solid ${T.blue}'; this.select();"
+      onblur="this.style.border=this.value?'0.5px solid ${T.blueBdr}':'0.5px solid ${T.bgSub}';"
+      oninput="otpInput('${id}',${i},'${dest}',this)"
+      onkeydown="otpBack('${id}',${i},event)"
+    />`).join('');
+
+  return `<div style="display:flex;gap:8px;justify-content:center;">${boxes}</div>`;
+}
+
+function otpInput(id, i, dest, el) {
+  // Strip non-digits, keep only last character
+  el.value = el.value.replace(/[^0-9]/g,'').slice(-1);
+  if (el.value) {
+    el.style.background = T.blueTint;
+    el.style.border = `0.5px solid ${T.blueBdr}`;
+    const next = document.getElementById(`${id}-${i+1}`);
+    if (next) {
+      next.focus();
+    } else {
+      // All 6 filled — navigate after brief pause
+      setTimeout(() => go(dest), 300);
+    }
+  }
+}
+
+function otpBack(id, i, e) {
+  if (e.key === 'Backspace') {
+    const el = document.getElementById(`${id}-${i}`);
+    if (!el.value && i > 0) {
+      const prev = document.getElementById(`${id}-${i-1}`);
+      if (prev) {
+        prev.value = '';
+        prev.style.background = '#fff';
+        prev.style.border = `0.5px solid ${T.bgSub}`;
+        prev.focus();
+      }
+    }
+  }
+}
+```
+
+### Auto-focus first box after render
+In postRender(), after the OTP screen is in the DOM:
+```javascript
+// Focus first OTP box after DOM is painted
+setTimeout(() => {
+  const first = document.getElementById(`${id}-0`);
+  if (first) first.focus();
+}, 150);
+```
+
+### Test this before moving on
+- Tap box 1 → keyboard opens, cursor visible inside box
+- Type a digit → digit shows, cursor jumps to box 2
+- Type 6 digits in sequence → auto-navigates to next screen
+- Tap box 3 → cursor lands in box 3
+- Press backspace on empty box → cursor jumps to previous box
+
+---
+
+## Bottom Sheets — CRITICAL, DO NOT BLOCK BUTTON TAPS
+
+### Why buttons inside sheets stop working
+If the overlay div covers the entire screen AND has `pointer-events:auto`,
+taps on buttons inside the sheet card bubble up to the overlay and either
+close the sheet or get swallowed before reaching the button.
+
+### The correct approach — stopPropagation on the card
+
+```html
+<!-- The overlay closes the sheet when tapped -->
+<div
+  id="${id}-overlay"
+  onclick="closeSheet('${id}')"
+  style="position:absolute;inset:0;background:rgba(0,0,0,.45);z-index:200;
+         display:flex;align-items:flex-end;"
+>
+  <!-- The card stops tap propagation so buttons inside work -->
+  <div
+    onclick="event.stopPropagation()"
+    style="width:100%;background:#fff;border-radius:20px 20px 0 0;
+           padding-bottom:24px;z-index:201;"
+  >
+    <div style="width:40px;height:4px;background:${T.bgSub};border-radius:2px;margin:8px auto 0;"></div>
+    <!-- Sheet content here — all buttons fully tappable -->
+  </div>
+</div>
+```
+
+### Opening and closing sheets
+```javascript
+function openSheet(id) {
+  const el = document.getElementById(id + '-overlay');
+  if (el) el.style.display = 'flex';
+}
+function closeSheet(id) {
+  const el = document.getElementById(id + '-overlay');
+  if (el) el.style.display = 'none';
+}
+```
+
+### Test every sheet before moving on
+Open each sheet. Tap every single button inside it.
+Confirm each button responds — navigates, shows toast, or triggers an action.
+If any button is unresponsive, the stopPropagation is missing or z-index is wrong.
+
+---
+
+## Photo Tap Behaviour
+
+### Single tap = always open full screen
+Single tap on a photo ALWAYS opens full screen view. Never conditionally block this.
+
+```javascript
+function photoTap(index) {
+  state.currentPhoto = index;
+  state.prevScreen   = state.screen;
+  go('photo-full');
+}
+```
+
+### Long press = enter selection mode
+Set up long press separately in postRender() after the grid is in the DOM:
+
+```javascript
+function setupLongPress() {
+  document.querySelectorAll('.photo-cell').forEach((cell, i) => {
+    let timer;
+    const start = () => { timer = setTimeout(() => enterSelectionMode(i), 600); };
+    const cancel = () => clearTimeout(timer);
+    cell.addEventListener('touchstart', start, { passive: true });
+    cell.addEventListener('touchend',   cancel);
+    cell.addEventListener('touchmove',  cancel);
+    cell.addEventListener('mousedown',  start);
+    cell.addEventListener('mouseup',    cancel);
+    cell.addEventListener('mouseleave', cancel);
+  });
+}
+
+function enterSelectionMode(index) {
+  state.selectionMode = true;
+  state.selectedPhotos = new Set([index]);
+  render();
+}
+```
+
+### In selection mode — tap toggles selection, does NOT open full screen
+Override the onclick in selection mode:
+
+```javascript
+function photoTap(index) {
+  if (state.selectionMode) {
+    if (state.selectedPhotos.has(index)) state.selectedPhotos.delete(index);
+    else state.selectedPhotos.add(index);
+    updateSelectionUI();
+    return;
+  }
+  // Not in selection mode — always open full screen
+  state.currentPhoto = index;
+  state.prevScreen   = state.screen;
+  go('photo-full');
+}
+```
+
+---
+
+## FAB — Floating Action Button Position
+
+The FAB must float ABOVE the nav bar. It is NOT a flex child of the nav bar row.
+
+```javascript
+function navbar(activeTab, onHome, onProfile, onFab) {
+  return `
+    <div style="height:56px;background:#fff;border-top:0.5px solid ${T.bgSub};
+                display:flex;align-items:center;padding:0 40px;
+                position:relative;flex-shrink:0;">
+      <!-- Home -->
+      <div onclick="${onHome}" style="flex:1;display:flex;flex-direction:column;
+           align-items:center;gap:3px;cursor:pointer;">
+        ${icon('home', 22, activeTab==='home' ? T.blue : T.textT)}
+        <span style="font-size:9px;font-weight:500;
+              color:${activeTab==='home' ? T.blue : T.textT};">Home</span>
+      </div>
+      <!-- Spacer for FAB -->
+      <div style="flex:1;"></div>
+      <!-- Profile -->
+      <div onclick="${onProfile}" style="flex:1;display:flex;flex-direction:column;
+           align-items:center;gap:3px;cursor:pointer;">
+        ${icon('user', 22, activeTab==='profile' ? T.blue : T.textT)}
+        <span style="font-size:9px;font-weight:500;
+              color:${activeTab==='profile' ? T.blue : T.textT};">Profile</span>
+      </div>
+      <!-- FAB — absolutely positioned, floats above nav bar -->
+      <button onclick="${onFab}"
+        style="position:absolute;bottom:28px;left:50%;transform:translateX(-50%);
+               width:52px;height:52px;background:${T.blue};border-radius:50%;
+               border:3px solid #fff;
+               box-shadow:0 4px 12px rgba(27,79,216,.3);
+               display:flex;align-items:center;justify-content:center;
+               cursor:pointer;z-index:10;">
+        ${icon('plus', 22, '#fff')}
+      </button>
+    </div>`;
+}
+```
+
+---
+
+## Event Screen Structure — exact order required
+
+Every event screen (Varun, Kavitha, Mayank) must have this exact top-to-bottom structure.
+Missing any layer breaks the UX flow.
+
+```
+┌─────────────────────────────────┐
+│ Status bar (44px)               │
+├─────────────────────────────────┤
+│ Top bar: ← title icons (44px)  │
+├─────────────────────────────────┤
+│ Face chips row (scroll horiz)   │
+├─────────────────────────────────┤
+│ My Photos  │  With Me  (tabs)   │
+├─────────────────────────────────┤
+│ Filter bar: People Scene...     │ ← only on My Photos tab
+│   └ Sub-chips (slide in/out)    │
+├─────────────────────────────────┤
+│ Action tabs: All Shared...      │ ← only on My Photos tab
+├─────────────────────────────────┤  ← scroll starts here
+│                                 │
+│   Photo grid (3 columns)        │
+│                                 │
+│                                 │
+├─────────────────────────────────┤  ← scroll ends here
+│ Deliver photos button (pinned)  │ ← hidden in selection mode
+├─────────────────────────────────┤
+│ Nav bar + FAB                   │
+└─────────────────────────────────┘
+```
+
+The scroll area is `flex:1; overflow-y:auto`. Everything above and below is `flex-shrink:0`.
+
+---
+
+## Filter Bar — Clickable Category and Sub-chips
+
+```javascript
+function filterBar(activeCat, activeSub) {
+  const categories = ['People', 'Scene', 'Format', 'Time'];
+  const subOptions = {
+    People: ['Varun','Beulah','Kavitha','Mayank','Vishal','Anand'],
+    Scene:  ['Bonfire','Waterfall','Group shot','Night sky','Forest','Food','Lakeside'],
+    Format: ['Selfie','Group','Portrait','Landscape','Video'],
+    Time:   ['Day 1 (Sat)','Day 2 (Sun)','Morning','Evening','Night'],
+  };
+  const subs = activeCat ? subOptions[activeCat] : [];
+
+  return `
+    <div style="background:#fff;border-bottom:0.5px solid ${T.bgSub};flex-shrink:0;">
+      <!-- Category chips -->
+      <div style="display:flex;gap:8px;padding:8px 16px;overflow-x:auto;">
+        ${categories.map(cat => `
+          <button
+            onclick="filterCatClick('${cat}')"
+            style="height:32px;border-radius:16px;padding:0 14px;border:none;
+                   font-family:inherit;font-size:12px;font-weight:500;cursor:pointer;
+                   white-space:nowrap;flex-shrink:0;
+                   background:${activeCat===cat ? T.blue : T.bgSub};
+                   color:${activeCat===cat ? '#fff' : T.textS};"
+          >${cat}</button>`).join('')}
+      </div>
+      <!-- Sub-chips (only when a category is active) -->
+      ${subs.length > 0 ? `
+        <div style="display:flex;gap:8px;padding:0 16px 8px;overflow-x:auto;">
+          ${subs.map(sub => `
+            <button
+              onclick="filterSubClick('${sub}')"
+              style="height:30px;border-radius:15px;padding:0 12px;border:none;
+                     font-family:inherit;font-size:11px;font-weight:500;cursor:pointer;
+                     white-space:nowrap;flex-shrink:0;
+                     background:${activeSub===sub ? T.blue : T.bgSub};
+                     color:${activeSub===sub ? '#fff' : T.textS};"
+            >${sub}</button>`).join('')}
+        </div>` : ''}
+    </div>`;
+}
+
+function filterCatClick(cat) {
+  // Toggle: tap active category = collapse sub-row
+  state.activeFilters.cat = state.activeFilters.cat === cat ? null : cat;
+  state.activeFilters.sub = null;
+  render();
+}
+
+function filterSubClick(sub) {
+  state.activeFilters.sub = state.activeFilters.sub === sub ? null : sub;
+  render();
+  // After render, dim non-matching photos
+  applyPhotoFilter();
+}
+
+function applyPhotoFilter() {
+  if (!state.activeFilters.sub) {
+    document.querySelectorAll('.photo-cell').forEach(c => c.style.opacity = '1');
+    return;
+  }
+  // Deterministic filter: keep every 3rd and 5th photo to show the effect
+  document.querySelectorAll('.photo-cell').forEach((c, i) => {
+    c.style.opacity = (i%3===0 || i%5===0) ? '1' : '0.2';
+    c.style.transition = 'opacity .3s';
+  });
+}
+```
+
+---
+
+## Switch Journey Pill
+
+Must appear on every screen without exception, including over open sheets.
+
+```javascript
+function switchPill() {
+  return `
+    <button
+      onclick="go('entry')"
+      style="position:absolute;top:6px;left:50%;transform:translateX(-50%);
+             z-index:9999;background:#fff;border:0.5px solid ${T.blue};
+             border-radius:20px;padding:4px 12px;font-family:inherit;
+             font-size:10px;font-weight:500;color:${T.blue};cursor:pointer;
+             white-space:nowrap;">
+      Switch journey
+    </button>`;
+}
+```
+
+---
+
+## Mobile and Desktop Layout
+
+```css
+/* Desktop — phone frame centered on warm background */
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: #E8E4DF;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow: hidden;
+}
+.phone {
+  width: 390px;
+  height: 844px;
+  background: #F8F7F5;
+  border-radius: 50px;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 8px #2E2A26, 0 0 0 10px #1A1610, 0 32px 64px rgba(0,0,0,.35);
+}
+
+/* Mobile — fills the real screen edge to edge like a native app */
+@media (max-width: 500px) {
+  body {
+    padding: 0;
+    background: #F8F7F5;
+    align-items: flex-start;
+    overflow: hidden;
+  }
+  .phone {
+    width: 100vw;
+    height: 100svh;  /* svh = small viewport height, excludes browser chrome */
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .notch { display: none; }
+}
+
+/* Fallback for browsers that don't support svh */
+@supports not (height: 100svh) {
+  @media (max-width: 500px) {
+    .phone { height: 100vh; }
+  }
+}
+```
+
+---
+
+## Screen Layout Pattern
+
+Every screen is an absolutely positioned div filling the phone container.
+Only one screen is visible at a time.
+
+```javascript
+function render() {
+  const phone = document.getElementById('phone');
+  // Remove previous screen
+  const old = phone.querySelector('.screen');
+  if (old) old.remove();
+
+  // Build and insert new screen
+  const fn = SCREEN_MAP[state.screen];
+  if (!fn) { state.screen = 'entry'; render(); return; }
+
+  const tmp = document.createElement('div');
+  tmp.innerHTML = fn();
+  const screen = tmp.firstElementChild;
+  phone.appendChild(screen);
+
+  // Run post-render hooks (animations, timers, event listeners)
+  postRender();
+}
+```
+
+Each screen function returns a string of HTML. The outermost element must be:
+```html
+<div class="screen" style="position:absolute;inset:0;display:flex;flex-direction:column;background:#F8F7F5;">
+```
+
+---
+
+## Build Order — Phase by Phase
+
+Build and fully test each phase before starting the next.
+Do not build Screen 3 if Screen 2 has broken buttons.
+
+**Phase 1 — Shared components**
+floatInput, otpRow, buttons (primary/secondary/ghost), icon(), logo(),
+sbar(), tbar(), navbar(), switchPill(), faceChip(), faceChipsRow(),
+filterBar(), actionTabs(), photoIllustration(), photoGrid(), photoCell(),
+bottomSheet(), toast(), popup(), eventCard()
+
+Test: render each component in isolation. Confirm inputs work. Confirm buttons fire.
+
+**Phase 2 — Varun's full journey**
+entry → varun-reg → varun-otp → varun-profile →
+varun-home → varun-create-group → varun-sync → varun-tagging → varun-home
+
+- Journey starts from `screenEntry` (journey selector card — tap Varun card → `go('varun-reg')`)
+- Journey ends at `screenVarunHome` after sharing completes — this is the closure state
+- LIVE album card on home taps → `taggingOpenTab='group'; go('varun-tagging')` (Group tab active)
+- "Add memories" button → `taggingOpenTab='my-photos'; go('varun-tagging')` (My Photos tab active)
+- `taggingOpenTab` is a global consumed once in `screenVarunTagging()` reset block
+
+Test every interaction on varun-event:
+- Face chips scroll and toggle filter
+- My Photos / With Me tabs switch content
+- Filter bar category tap shows sub-chips
+- Sub-chip tap dims non-matching photos
+- Long press photo enters selection mode
+- Share FAB appears when photos are selected
+- Every option in share sheet responds
+- Download sheet shows ₹5 and ₹149 pricing
+- Remove shows destructive popup
+- Single tap photo opens full screen
+- Full screen prev/next navigation works
+- Identification sheet opens on tap of unidentified person avatar (contextual, not auto-triggered)
+- Inline search bar expands in top bar on search icon tap (no new screen)
+- Delivery screen progress animates to completion
+
+**Phase 3 — Remaining journeys**
+Beulah: beulah-scene → beulah-web → beulah-reg → beulah-otp → beulah-photos
+Kavitha: kavitha-reg → kavitha-otp → kavitha-profile → kavitha-gallery → kavitha-home → kavitha-event
+Mayank: mayank-scene → mayank-home → mayank-event (NO Moment A or B — all chips pre-identified)
+Vishal: vishal-scene → vishal-web → vishal-reg → vishal-otp → vishal-photos
+
+**Phase 4 — Entry screen + completion**
+5 user cards, completed checkmarks, Share Experience button
+
+---
+
+## Screen 7 — Trip Photos (varun-tagging) ✅ BUILT
+
+### Globals (declared before screenVarunTagging)
+```javascript
+var taggingTab          = 'my-photos'; // active action tab id
+var taggingFilterCat    = '';          // active filter category (legacy)
+var taggingFilterSub    = '';          // active sub-filter (legacy)
+var taggingFaceFilter   = '';          // 'VR'|'MA'|'KA'|'?'|''
+var taggingSelected     = [];          // array of selected photo ids
+var taggingSelectMode   = false;
+var momentAFired        = false;       // guard (kept for legacy compatibility)
+var momentBFired        = false;
+var momentAFace         = -1;
+var taggingLongTimer    = null;
+var groupPoolCount      = 12;          // user's contributed count (caps at 34)
+var groupDisplayCount   = 258;         // total group pool (all members); increments on share
+var taggingSearchActive = false;       // true while inline search bar is open
+var taggingCategory     = '';          // active category pill name
+```
+
+### Photo data
+```javascript
+// 34 photos. Scenes cycle through 9 types; photographer cycles through 10.
+var TRIP_SCENE_LIST = ['bonfire','forest','lake','night','waterfall',
+                       'food','selfie','travel','group'];
+var TRIP_BY_LIST    = ['VR','MA','KA','?','VR','MA','KA','VR','?','MA'];
+var TRIP_PHOTOS = (function() {
+  var arr = [];
+  for (var i = 1; i <= 34; i++) {
+    arr.push({ id: i, scene: TRIP_SCENE_LIST[(i-1)%9],
+               by: TRIP_BY_LIST[(i-1)%10], day: i <= 18 ? 1 : 2 });
+  }
+  return arr;
+}());
+```
+
+### Key functions
+| Function | Purpose |
+|---|---|
+| `sceneThumb(scene)` | Returns gradient+SVG HTML for a photo thumbnail |
+| `taggingPhotoCell(photo)` | Returns one grid cell with checkbox overlay |
+| `taggingTapPhoto(id)` | Toggle selection in selection mode |
+| `taggingLongStart(id,e)` / `taggingLongEnd()` | 600ms long-press detection |
+| `taggingEnterSelect(firstId)` | Enter selection mode, show checkboxes, swap top bar |
+| `taggingExitSelect()` | Exit selection mode, hide checkboxes, restore top bar |
+| `taggingRestoreTopBar()` | Rebuild default top bar HTML in-place |
+| `taggingSetFace(face)` | Toggle people-avatar filter + update photo opacities; uses `people-avatar-{id}` elements |
+| `taggingSetCategory(cat)` | Toggle category pill (maps to scene via CAT_SCENE_MAP) + set photo opacity |
+| `taggingSetTab(tab)` | Switch tabs (group/saved/downloaded/my-photos) + rebuild grid for group tab |
+| `taggingToggleSearch()` | Swap top bar to inline search input (opacity animation) |
+| `taggingCloseSearch()` | Collapse inline search, restore default top bar |
+| `taggingIdentifyPerson(personId)` | Look up person gradient/count, call `showIdentifySheet` |
+| `showIdentifySheet(personId, count, avatarBg)` | "Is this you?" sheet — 72px gradient avatar, name chips (no text input), Confirm/Not sure |
+| `identifyPickName(name)` | Highlight selected chip, store in `identifySelectedName`, enable Confirm |
+| `confirmIdentify(personId)` | Read `identifySelectedName`, update avatar to identified state, re-wire tap to `taggingSetFace`, toast |
+| `taggingShowThreeDot()` | Three-dot overlay sheet |
+| `showMomentA()` | Legacy sheet (no longer auto-fired) |
+| `momentASelectFace(idx)` / `dismissMomentA` | Legacy Moment A helpers |
+| `showMomentB()` / `momentBSuggest` / `momentBNameInput` / `dismissMomentB` | Legacy Moment B helpers |
+| `showTaggingShareSheet()` | Compact member-avatar share sheet: "Share N photos" title, 6 member avatars (all checked), single CTA → `doShareWithGroup()` |
+| `doShareWithGroup()` | Flash animation + exit select + update badge + group tab + toast "N photos shared ✓" → `go('varun-home')` after 1600ms. No dedicated success screen. |
+
+### postRender hook
+No auto-fire timers for varun-tagging. Identification is contextual — triggered only when the
+user taps an unidentified person avatar. screenVarunTagging() resets all tagging globals at the
+top of the function so each visit starts clean.
+
+### Selection mode — in-place DOM mutation pattern
+Top bar swap (no re-render):
+- Enter: `document.getElementById('tagging-top-bar').innerHTML = 'Cancel ... X selected ...'`
+- Exit: `taggingRestoreTopBar()` rebuilds the original back/title/icons HTML
+
+Checkbox visibility: `check-{id}` divs always exist in DOM; `display:none` ↔ `display:flex`
+
+Share FAB: pill button (`id="tagging-share-fab"`, `border-radius:24px`) with share icon + `<span id="tagging-fab-label">`. Label updates live: "Share (1)" on enter, "Share (N)" on each tap toggle. `display:none` ↔ `display:flex` toggled by `taggingEnterSelect` / `taggingExitSelect`. Consistent across ALL tabs (Group, Saved, Downloaded, My Photos) — positioned absolute within the screen, independent of grid content.
+
+### Group tab (formerly Group Pool)
+Tab IDs: `['group', 'saved', 'downloaded', 'my-photos']` — in that order, left to right.
+Active tab style: `color:T.blue`, `fontWeight:600`, `border-bottom:2px solid T.blue`.
+
+- `taggingSetTab('group')` rebuilds `#tagging-grid` with pool photos using `taggingPhotoCell()` — selection/long-press works on Group tab exactly as on My Photos
+- Any other tab also rebuilds full grid via `taggingPhotoCell()`
+- Badge: `#ttab-group-badge` span inside the Group tab button; updated by `doShareWithGroup`
+- `groupPoolCount` — user's contributed photo count (starts 12, caps at 34)
+- `groupDisplayCount` — total group pool count across all members (starts 258, increments on share)
+- `doShareWithGroup()` increments both; badge shows `groupDisplayCount`
+
+### Category pills
+```javascript
+var CAT_SCENE_MAP = {
+  'Bonfire':'bonfire', 'Forest':'forest', 'Lake':'lake',
+  'Night':'night', 'Waterfall':'waterfall', 'Food':'food',
+  'Selfies':'selfie', 'Travel':'travel', 'Group':'group'
+};
+```
+Each pill has: `id="fcat-{cat}"`, colored bg/text, emoji + label, 34px height, 20px border-radius.
+`taggingSetCategory(cat)` maps the pill name → scene key → dims non-matching photos to opacity 0.12.
+
+### People row (circular avatars)
+- 4 circular avatars: VR (You — identified), MA/KA/unk (Unknown — unidentified)
+- Each: 56px circle, colored gradient bg, colored ring (solid=identified, dashed=unidentified)
+- Name label below (11px), photo count in brackets (10px)
+- Tap identified → `taggingSetFace(face)` toggles filter + dims other photos to 0.15
+- Tap unidentified → `taggingIdentifyPerson(personId)` → `showIdentifySheet(personId, count, avatarBg)`
+- Identify sheet: "Is this you?" headline, person's saturated gradient avatar (72px), name chips (Varun/Mayank/Kavitha/Beulah/Vishal), no text input. Tap chip → `identifyPickName` highlights it + enables Confirm. "Not sure" dismisses.
+- After `confirmIdentify`: `identifySelectedName` is read, avatar updates to identified state, ring becomes solid, tap re-wired to `taggingSetFace`. Fires once per person.
+- Global `identifySelectedName = ''` — reset at top of `showIdentifySheet`.
+- Element IDs: `people-avatar-VR`, `people-avatar-MA`, `people-avatar-KA`, `people-avatar-unk`
+
+### Inline search
+- Tap search icon → `taggingToggleSearch()`: replaces top bar innerHTML with input bar
+- Opacity animation (0→1) on wrapper via double `requestAnimationFrame` for smooth reveal
+- Input auto-focused after animation
+- × button → `taggingCloseSearch()` → `taggingRestoreTopBar()`
+
+### Illustrated scene thumbnails
+9 scenes, each defined in `sceneThumb()` config object:
+bonfire (amber/orange), forest (deep green), lake (blue), night (dark purple),
+waterfall (teal), food (terracotta), selfie (magenta), travel (brown), group (coral red).
+Each has a `g` (CSS gradient string) and `s` (SVG inner HTML with decorative paths).
+Scene hex colors are illustration content — not design tokens.
+
+---
+
+## Test Gate — Run After Every Screen
+
+Before moving to the next screen, verify:
+
+1. Every input field — tap it, type, confirm label floats up and stays up
+2. Every button — tap it, confirm it responds (navigates, opens sheet, shows toast)
+3. Every sheet — open it, tap every option inside, confirm no blocking
+4. Back button — confirm it returns to the correct previous screen
+5. Switch Journey pill — confirm it's visible and returns to entry
+6. No dead ends — every tappable element does something
+
+If any item fails — fix it before proceeding. This rule is non-negotiable.
+
+---
+
+## Moment A — Identify Yourself Sheet
+
+Auto-triggers 1.2 seconds after varun-event first renders (and kavitha-event after sync completes).
+Only triggers if `state.identifiedFaces.length === 0`.
+
+Sheet contains:
+- Headline: "Which one is you?" 20px 800
+- Sub: "Tap your face so we know who you are." 13px secondary colour
+- 3×2 grid of face tiles (coloured squares with initials — simulates cropped face photos)
+- "That's me" primary button — DISABLED until a face tile is tapped
+- "Skip for now" ghost button — same height and width as primary, always enabled
+
+On face tile tap: tile gets blue border + checkmark badge. "That's me" button activates.
+On "That's me": close sheet, show toast "You're identified!", trigger Moment B after 2s.
+On "Skip": close sheet, trigger Moment B after 2s if unidentified faces remain.
+
+---
+
+## Moment B — Identify Others Sheet
+
+Partial height sheet (~65% screen). Appears for each unidentified face chip in turn.
+Shows one face at a time. Never more than one.
+
+Sheet contains:
+- 80px circle showing a coloured placeholder (simulates cropped face)
+- "This person appears in X of your photos." 13px secondary
+- Name input field (use inline JS floated label pattern from above)
+- Suggestion chips row: Beulah / Kavitha / Mayank / Vishal / Anand
+  Each chip is a real `<button>` that on tap fills the name input AND floats its label
+- "Confirm" primary button — disabled until name input has content
+- "Skip" ghost button — same height, always enabled
+
+On suggestion chip tap:
+```javascript
+function fillMomBName(name) {
+  const inp = document.getElementById('momB-input');
+  const lbl = document.getElementById('momB-input-lbl');
+  if (!inp) return;
+  inp.value = name;
+  inp.style.border = `0.5px solid ${T.blueBdr}`;
+  if (lbl) lbl.style.cssText = `position:absolute;left:14px;background:#fff;
+    pointer-events:none;top:0;transform:translateY(-50%);font-size:11px;
+    font-weight:600;color:${T.textT};padding:0 4px;`;
+  // Enable confirm button
+  const btn = document.getElementById('momB-confirm');
+  if (btn) btn.disabled = false;
+}
+```
+
+On Confirm: save to `state.identifiedFaces`, close sheet, show toast "[name] identified!",
+after 1s show next unidentified face sheet. When all done: dismiss permanently.
+On Skip: mark as skipped in state, move to next face.
+
+---
+
+## Mayank — Pre-identified, Zero Friction
+
+Mayank is an existing PixSlay user. His event screen must make this obvious:
+
+- ALL face chips are pre-identified and blue from first render — no grey chips
+- NO Moment A sheet
+- NO Moment B sheet
+- Sync bar starts at 60% (phone was off) and completes to 100% over ~3 seconds
+- On completion: green toast "All your Karjat photos are here. Everyone's already identified."
+- This contrast with Varun's journey (no face ID steps, straight to browsing) IS the product insight
+
+---
+
+## WhatsApp Scene Setters
+
+Beulah's scene setter shows a WhatsApp message card:
+- Chat label, avatar, message bubble from Varun with a tappable PixSlay link card inside
+- Text: "It's Sunday morning. Varun just sent you this."
+- CTA: "Tap the link"
+
+Vishal's scene setter shows a WhatsApp group conversation:
+- 3 message bubbles: Varun (Saturday), Mayank (Sunday morning), Vishal reply (Sunday afternoon)
+- Left-aligned bubbles (others), right-aligned bubble (Vishal's own reply) in blue
+- Text: "It's Sunday afternoon. You finally gave in."
+- CTA: "Tap the link"
+
+---
+
+## Photo Sync Screen (varun-sync)
+
+### Flow order — screen → sheet → sync
+1. `screenVarunSync()` renders: informational card (State A copy), no inline CTAs.
+   Sticky bottom: "Set up trip photos" (blue) + "I'll do this later" (ghost).
+2. "Set up trip photos" → `showSyncReassuranceSheet()` opens the sheet.
+3. Sheet: "When should we look for trip photos?" — 4 pre-filled fields, "Allow access & continue" / "Cancel".
+4. "Allow access & continue" → `closeSyncReassuranceSheet(true)`:
+   — saves field values to state.syncTiming
+   — calls `syncUpdateCardToRunning()` (swaps card to State B/C copy)
+   — calls `syncSetStickyState('syncing')` (primary becomes "View my photos" disabled)
+   — calls `syncStartPhase1()`
+5. "Cancel" or overlay tap → `closeSyncReassuranceSheet(false)` → no save, no sync.
+
+### Card content swap — syncUpdateCardToRunning()
+Updates these IDs in-place (no re-render):
+  sync-card-title  → "You're all set for Karjat."
+  sync-card-sub    → "Just enjoy the trip and keep clicking photos."
+  sync-card-window → display:none (trip window line hidden)
+  sync-card-status → display:block, text = "Looking from [fromDate], [fromTime] to [toDate], [toTime]"
+
+### Sticky bottom area — dynamic state swap (no re-render)
+```javascript
+syncSetStickyState('syncing')  // "View my photos" disabled, grey
+syncSetStickyState('done')     // "View my photos" active, blue, onclick → varun-tagging
+```
+Both target id="sync-primary-btn" and update textContent, disabled, style, onclick in-place.
+Called from: closeSyncReassuranceSheet(true) → 'syncing'; syncComplete() → 'done'.
+"I'll do this later" ghost is always static — always goes to varun-home.
+
+### Reassurance sheet
+```javascript
+showSyncReassuranceSheet()          // appends overlay, slides sheet up, focuses sr-from-time
+closeSyncReassuranceSheet(bool)     // saves timing if bool=true, slides sheet down, starts or cancels
+```
+Sheet always shows all 4 fields (no expand mechanic). Fields: sr-from-date, sr-from-time,
+sr-to-date, sr-to-time — all floatInput, type="text", inputmode="text".
+Auto-focus: sr-from-time (users mainly adjust time, not date).
+Helper text: "We'll only use this to find photos from the trip." 11px #A8A49F centered.
+
+### Saving edited values
+closeSyncReassuranceSheet(true) reads all 4 field values and writes non-empty ones to
+state.syncTiming before closing. state.syncTiming is the single source of truth —
+the sync card subtext reads from it on render.
+
+### Progress animation
+- Phase 1: syncStartPhase1() — counter shows "Scanning N photos..." from first tick
+- At 60%: amber banner, 1s pause, then syncStartPhase2()
+- At 100%: syncComplete():
+  — hides sync-card-status (trip window line moves into results section, no duplication)
+  — fades progress section out (300ms), then fades results in
+  — calls syncSetStickyState('done')
+
+### Results section layout (sync-results div)
+Rendered at screen build time, hidden (display:none, opacity:0) until syncComplete().
+Contains in order:
+  1. Two-stat flex row: "34 Trip photos" | "2 Trip videos" — 28px 800 numbers, vertical divider
+  2. Contextual trip window line — 11px #A8A49F, reads state.syncTiming at render time
+  3. Photo preview strip — 5 flex children with flex:1, aspect-ratio:1, border-radius:10px
+     Four gradient thumbnails (scene colours) + "+27" overflow pill (#F0EEEB bg)
+     Not interactive — static decoration only
+  4. Privacy line — 12px #A8A49F centered
+
+### Progress animation
+- Phase 1: `syncStartPhase1()` — setInterval every 25ms, +1.0 per tick, 0→60%
+  - At 60%: show amber banner, pause 1s, then call `syncStartPhase2()`
+- Phase 2: `syncStartPhase2()` — setInterval every 37ms, +1.0 per tick, 60→100%
+  - At 100%: call `syncComplete()`
+- `syncComplete()`: sets syncDone=true, fades out progress section, fades in results row,
+  activates "View my photos" button.
+
+### Globals — reset in postRender on every visit
+```javascript
+var syncPhaseInt = null;
+var syncProg     = 0;
+var syncDone     = false;
+// postRender resets these so re-entering the screen always starts clean
+```
+
+### "View my photos" and "I'll do this later"
+- "View my photos": disabled (background bgSub, text textT) until syncDone===true.
+  On complete: background=blue, color=white, cursor=pointer.
+- "I'll do this later": always active ghost button, same height (44px) as any adjacent secondary.
+  Never greyed or hidden — the app does not guilt-trip users.
+
+---
+
+## Delivery Screen
+
+Shows a list of all 5 guests with photo counts and Ready/Awaiting status badges.
+"Deliver now — it's free" primary button triggers an animated progress bar.
+Progress animates 0→100% over 4 seconds.
+On completion: status updates, toast "All photos delivered!", button changes to
+"Done — back to events" which calls markComplete('varun').
+
+---
+
+## Transitions and Animations — Minimal, Modern
+
+All transitions use CSS only. No JS animation libraries. No external dependencies.
+Duration: 280ms for screens and sheets. 200ms for components. Easing: cubic-bezier(0.4,0,0.2,1) throughout — this is Material Design standard easing, feels native on both iOS and Android.
+Never animate layout properties (width, height, padding, margin) — only transform and opacity.
+
+### Screen transitions — slide in from right, slide out to left
+```css
+@keyframes slideIn  { from { transform:translateX(100%); opacity:0; } to { transform:translateX(0); opacity:1; } }
+@keyframes slideOut { from { transform:translateX(0); opacity:1; } to { transform:translateX(-8%); opacity:0; } }
+.screen-enter { animation: slideIn  0.28s cubic-bezier(0.4,0,0.2,1) forwards; }
+.screen-exit  { animation: slideOut 0.28s cubic-bezier(0.4,0,0.2,1) forwards; }
+```
+Apply `.screen-enter` to the incoming screen and `.screen-exit` to the outgoing screen simultaneously in render().
+
+### Tab switching — sliding panel, never a jump, never a full re-render
+My Photos / With Me tabs and action tabs must slide content, not swap it abruptly.
+Never call render() on a tab switch — it causes a full DOM rebuild which looks like a hard cut.
+Instead, use a sliding wrapper:
+
+```html
+<!-- Tab panels sit side by side in a flex row -->
+<div id="tab-wrapper" style="display:flex;width:200%;transition:transform 0.28s cubic-bezier(0.4,0,0.2,1);will-change:transform;">
+  <div style="width:50%;"><!-- My Photos content --></div>
+  <div style="width:50%;"><!-- With Me content --></div>
+</div>
+```
+
+```javascript
+function setMainTab(t) {
+  state.activeFilters.mainTab = t;
+  const wrapper = document.getElementById('tab-wrapper');
+  if (wrapper) wrapper.style.transform = t === 'my' ? 'translateX(0%)' : 'translateX(-50%)';
+  // Update only the tab indicator underlines — no full re-render
+  document.querySelectorAll('.main-tab-btn').forEach(btn => {
+    const isActive = btn.dataset.tab === t;
+    btn.style.fontWeight  = isActive ? '600' : '400';
+    btn.style.color       = isActive ? T.text : T.textT;
+    btn.style.borderBottom = isActive ? `2px solid ${T.blue}` : '2px solid transparent';
+  });
+}
+```
+
+### Bottom sheets — slide up from bottom
+```css
+.sheet-overlay { position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end; }
+.sheet-card    { width:100%;background:#fff;border-radius:20px 20px 0 0;
+                 transform:translateY(100%);transition:transform 0.28s cubic-bezier(0.4,0,0.2,1);
+                 will-change:transform; }
+.sheet-card.open { transform:translateY(0); }
+```
+Open: add class `open` to `.sheet-card` on next frame after inserting into DOM.
+Close: remove class `open`, then remove element after transition ends (280ms).
+
+### Filter sub-chips row — slides down, not a jump
+```css
+.sub-chips-row { max-height:0; overflow:hidden; transition:max-height 0.2s cubic-bezier(0.4,0,0.2,1); }
+.sub-chips-row.open { max-height:48px; }
+```
+
+### Photo grid filter dimming — smooth opacity
+```css
+.photo-cell            { transition:opacity 0.25s ease; }
+.photo-cell.dim        { opacity:0.15; }
+```
+
+### Face chip identification — colour transition
+```css
+.face-chip { transition:background 0.15s ease, color 0.15s ease; }
+```
+
+### General rules
+- `will-change:transform` only on elements that animate — do not apply globally
+- No bounce, overshoot, or spring physics — calm and precise only
+- No third-party animation libraries — zero dependencies
+- All durations in milliseconds: screens/sheets 280ms, components 200ms, micro-interactions 150ms
+
+---
+
+## Common Mistakes — Do Not Repeat
+
+| What went wrong | What to do instead |
+|---|---|
+| CSS ~ selector for floating label | JS inline style on onfocus/onblur |
+| Single hidden 1px OTP input | 6 real `<input>` elements |
+| Sheet overlay blocking sheet buttons | `onclick="event.stopPropagation()"` on inner card |
+| photoTap() only works in selection mode | Single tap always opens full screen |
+| FAB as flex child of nav bar | FAB is `position:absolute` inside `position:relative` nav bar |
+| Fixed 844px height on mobile | `100svh` with `100vh` fallback via `@supports` |
+| Missing My Photos / With Me tabs | Required in every event screen — see structure above |
+| Moving to next screen before testing current | Test gate after every screen, no exceptions |
+| Rewriting a function and losing dependent functions | Search for all callers before rewriting anything |
+| Black `#111` desktop background | Use `#E8E4DF` warm grey |
+| Filter chips that render but don't respond | Use real `<button>` elements with `onclick`, not styled divs |
+| Suggestion chips in Moment B that don't fill input | Use fillMomBName() with direct style manipulation |
