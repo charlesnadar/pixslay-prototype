@@ -1145,7 +1145,7 @@
 
             '<p style="text-align:center;font-size:10px;font-weight:500;' +
                       'color:' + T.textT + ';margin-top:8px;letter-spacing:.04em;">' +
-              'v21' +
+              'v22' +
             '</p>' +
 
           '</div>' +
@@ -7771,6 +7771,59 @@
       }
 
     }
+
+    /* ─────────────────────────────────────────────────────
+       DEBUG OVERLAY — triple-tap bottom-right corner to toggle
+       Shows raw pixel values so we can diagnose layout gaps on iOS.
+       Remove once layout is confirmed correct.
+    ───────────────────────────────────────────────────── */
+    (function() {
+      var _tc = 0, _tt = 0;
+      document.addEventListener('touchend', function(e) {
+        var t = e.changedTouches[0];
+        /* Bottom-right 60×60px zone */
+        if (t.clientX < window.innerWidth - 60 || t.clientY < window.innerHeight - 60) {
+          _tc = 0; return;
+        }
+        var now = Date.now();
+        if (now - _tt > 700) _tc = 0;
+        _tt = now;
+        _tc++;
+        if (_tc >= 3) {
+          _tc = 0;
+          var el = document.getElementById('_dbg');
+          if (el) { el.remove(); return; }
+          var phone  = document.getElementById('phone');
+          var screen = phone ? phone.querySelector('.screen') : null;
+          var vv     = window.visualViewport;
+          var lines  = [
+            'innerW  : ' + window.innerWidth,
+            'innerH  : ' + window.innerHeight,
+            'vv.h    : ' + (vv ? Math.round(vv.height) : 'n/a'),
+            'vv.w    : ' + (vv ? Math.round(vv.width)  : 'n/a'),
+            'screen.h: ' + window.screen.height,
+            'screen.w: ' + window.screen.width,
+            'dpr     : ' + window.devicePixelRatio,
+            'phone H : ' + (phone  ? phone.offsetHeight  : 'n/a'),
+            'phone pH: ' + (phone  ? phone.style.height  : 'n/a'),
+            'scr  H  : ' + (screen ? screen.offsetHeight : 'n/a'),
+            'scr pH  : ' + (screen ? screen.style.height : 'n/a'),
+            'safeTop : ' + getComputedStyle(document.documentElement).getPropertyValue('--safe-top'),
+            'standalone: ' + (window.navigator.standalone === true || window.matchMedia('(display-mode:standalone)').matches),
+          ];
+          var box = document.createElement('div');
+          box.id = '_dbg';
+          box.style.cssText = [
+            'position:fixed','bottom:80px','left:12px','right:12px','z-index:99999',
+            'background:rgba(0,0,0,.88)','color:#0f0','font:12px/1.7 monospace',
+            'padding:12px 14px','border-radius:10px','white-space:pre',
+            'pointer-events:none'
+          ].join(';');
+          box.textContent = lines.join('\n');
+          document.body.appendChild(box);
+        }
+      });
+    }());
 
     /* ─────────────────────────────────────────────────────
        BOOT
