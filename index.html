@@ -1073,7 +1073,7 @@
 
             '<p style="text-align:center;font-size:10px;font-weight:500;' +
                       'color:' + T.textT + ';margin-top:8px;letter-spacing:.04em;">' +
-              'v32' +
+              'v33' +
             '</p>' +
 
           '</div>' +
@@ -5204,136 +5204,121 @@
 
     /* ── K1: Scene-setter — Varun shows her the app at the campsite ── */
     function screenKavithaScene() {
+      /* One notification card helper */
+      function notifCard(iconBg, iconHtml, appName, time, title, body, tapFn) {
+        return (
+          '<div onclick="' + (tapFn || '') + '"' +
+               ' style="background:rgba(255,255,255,.14);backdrop-filter:blur(12px);' +
+                       'border-radius:16px;padding:12px 14px;margin-bottom:8px;' +
+                       'border:1px solid rgba(255,255,255,.10);' +
+                       (tapFn ? 'cursor:pointer;' : '') + '">' +
+            '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">' +
+              '<div style="width:22px;height:22px;border-radius:6px;flex-shrink:0;' +
+                          'background:' + iconBg + ';' +
+                          'display:flex;align-items:center;justify-content:center;">' +
+                iconHtml +
+              '</div>' +
+              '<span style="font-size:11px;font-weight:600;color:rgba(255,255,255,.65);' +
+                           'flex:1;letter-spacing:.02em;">' + appName + '</span>' +
+              '<span style="font-size:11px;color:rgba(255,255,255,.4);">' + time + '</span>' +
+            '</div>' +
+            '<p style="font-size:13px;font-weight:700;color:#fff;margin-bottom:2px;">' + title + '</p>' +
+            '<p style="font-size:12px;color:rgba(255,255,255,.7);line-height:1.4;">' + body + '</p>' +
+          '</div>'
+        );
+      }
+
+      /* WhatsApp icon SVG */
+      var waIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.135.558 4.14 1.535 5.878L0 24l6.337-1.513A11.94 11.94 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.793 9.793 0 0 1-5.006-1.371l-.36-.213-3.76.898.939-3.648-.234-.374A9.768 9.768 0 0 1 2.182 12C2.182 6.57 6.57 2.182 12 2.182c5.43 0 9.818 4.388 9.818 9.818 0 5.43-4.388 9.818-9.818 9.818z"/></svg>';
+
       return (
         '<div class="screen"' +
              ' style="position:absolute;inset:0;display:flex;flex-direction:column;' +
-                    'background:' + T.bgWarm + ';">' +
+                    'background:linear-gradient(160deg,#1a1a2e 0%,#16213e 45%,#0f3460 100%);">' +
 
           switchPill() +
-          sbar(T.bgWarm) +
+          sbar('transparent') +
 
-          /* ── Scrollable content ── */
-          '<div style="flex:1;overflow-y:auto;padding:24px 20px 0;">' +
-
-            /* Logo */
-            '<div style="margin-bottom:28px;">' + logo(22, 17) + '</div>' +
-
-            /* Narrative */
-            '<p style="font-size:22px;font-weight:800;color:' + T.text + ';' +
-                      'line-height:1.25;margin-bottom:8px;">' +
-              'Saturday afternoon<br>at the campsite.' +
+          /* ── Clock area ── */
+          '<div style="text-align:center;padding:28px 20px 16px;flex-shrink:0;">' +
+            '<p style="font-size:62px;font-weight:200;color:#fff;' +
+                      'letter-spacing:-2px;line-height:1;margin-bottom:4px;">9:24</p>' +
+            '<p style="font-size:14px;font-weight:400;color:rgba(255,255,255,.65);">' +
+              'Saturday, 24 May' +
             '</p>' +
-            '<p style="font-size:14px;font-weight:400;color:' + T.textS + ';' +
-                      'line-height:1.6;margin-bottom:24px;">' +
-              'Varun pulls out his phone and shows you something. ' +
-              'All the trip photos — automatically organised, faces already matched.' +
-            '</p>' +
+          '</div>' +
 
-            /* Mini album preview card — what Varun is showing */
-            '<div style="background:#fff;border-radius:16px;overflow:hidden;' +
-                        'box-shadow:0 4px 20px rgba(0,0,0,.10);margin-bottom:20px;">' +
+          /* ── Quick-toggle row (Samsung style) ── */
+          '<div style="display:flex;justify-content:center;gap:18px;' +
+                      'padding:0 20px 18px;flex-shrink:0;">' +
+            (function () {
+              var toggles = [
+                { icon:'📶', on:true  },
+                { icon:'🔵', on:true  },
+                { icon:'✈️', on:false },
+                { icon:'🔦', on:false },
+                { icon:'🔔', on:true  },
+              ];
+              return toggles.map(function(t) {
+                return (
+                  '<div style="width:38px;height:38px;border-radius:50%;' +
+                              'background:' + (t.on ? 'rgba(255,255,255,.25)' : 'rgba(255,255,255,.08)') + ';' +
+                              'display:flex;align-items:center;justify-content:center;' +
+                              'font-size:15px;">' +
+                    t.icon +
+                  '</div>'
+                );
+              }).join('');
+            }()) +
+          '</div>' +
 
-              /* Cover with photo strip */
-              '<div style="height:140px;position:relative;overflow:hidden;">' +
-                '<img src="' + PHOTO_FILES[6] + '"' +
-                     ' style="width:100%;height:100%;object-fit:cover;display:block;">' +
-                '<div style="position:absolute;inset:0;' +
-                             'background:linear-gradient(to bottom,rgba(0,0,0,.04),rgba(0,0,0,.52));"></div>' +
+          /* ── Notifications ── */
+          '<div style="flex:1;overflow-y:auto;padding:0 14px 16px;" class="pscroll">' +
 
-                /* LIVE badge */
-                '<div style="position:absolute;top:10px;right:10px;' +
-                             'background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.35);' +
-                             'border-radius:20px;backdrop-filter:blur(8px);' +
-                             'padding:3px 9px;display:flex;align-items:center;gap:4px;">' +
-                  '<div style="width:6px;height:6px;border-radius:50%;background:#4ade80;' +
-                               'box-shadow:0 0 0 2px rgba(74,222,128,.35);"></div>' +
-                  '<span style="font-size:11px;font-weight:700;color:#fff;letter-spacing:.5px;">LIVE</span>' +
-                '</div>' +
+            '<p style="font-size:11px;font-weight:600;color:rgba(255,255,255,.45);' +
+                      'letter-spacing:.08em;text-transform:uppercase;' +
+                      'margin-bottom:10px;padding-left:4px;">Notifications</p>' +
 
-                /* Mini thumb strip */
-                '<div style="position:absolute;bottom:10px;left:12px;display:flex;gap:3px;">' +
-                  (function () {
-                    var ti = [0, 5, 9, 13]; var out = '';
-                    for (var si = 0; si < ti.length; si++) {
-                      out += '<div style="width:28px;height:28px;border-radius:5px;overflow:hidden;' +
-                                         'border:1.5px solid rgba(255,255,255,.5);">' +
-                               '<img src="' + PHOTO_FILES[ti[si]] + '"' +
-                                    ' style="width:100%;height:100%;object-fit:cover;display:block;">' +
-                             '</div>';
-                    }
-                    return out;
-                  }()) +
-                '</div>' +
-              '</div>' +
+            /* Google Pay */
+            notifCard(
+              '#1a73e8',
+              '<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><text y="14" font-size="13">G</text></svg><span style="font-size:11px;font-weight:800;color:#fff;line-height:1;">G</span>',
+              'Google Pay',
+              '9:01',
+              '₹500 received',
+              'Mayank Mehta paid you ₹500 via UPI',
+              ''
+            ) +
 
-              /* Card footer */
-              '<div style="padding:12px 14px 14px;' +
-                          'display:flex;align-items:center;justify-content:space-between;">' +
-                '<div>' +
-                  '<p style="font-size:14px;font-weight:700;color:' + T.text + ';margin-bottom:2px;">' +
-                    'Mumbai — Karjat' +
-                  '</p>' +
-                  '<p style="font-size:12px;font-weight:400;color:' + T.textS + ';">' +
-                    '34 photos · 5 people' +
-                  '</p>' +
-                '</div>' +
-                /* Face stack */
-                '<div style="display:flex;">' +
-                  (function () {
-                    var cols = ['#1B4FD8','#880E4F','#E65100','#1B5E20'];
-                    var ini  = ['VR','BE','MA','KA'];
-                    var out  = '';
-                    for (var fi = cols.length - 1; fi >= 0; fi--) {
-                      out += '<div style="width:28px;height:28px;border-radius:50%;' +
-                                         'background:' + cols[fi] + ';' +
-                                         'border:2px solid #fff;' +
-                                         'margin-left:' + (fi < cols.length - 1 ? '-8px' : '0') + ';' +
-                                         'display:flex;align-items:center;justify-content:center;' +
-                                         'font-size:9px;font-weight:800;color:#fff;">' +
-                               ini[fi] +
-                             '</div>';
-                    }
-                    return out;
-                  }()) +
-                '</div>' +
-              '</div>' +
-            '</div>' +
+            /* Swiggy */
+            notifCard(
+              '#FC8019',
+              '<span style="font-size:12px;">🛵</span>',
+              'Swiggy',
+              '9:12',
+              'Your order is on the way!',
+              'Paneer butter masala arriving in 8 mins 🍛',
+              ''
+            ) +
 
-            /* Value prop row */
-            '<div style="display:flex;gap:10px;margin-bottom:32px;">' +
-              (function () {
-                var props = [
-                  { icon: '📸', label: 'Auto-sync\nyour shots' },
-                  { icon: '🙋', label: 'Faces\nalready known' },
-                  { icon: '🔒', label: 'Your photos\nstay private' },
-                ];
-                var out = '';
-                for (var pi = 0; pi < props.length; pi++) {
-                  out += '<div style="flex:1;background:#fff;border-radius:12px;padding:12px 8px;' +
-                                     'text-align:center;box-shadow:0 1px 6px rgba(0,0,0,.05);">' +
-                           '<div style="font-size:20px;margin-bottom:4px;">' + props[pi].icon + '</div>' +
-                           '<p style="font-size:10px;font-weight:600;color:' + T.textS + ';' +
-                                     'line-height:1.4;white-space:pre-line;">' +
-                             props[pi].label +
-                           '</p>' +
-                         '</div>';
-                }
-                return out;
-              }()) +
-            '</div>' +
+            /* WhatsApp — TAPPABLE */
+            notifCard(
+              '#25D366',
+              waIcon,
+              'WhatsApp',
+              'now',
+              'Varun Tiwari',
+              'Trip ke photos sab ek jagah hai — join kar 📸 pixslay.app/join/karjat-2405',
+              'openApp(\'kavitha-home\')'
+            ) +
 
           '</div>' +
 
-          /* ── Sticky CTA ── */
-          '<div style="padding:12px 20px 28px;flex-shrink:0;">' +
-            '<button onclick="go(\'varun-reg\')"' +
-              ' style="display:block;width:100%;height:52px;border-radius:14px;border:none;' +
-                     'background:' + T.blue + ';color:#fff;' +
-                     'font-family:inherit;font-size:16px;font-weight:700;' +
-                     'cursor:pointer;' +
-                     'box-shadow:0 4px 16px rgba(27,79,216,.28);">' +
-              'Install PixSlay' +
-            '</button>' +
+          /* ── Swipe hint ── */
+          '<div style="text-align:center;padding:8px 20px 20px;flex-shrink:0;">' +
+            '<div style="width:40px;height:4px;border-radius:2px;' +
+                        'background:rgba(255,255,255,.25);margin:0 auto 8px;"></div>' +
+            '<p style="font-size:11px;color:rgba(255,255,255,.35);">Tap WhatsApp notification to open</p>' +
           '</div>' +
 
         '</div>'
