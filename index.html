@@ -1073,7 +1073,7 @@
 
             '<p style="text-align:center;font-size:10px;font-weight:500;' +
                       'color:' + T.textT + ';margin-top:8px;letter-spacing:.04em;">' +
-              'v34' +
+              'v35' +
             '</p>' +
 
           '</div>' +
@@ -4691,51 +4691,167 @@
       );
     }
 
-    /* ── B2: Dummy install screen ── */
+    /* ── B2: Play Store install screen ── */
     function screenBeulahInstall() {
-      /* Auto-advance to login after 2.2s */
-      setTimeout(function () {
-        var bar = document.getElementById('install-bar-fill');
-        if (bar) bar.style.width = '100%';
-        setTimeout(function () {
-          activeJourney  = 'beulah';
-          otpDest        = 'varun-profile';   /* name screen first */
-          taggingOpenTab = 'group';
-          hasSynced      = false;
-          go('varun-reg');
-        }, 900);
-      }, 80);
+      return playStoreScreen('beulah', 'varun-reg');
+    }
+
+    /* ── K3: Play Store install screen ── */
+    function screenKavithaInstall() {
+      return playStoreScreen('kavitha', 'kavitha-home');
+    }
+
+    /* ── Shared Play Store UI ── */
+    function playStoreScreen(journey, nextScreen) {
+      function doInstall() {
+        var btn = document.getElementById('ps-install-btn');
+        var bar = document.getElementById('ps-bar-wrap');
+        if (btn) btn.style.display = 'none';
+        if (bar) bar.style.display = 'block';
+        setTimeout(function() {
+          var fill = document.getElementById('ps-bar-fill');
+          if (fill) fill.style.width = '100%';
+        }, 60);
+        setTimeout(function() {
+          if (journey === 'beulah') {
+            activeJourney  = 'beulah';
+            otpDest        = 'varun-profile';
+            taggingOpenTab = 'group';
+            hasSynced      = false;
+          }
+          go(nextScreen);
+        }, 2200);
+      }
+      /* expose so onclick string works */
+      window._psInstall = doInstall;
 
       return (
         '<div class="screen"' +
              ' style="position:absolute;inset:0;display:flex;flex-direction:column;' +
-                    'align-items:center;justify-content:center;' +
-                    'background:#F5F5F7;padding:40px 32px;">' +
+                    'background:#fff;">' +
 
           switchPill() +
-          sbar('#F5F5F7') +
+          sbar('#fff') +
 
-          /* App icon */
-          '<div style="width:88px;height:88px;border-radius:22px;' +
-                      'background:linear-gradient(135deg,' + T.blue + ',#2D7DD2);' +
-                      'display:flex;align-items:center;justify-content:center;' +
-                      'margin-bottom:20px;' +
-                      'box-shadow:0 8px 28px rgba(27,79,216,.3);">' +
-            '<span style="font-size:40px;">📷</span>' +
+          /* Play Store header */
+          '<div style="background:#fff;border-bottom:1px solid #f0f0f0;' +
+                      'padding:10px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;">' +
+            '<svg width="22" height="22" viewBox="0 0 24 24" fill="none"' +
+                 ' stroke="#000" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' +
+              '<polyline points="15 18 9 12 15 6"/>' +
+            '</svg>' +
+            /* Google Play wordmark area */
+            '<div style="flex:1;display:flex;align-items:center;gap:6px;">' +
+              '<div style="display:flex;gap:2px;">' +
+                '<span style="font-size:13px;font-weight:700;color:#4285F4;">G</span>' +
+                '<span style="font-size:13px;font-weight:700;color:#EA4335;">o</span>' +
+                '<span style="font-size:13px;font-weight:700;color:#FBBC05;">o</span>' +
+                '<span style="font-size:13px;font-weight:700;color:#4285F4;">g</span>' +
+                '<span style="font-size:13px;font-weight:700;color:#34A853;">l</span>' +
+                '<span style="font-size:13px;font-weight:700;color:#EA4335;">e</span>' +
+              '</div>' +
+              '<span style="font-size:13px;font-weight:400;color:#555;">Play</span>' +
+            '</div>' +
+            '<svg width="22" height="22" viewBox="0 0 24 24" fill="none"' +
+                 ' stroke="#555" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+              '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>' +
+            '</svg>' +
           '</div>' +
 
-          '<p style="font-size:20px;font-weight:800;color:' + T.text + ';margin-bottom:4px;">PixSlay</p>' +
-          '<p style="font-size:13px;color:' + T.textS + ';margin-bottom:40px;">Installing…</p>' +
+          /* Scrollable content */
+          '<div style="flex:1;overflow-y:auto;" class="pscroll">' +
 
-          /* Progress bar */
-          '<div style="width:100%;height:5px;background:#DDDBD6;border-radius:999px;overflow:hidden;">' +
-            '<div id="install-bar-fill"' +
-                 ' style="width:8%;height:100%;' +
-                        'background:' + T.blue + ';border-radius:999px;' +
-                        'transition:width 1.8s cubic-bezier(0.4,0,0.2,1);"></div>' +
+            /* App hero row */
+            '<div style="display:flex;gap:14px;padding:18px 16px 16px;align-items:flex-start;">' +
+              '<div style="width:76px;height:76px;border-radius:18px;flex-shrink:0;' +
+                          'background:linear-gradient(135deg,#1B4FD8,#2D7DD2);' +
+                          'display:flex;align-items:center;justify-content:center;' +
+                          'box-shadow:0 4px 12px rgba(27,79,216,.25);">' +
+                '<svg width="36" height="36" viewBox="0 0 24 24" fill="none"' +
+                     ' stroke="rgba(255,255,255,.95)" stroke-width="1.8"' +
+                     ' stroke-linecap="round" stroke-linejoin="round">' +
+                  '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>' +
+                  '<circle cx="12" cy="13" r="4"/>' +
+                '</svg>' +
+              '</div>' +
+              '<div style="flex:1;padding-top:2px;">' +
+                '<p style="font-size:18px;font-weight:700;color:#000;margin-bottom:3px;">PixSlay</p>' +
+                '<p style="font-size:12px;color:#01875f;font-weight:500;margin-bottom:8px;">PixSlay Inc.</p>' +
+                '<div style="display:flex;align-items:center;gap:6px;">' +
+                  '<span style="font-size:12px;font-weight:600;color:#555;">4.8</span>' +
+                  '<span style="font-size:13px;color:#FBBC05;">★★★★★</span>' +
+                  '<span style="font-size:11px;color:#999;">· 4.8K</span>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+
+            /* Stats row */
+            '<div style="display:flex;border-top:1px solid #f0f0f0;border-bottom:1px solid #f0f0f0;' +
+                        'padding:12px 0;margin:0 16px 16px;">' +
+              '<div style="flex:1;text-align:center;">' +
+                '<p style="font-size:13px;font-weight:700;color:#000;margin-bottom:2px;">10K+</p>' +
+                '<p style="font-size:11px;color:#777;">Downloads</p>' +
+              '</div>' +
+              '<div style="width:1px;background:#f0f0f0;"></div>' +
+              '<div style="flex:1;text-align:center;">' +
+                '<p style="font-size:13px;font-weight:700;color:#000;margin-bottom:2px;">4.8</p>' +
+                '<p style="font-size:11px;color:#777;">Rating</p>' +
+              '</div>' +
+              '<div style="width:1px;background:#f0f0f0;"></div>' +
+              '<div style="flex:1;text-align:center;">' +
+                '<p style="font-size:13px;font-weight:700;color:#000;margin-bottom:2px;">3+</p>' +
+                '<p style="font-size:11px;color:#777;">Age</p>' +
+              '</div>' +
+            '</div>' +
+
+            /* Screenshot strip */
+            '<div style="display:flex;gap:8px;padding:0 16px 16px;overflow-x:auto;" class="pscroll">' +
+              (function() {
+                var shots = [2, 7, 11, 14];
+                return shots.map(function(i) {
+                  return (
+                    '<div style="width:110px;height:190px;border-radius:12px;overflow:hidden;' +
+                                'flex-shrink:0;border:1px solid #f0f0f0;">' +
+                      '<img src="' + PHOTO_FILES[i] + '"' +
+                           ' style="width:100%;height:100%;object-fit:cover;display:block;">' +
+                    '</div>'
+                  );
+                }).join('');
+              }()) +
+            '</div>' +
+
+            /* About */
+            '<div style="padding:0 16px 24px;">' +
+              '<p style="font-size:14px;font-weight:700;color:#000;margin-bottom:8px;">About this app</p>' +
+              '<p style="font-size:13px;color:#444;line-height:1.6;">' +
+                'Share trip photos with your people — automatically organised, everyone in the right album. ' +
+                'No manual sorting. No group chats full of blurry duplicates.' +
+              '</p>' +
+            '</div>' +
+
           '</div>' +
 
-          '<p style="font-size:11px;color:' + T.textT + ';margin-top:14px;">From the App Store</p>' +
+          /* Install button / progress bar */
+          '<div style="padding:12px 16px 28px;flex-shrink:0;border-top:1px solid #f0f0f0;">' +
+            '<button id="ps-install-btn" onclick="_psInstall()"' +
+              ' style="display:block;width:100%;height:48px;border-radius:24px;border:none;' +
+                     'background:#01875f;color:#fff;' +
+                     'font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;">' +
+              'Install' +
+            '</button>' +
+            '<div id="ps-bar-wrap" style="display:none;">' +
+              '<div style="display:flex;align-items:center;justify-content:space-between;' +
+                          'margin-bottom:6px;">' +
+                '<span style="font-size:12px;color:#555;">Downloading…</span>' +
+                '<span style="font-size:12px;color:#01875f;">PixSlay</span>' +
+              '</div>' +
+              '<div style="height:4px;background:#e0e0e0;border-radius:2px;overflow:hidden;">' +
+                '<div id="ps-bar-fill"' +
+                     ' style="width:4%;height:100%;background:#01875f;border-radius:2px;' +
+                            'transition:width 2s cubic-bezier(0.4,0,0.2,1);"></div>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
 
         '</div>'
       );
@@ -5339,7 +5455,7 @@
               'now',
               'Varun Tiwari',
               'Trip ke photos sab ek jagah hai — join kar 📸 pixslay.app/join/karjat-2405',
-              'openApp(\'kavitha-home\')'
+              'openApp(\'kavitha-install\')'
             ) +
 
           '</div>' +
@@ -7681,6 +7797,7 @@
       'mayank-scene':        screenMayankScene,
       'mayank-home':         screenAlbumListing,
       'kavitha-scene':       screenKavithaScene,
+      'kavitha-install':     screenKavithaInstall,
       'kavitha-home':        screenAlbumListing,
       'vishal-scene':        screenVishalScene,
       'vishal-home':         screenAlbumListing,
