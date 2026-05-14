@@ -1019,12 +1019,9 @@
           '<div style="flex:1;overflow-y:auto;padding:24px 20px 32px;">' +
 
             /* Logo centred, heading left-aligned */
-            '<div style="margin-bottom:20px;padding-top:8px;">' +
-              '<div style="text-align:center;margin-bottom:16px;">' + logo(36, 26) + '</div>' +
-              '<p style="font-size:20px;font-weight:800;color:' + T.text + ';margin-bottom:2px;">' +
-                'Choose a journey' +
-              '</p>' +
-              '<p style="font-size:13px;font-weight:400;color:' + T.textS + ';">to explore</p>' +
+            /* Logo */
+            '<div style="text-align:center;padding-top:8px;margin-bottom:20px;">' +
+              logo(36, 26) +
             '</div>' +
 
             /* Before you start — notes + refresh button */
@@ -1064,11 +1061,19 @@
 
             '</div>' +
 
+            /* Choose a journey heading — sits directly above the cards */
+            '<div style="margin-bottom:14px;">' +
+              '<p style="font-size:20px;font-weight:800;color:' + T.text + ';margin-bottom:2px;">' +
+                'Choose a journey' +
+              '</p>' +
+              '<p style="font-size:13px;font-weight:400;color:' + T.textS + ';">to explore</p>' +
+            '</div>' +
+
             cardsHTML +
 
             '<p style="text-align:center;font-size:10px;font-weight:500;' +
                       'color:' + T.textT + ';margin-top:8px;letter-spacing:.04em;">' +
-              'v27' +
+              'v28' +
             '</p>' +
 
           '</div>' +
