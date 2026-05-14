@@ -104,23 +104,32 @@
        we measure the actual gap between screen height and viewport height instead. -->
   <script>
     (function() {
+      var _maxH = 0; /* tallest innerHeight seen — used as the stable app height */
+
       function setH() {
         var h   = window.innerHeight;
         var dpr = window.devicePixelRatio || 1;
+
+        /* Only grow, never shrink: keyboard open shrinks innerHeight,
+           but we want the app frame to stay at the full screen height. */
+        if (h > _maxH) _maxH = h;
+
         /* Logical screen height (incl. status bar on Android) */
         var screenH = Math.round(window.screen.height / dpr);
         /* Gap = status bar height when innerHeight excludes it.
            Clamp to sane range (20-80 px) to ignore rounding noise. */
-        var gap = screenH - h;
+        var gap = screenH - _maxH;
         var safeTop = (gap >= 20 && gap <= 80) ? gap : 0;
-        document.documentElement.style.setProperty('--app-height', h + 'px');
-        /* Only set --safe-top from measurement when we get a sensible gap.
-           Otherwise leave it unset so the CSS env() fallback takes over. */
+
+        document.documentElement.style.setProperty('--app-height', _maxH + 'px');
         if (safeTop > 0) {
           document.documentElement.style.setProperty('--safe-top', safeTop + 'px');
         }
       }
+
       setH();
+      /* resize fires for keyboard open/close — the _maxH guard above ensures
+         we only ever expand the app height, never compress it. */
       window.addEventListener('resize', setH);
     }());
   </script>
@@ -1045,6 +1054,12 @@
                 '</svg>' +
               '</div>' +
             '</div>' +
+
+            /* Build version — confirms which deploy is live on device */
+            '<p style="text-align:center;font-size:10px;font-weight:500;' +
+                      'color:' + T.textT + ';margin-top:8px;letter-spacing:.04em;">' +
+              'v6' +
+            '</p>' +
 
           '</div>' +
         '</div>'
