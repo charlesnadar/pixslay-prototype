@@ -45,8 +45,10 @@
     }
 
     /* Mobile + PWA: fills screen edge to edge.
-       --app-height is set by JS (window.innerHeight) for pixel-perfect accuracy
-       on every device. Falls back to 100dvh → 100svh → 100vh. */
+       --app-height  = stable full-screen height (never shrinks, set by JS)
+       --vv-height   = current visual-viewport height (shrinks when keyboard opens)
+       Phone uses --vv-height so it compresses with the keyboard, keeping the
+       sticky CTA above the keys exactly like a native app. */
     @media (max-width: 500px), (display-mode: standalone) {
       body {
         padding: 0;
@@ -56,14 +58,26 @@
       }
       .phone {
         width: 100vw;
-        height: var(--app-height, 100dvh);
-        min-height: var(--app-height, 100dvh);
+        /* Shrink with keyboard (--vv-height), but never taller than the real screen (--app-height) */
+        height: var(--vv-height, var(--app-height, 100dvh));
+        min-height: 0;                              /* allow shrinking */
         max-height: var(--app-height, 100dvh);
         border-radius: 0;
         box-shadow: none;
         padding-top: 0;
         padding-bottom: env(safe-area-inset-bottom, 16px);
+        /* Animate with the keyboard open/close motion */
+        transition: height 0.2s ease;
       }
+    }
+
+    /* Prevent iOS Safari from zooming when an input is focused.
+       iOS zooms any input with font-size < 16px. We scale the input text to 16px
+       on mobile only — the floating-label size stays unchanged via the label rules. */
+    @media (max-width: 500px), (display-mode: standalone) {
+      #phone input,
+      #phone textarea,
+      #phone select { font-size: 16px !important; }
     }
 
     /* OTP error shake */
@@ -131,6 +145,27 @@
       /* resize fires for keyboard open/close — the _maxH guard above ensures
          we only ever expand the app height, never compress it. */
       window.addEventListener('resize', setH);
+    }());
+
+    /* VisualViewport API — keyboard-aware height.
+       window.visualViewport.height shrinks when the keyboard opens on iOS/Android.
+       We expose it as --vv-height so .phone compresses exactly to the visible area,
+       keeping sticky CTAs and nav bars above the keyboard at all times. */
+    (function() {
+      function updateVV() {
+        var vv = window.visualViewport;
+        if (!vv) return;
+        /* vv.height = visible screen area above the keyboard */
+        var h = Math.round(vv.height);
+        if (h > 100) {
+          document.documentElement.style.setProperty('--vv-height', h + 'px');
+        }
+      }
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', updateVV);
+        window.visualViewport.addEventListener('scroll', updateVV);
+        updateVV();
+      }
     }());
   </script>
 </head>
@@ -1058,7 +1093,7 @@
             /* Build version — confirms which deploy is live on device */
             '<p style="text-align:center;font-size:10px;font-weight:500;' +
                       'color:' + T.textT + ';margin-top:8px;letter-spacing:.04em;">' +
-              'v6' +
+              'v8' +
             '</p>' +
 
           '</div>' +
