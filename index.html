@@ -1125,10 +1125,19 @@
               '</div>' +
             '</div>' +
 
-            /* Build version — confirms which deploy is live on device */
-            '<p style="text-align:center;font-size:10px;font-weight:500;' +
-                      'color:' + T.textT + ';margin-top:8px;letter-spacing:.04em;">' +
-              'v12' +
+            /* Build version — triple-tap to toggle debug overlay */
+            (function(){
+              var _vt=0,_vtm=null;
+              window._vTap=function(){
+                _vt++;clearTimeout(_vtm);
+                if(_vt>=3){_vt=0;if(window._dbgToggle)window._dbgToggle();return;}
+                _vtm=setTimeout(function(){_vt=0;},600);
+              };
+            }()),
+            '<p onclick="_vTap()" style="text-align:center;font-size:10px;font-weight:500;' +
+                      'color:' + T.textT + ';margin-top:8px;letter-spacing:.04em;' +
+                      'padding:8px 0;cursor:default;">' +
+              'v13 · tap 3× for debug' +
             '</p>' +
 
           '</div>' +
@@ -7762,6 +7771,59 @@
           .catch(function(err) { console.warn('SW registration failed:', err); });
       });
     }
+  </script>
+
+  <!-- DEBUG OVERLAY — triple-tap the version label on entry screen to toggle.
+       Shows raw measurements so we can diagnose layout issues on real devices.
+       Remove this block before production. -->
+  <script>
+    (function() {
+      var _dbgVisible = false;
+      var _dbgEl = null;
+
+      function _dbgUpdate() {
+        if (!_dbgEl) return;
+        var phone = document.getElementById('phone');
+        var vv    = window.visualViewport;
+        var dpr   = window.devicePixelRatio || 1;
+        var lines = [
+          'screen : ' + window.screen.width + ' × ' + window.screen.height,
+          'dpr    : ' + dpr,
+          'inner  : ' + window.innerWidth + ' × ' + window.innerHeight,
+          'vv     : ' + (vv ? Math.round(vv.width) + ' × ' + Math.round(vv.height) : 'none'),
+          'vv.off : ' + (vv ? vv.offsetTop.toFixed(1) : '-'),
+          'phone  : ' + (phone ? phone.offsetWidth + ' × ' + phone.offsetHeight : '?'),
+          'isPWA  : ' + (typeof IS_PWA !== 'undefined' ? IS_PWA : '?'),
+          'safeT  : ' + getComputedStyle(document.documentElement).getPropertyValue('--safe-top').trim(),
+          'standalone: ' + (window.navigator.standalone === true),
+          'dispMode : ' + window.matchMedia('(display-mode:standalone)').matches,
+        ];
+        _dbgEl.textContent = lines.join('\n');
+      }
+
+      window._dbgToggle = function() {
+        if (_dbgVisible) {
+          if (_dbgEl) _dbgEl.remove();
+          _dbgEl = null;
+          _dbgVisible = false;
+          return;
+        }
+        _dbgVisible = true;
+        _dbgEl = document.createElement('pre');
+        _dbgEl.id = 'dbg-overlay';
+        _dbgEl.style.cssText = [
+          'position:fixed', 'top:60px', 'left:8px', 'right:8px',
+          'background:rgba(0,0,0,.82)', 'color:#0f0',
+          'font-size:11px', 'line-height:1.6',
+          'padding:10px 12px', 'border-radius:8px',
+          'z-index:99999', 'white-space:pre', 'pointer-events:none',
+          'font-family:monospace'
+        ].join(';');
+        document.body.appendChild(_dbgEl);
+        _dbgUpdate();
+        setInterval(_dbgUpdate, 500);
+      };
+    }());
   </script>
 </body>
 </html>
