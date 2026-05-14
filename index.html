@@ -268,7 +268,7 @@
       var inner = Math.round(iconPx * 0.62);
 
       return (
-        '<div style="display:flex;align-items:center;gap:8px;">' +
+        '<div onclick="go(\'entry\')" style="display:flex;align-items:center;gap:8px;cursor:pointer;">' +
           '<div style="' +
             'width:' + iconPx + 'px;' +
             'height:' + iconPx + 'px;' +
@@ -349,9 +349,13 @@
          The 44px fallback is intentionally generous — better to have a little
          extra breathing room than to have content hide behind the clock. */
       if (IS_PWA) {
+        /* max() ensures we ALWAYS get at least 52px even when
+           env(safe-area-inset-top) is defined but returns 0 (many Android/iOS
+           devices define the property yet give 0 for non-notch screens).
+           On notched iPhones env() returns 47-59px which max() preserves. */
         return (
           '<div style="' +
-            'height:var(--safe-top, env(safe-area-inset-top, 44px));' +
+            'height:max(var(--safe-top,0px),env(safe-area-inset-top,0px),52px);' +
             'background:' + bg + ';' +
             'flex-shrink:0;">' +
           '</div>'
@@ -1096,7 +1100,7 @@
             /* Build version — confirms which deploy is live on device */
             '<p style="text-align:center;font-size:10px;font-weight:500;' +
                       'color:' + T.textT + ';margin-top:8px;letter-spacing:.04em;">' +
-              'v9' +
+              'v10' +
             '</p>' +
 
           '</div>' +
