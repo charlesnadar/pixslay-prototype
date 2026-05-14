@@ -4659,7 +4659,7 @@
                           'display:flex;align-items:center;justify-content:center;">' +
                 '<span style="font-size:9px;font-weight:700;color:#fff;">VR</span>' +
               '</div>' +
-              '<div onclick="openApp(\'beulah-install\')"' +
+              '<div onclick="go(\'beulah-install\')"' +
                    ' style="background:#EFEFEF;border-radius:16px 16px 16px 4px;' +
                            'overflow:hidden;max-width:76%;cursor:pointer;">' +
                 /* Link preview banner */
@@ -4718,6 +4718,11 @@
       return playStoreScreen('kavitha', 'varun-reg');
     }
 
+    /* ── V3: Play Store install screen ── */
+    function screenVishalInstall() {
+      return playStoreScreen('vishal', 'varun-reg');
+    }
+
     /* ── Shared Play Store UI ── */
     function playStoreScreen(journey, nextScreen) {
       function doInstall() {
@@ -4730,13 +4735,7 @@
           if (fill) fill.style.width = '100%';
         }, 60);
         setTimeout(function() {
-          if (journey === 'beulah') {
-            activeJourney  = 'beulah';
-            otpDest        = 'varun-profile';
-            taggingOpenTab = 'group';
-            hasSynced      = false;
-          }
-          go(nextScreen);
+          openApp(nextScreen);
         }, 2200);
       }
       /* expose so onclick string works */
@@ -5472,7 +5471,7 @@
               'now',
               'Varun Tiwari',
               'Trip ke photos sab ek jagah hai — join kar 📸 pixslay.app/join/karjat-2405',
-              'openApp(\'kavitha-install\')'
+              'go(\'kavitha-install\')'
             ) +
 
           '</div>' +
@@ -5662,7 +5661,7 @@
                           'display:flex;align-items:center;justify-content:center;">' +
                 '<span style="font-size:9px;font-weight:700;color:#fff;">VR</span>' +
               '</div>' +
-              '<div onclick="openApp(\'varun-reg\')"' +
+              '<div onclick="go(\'vishal-install\')"' +
                    ' style="background:#E9E9EB;border-radius:18px 18px 18px 4px;' +
                            'padding:10px 12px;max-width:75%;cursor:pointer;">' +
                 '<div style="display:flex;align-items:center;gap:10px;">' +
@@ -7817,6 +7816,7 @@
       'kavitha-install':     screenKavithaInstall,
       'kavitha-home':        screenAlbumListing,
       'vishal-scene':        screenVishalScene,
+      'vishal-install':      screenVishalInstall,
       'vishal-home':         screenAlbumListing,
       'anand-scene':         screenAnandScene,
       'anand-home':          screenAlbumListing,
