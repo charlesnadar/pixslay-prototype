@@ -1,0 +1,24 @@
+{
+  "name": "PixSlay",
+  "short_name": "PixSlay",
+  "description": "Shared trip memories with your people",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#E8E4DF",
+  "theme_color": "#1B4FD8",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
