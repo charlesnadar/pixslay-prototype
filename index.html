@@ -51,10 +51,10 @@
     * { -webkit-tap-highlight-color: transparent; }
 
     /* ── Mobile + PWA: fills screen edge to edge ──────────────
-       position:fixed anchors the phone to the viewport directly —
-       no JS height calculation needed, no 100dvh / --app-height guessing.
-       top/left/right:0 = full bleed; bottom = shrinks when keyboard opens
-       via --keyboard-inset (set by JS from visualViewport). */
+       position:fixed can misbehave on iOS PWA when html/body has overflow:hidden.
+       Instead the phone's HEIGHT is set directly by JS (_setPhoneH) on every
+       visualViewport change, so it is always pixel-perfect and keyboard-aware.
+       CSS only sets position/width; JS owns height. */
     @media (max-width: 500px), (display-mode: standalone) {
       body {
         padding: 0;
@@ -67,16 +67,14 @@
         position: fixed;
         top: 0;
         left: 0;
-        right: 0;
-        bottom: var(--keyboard-inset, 0px);
         width: 100%;
-        height: auto;
+        /* height intentionally omitted — set by _setPhoneH() in JS */
         min-height: 0;
         max-height: none;
         border-radius: 0;
         box-shadow: none;
         padding-top: 0;
-        padding-bottom: env(safe-area-inset-bottom, 16px);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
         overscroll-behavior: none;
       }
     }
@@ -123,14 +121,25 @@
        from absolute-position constraints alone. */
     .screen { height: 100%; }
   </style>
-  <!-- Measure --safe-top (status bar gap) and --keyboard-inset (keyboard height).
-       position:fixed handles phone sizing — no JS height calculation needed.
-       env(safe-area-inset-top) is unreliable on Android PWA; we derive the
-       status-bar gap from screen.height vs innerHeight instead. -->
+  <!-- Mobile layout engine.
+       position:fixed has known iOS PWA bugs when body has overflow:hidden.
+       Instead we set the phone element height directly from JS on every
+       visualViewport change — this is immune to all CSS cascade issues.
+       --safe-top is also measured here (env(safe-area-inset-top) is unreliable
+       on many Android PWA builds; we derive it from screen vs viewport gap). -->
   <script>
     (function() {
-      /* ── Safe-top: gap between screen top and usable viewport ── */
+
+      /* ── Detect mobile: applies the dynamic sizing only on small screens ── */
+      function isMobile() {
+        return window.innerWidth <= 600 ||
+               window.matchMedia('(display-mode: standalone)').matches ||
+               window.navigator.standalone === true;
+      }
+
+      /* ── Safe-top: status-bar height derived from screen vs viewport gap ── */
       function measureSafeTop() {
+        if (!isMobile()) return;
         var h = window.innerHeight;
         if (h < 100) return;
         var dpr     = window.devicePixelRatio || 1;
@@ -140,27 +149,54 @@
           document.documentElement.style.setProperty('--safe-top', gap + 'px');
         }
       }
-      measureSafeTop();
-      document.addEventListener('DOMContentLoaded', measureSafeTop);
-      window.addEventListener('load', measureSafeTop);
-      setTimeout(measureSafeTop, 300);
 
-      /* ── Keyboard inset: how many px the keyboard pushes up ── */
-      function updateKeyboard() {
+      /* ── Phone height: set inline so it wins over every CSS rule ──
+         Uses visualViewport.height which shrinks when the keyboard opens,
+         so the nav bar / CTAs always stay above the keyboard. */
+      function setPhoneH() {
+        if (!isMobile()) return;
+        var phone = document.getElementById('phone');
+        if (!phone) return;
         var vv = window.visualViewport;
-        if (!vv) return;
-        /* keyboard height = innerHeight minus VV height minus VV offsetTop */
-        var kbH = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
-        document.documentElement.style.setProperty('--keyboard-inset', kbH + 'px');
+        var h  = vv ? Math.round(vv.height) : window.innerHeight;
+        if (h < 100) return;
+        phone.style.height = h + 'px';
       }
 
+      /* Expose globally so boot script can call before first render() */
+      window._setPhoneH = setPhoneH;
+
+      /* Run as early as possible */
+      measureSafeTop();
+
+      document.addEventListener('DOMContentLoaded', function() {
+        measureSafeTop();
+        setPhoneH();
+      });
+
       window.addEventListener('load', function() {
-        updateKeyboard();
+        measureSafeTop();
+        setPhoneH();
         if (window.visualViewport) {
-          window.visualViewport.addEventListener('resize', updateKeyboard);
-          window.visualViewport.addEventListener('scroll', updateKeyboard);
+          window.visualViewport.addEventListener('resize', function() {
+            setPhoneH();
+          });
+          window.visualViewport.addEventListener('scroll', function() {
+            setPhoneH();
+          });
         }
       });
+
+      /* Belt-and-suspenders: re-measure 300 ms after load (iOS quirk) */
+      window.addEventListener('load', function() {
+        setTimeout(function() { measureSafeTop(); setPhoneH(); }, 300);
+      });
+
+      window.addEventListener('resize', function() {
+        measureSafeTop();
+        setPhoneH();
+      });
+
     }());
   </script>
 </head>
@@ -1092,7 +1128,7 @@
             /* Build version — confirms which deploy is live on device */
             '<p style="text-align:center;font-size:10px;font-weight:500;' +
                       'color:' + T.textT + ';margin-top:8px;letter-spacing:.04em;">' +
-              'v11' +
+              'v12' +
             '</p>' +
 
           '</div>' +
@@ -7713,6 +7749,8 @@
     /* ─────────────────────────────────────────────────────
        BOOT
     ───────────────────────────────────────────────────── */
+    /* Set phone height before first render so layout is correct immediately */
+    if (window._setPhoneH) window._setPhoneH();
     render();
   </script>
 
