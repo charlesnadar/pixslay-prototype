@@ -4414,13 +4414,7 @@
           '</div>'
         );
       }
-      peopleHTML += (
-        '<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;">' +
-          '<div style="width:56px;height:56px;border-radius:50%;background:#F3F3F4;display:flex;align-items:center;justify-content:center;' +
-                      'font-size:16px;font-weight:700;color:' + T.textS + ';">+4</div>' +
-          '<span style="font-size:12px;font-weight:600;color:' + T.textS + ';">More</span>' +
-        '</div>'
-      );
+      /* +4 More chip removed — all members visible via horizontal scroll */
 
       /* ── category pills ── */
       var CAT_PILLS = [
@@ -4575,11 +4569,18 @@
             '</div>' +
           '</div>' +
 
-          /* ── people row ── */
-          '<div class="hscroll"' +
-               ' style="display:flex;gap:16px;overflow-x:auto;' +
-                       'padding:18px 18px 16px;flex-shrink:0;background:#fff;">' +
-            peopleHTML +
+          /* ── people row — all members, swipe to reveal, right fade hint ── */
+          '<div style="position:relative;flex-shrink:0;background:#fff;overflow:hidden;">' +
+            '<div class="hscroll"' +
+                 ' style="display:flex;gap:16px;overflow-x:auto;' +
+                         'padding:18px 18px 16px;">' +
+              peopleHTML +
+              /* Spacer so last avatar clears the fade */
+              '<div style="width:36px;flex-shrink:0;"></div>' +
+            '</div>' +
+            '<div style="position:absolute;top:0;right:0;height:100%;width:56px;' +
+                        'background:linear-gradient(to left,#fff 20%,transparent 100%);' +
+                        'pointer-events:none;"></div>' +
           '</div>' +
 
           /* ── category pills ── */
@@ -6440,45 +6441,39 @@
       );
     }
 
-    /* ── Helper: people chips (collapsed / expanded) ── */
+    /* ── Helper: people chips — all members, horizontal scroll + right fade ── */
     function alPeopleChips() {
-      var show = albumPeopleExpanded ? AL_PEOPLE : AL_PEOPLE.slice(0, 4);
-      var o = '<div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;' + (albumPeopleExpanded ? 'flex-wrap:wrap;' : '') + '">';
-
       var allOn = !albumSelectedPerson;
-      o += '<button onclick="alSetPersonFilter(\'\')" style="display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;flex-shrink:0;">' +
-             '<div style="width:44px;height:44px;border-radius:50%;background:' + (allOn ? T.blue : T.bgSub) + ';display:flex;align-items:center;justify-content:center;">' +
-               '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="' + (allOn ? '#fff' : T.textT) + '" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>' +
-             '</div>' +
-             '<span style="font-size:10px;font-weight:600;color:' + (allOn ? T.blue : T.textS) + ';">All</span>' +
-           '</button>';
+      var chips = '';
 
-      for (var i = 0; i < show.length; i++) {
-        var p = show[i]; var on = (albumSelectedPerson === p.id);
-        o += '<button onclick="alSetPersonFilter(\'' + p.id + '\')" style="display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;flex-shrink:0;">' +
-               '<div style="width:44px;height:44px;border-radius:50%;background:' + p.bg + ';box-sizing:border-box;border:2.5px solid ' + (on ? T.blue : 'transparent') + ';display:flex;align-items:center;justify-content:center;">' +
-                 '<span style="font-size:13px;font-weight:800;color:#fff;">' + p.id + '</span>' +
-               '</div>' +
-               '<span style="font-size:10px;font-weight:600;color:' + (on ? T.blue : T.textS) + ';">' + p.name + '</span>' +
-             '</button>';
+      chips += '<button onclick="alSetPersonFilter(\'\')" style="display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;flex-shrink:0;">' +
+                 '<div style="width:44px;height:44px;border-radius:50%;background:' + (allOn ? T.blue : T.bgSub) + ';display:flex;align-items:center;justify-content:center;">' +
+                   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="' + (allOn ? '#fff' : T.textT) + '" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>' +
+                 '</div>' +
+                 '<span style="font-size:10px;font-weight:600;color:' + (allOn ? T.blue : T.textS) + ';">All</span>' +
+               '</button>';
+
+      for (var i = 0; i < AL_PEOPLE.length; i++) {
+        var p = AL_PEOPLE[i]; var on = (albumSelectedPerson === p.id);
+        chips += '<button onclick="alSetPersonFilter(\'' + p.id + '\')" style="display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;flex-shrink:0;">' +
+                   '<div style="width:44px;height:44px;border-radius:50%;background:' + p.bg + ';box-sizing:border-box;border:2.5px solid ' + (on ? T.blue : 'transparent') + ';display:flex;align-items:center;justify-content:center;">' +
+                     '<span style="font-size:13px;font-weight:800;color:#fff;">' + p.id + '</span>' +
+                   '</div>' +
+                   '<span style="font-size:10px;font-weight:600;color:' + (on ? T.blue : T.textS) + ';">' + p.name + '</span>' +
+                 '</button>';
       }
 
-      if (!albumPeopleExpanded) {
-        o += '<button onclick="alTogglePeopleExpanded()" style="display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;flex-shrink:0;">' +
-               '<div style="width:44px;height:44px;border-radius:50%;background:' + T.bgSub + ';display:flex;align-items:center;justify-content:center;">' +
-                 '<span style="font-size:12px;font-weight:700;color:' + T.textS + ';">+' + (AL_PEOPLE.length - 4) + '</span>' +
-               '</div>' +
-               '<span style="font-size:10px;font-weight:600;color:' + T.textS + ';">More</span>' +
-             '</button>';
-      } else {
-        o += '<button onclick="alTogglePeopleExpanded()" style="display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;flex-shrink:0;">' +
-               '<div style="width:44px;height:44px;border-radius:50%;background:' + T.bgSub + ';display:flex;align-items:center;justify-content:center;">' +
-                 '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="' + T.textT + '" stroke-width="2.5" stroke-linecap="round"><polyline points="18 15 12 9 6 15"/></svg>' +
-               '</div>' +
-               '<span style="font-size:10px;font-weight:600;color:' + T.textS + ';">Less</span>' +
-             '</button>';
-      }
-      return o + '</div>';
+      return (
+        '<div class="hscroll" style="display:flex;gap:10px;overflow-x:auto;padding:12px 16px 4px;">' +
+          chips +
+          /* Spacer so last chip clears the fade gradient */
+          '<div style="width:32px;flex-shrink:0;"></div>' +
+        '</div>' +
+        /* Right-edge fade — hints at scrollable content */
+        '<div style="position:absolute;top:0;right:0;height:100%;width:52px;' +
+                    'background:linear-gradient(to left,' + T.bgWarm + ' 20%,transparent 100%);' +
+                    'pointer-events:none;"></div>'
+      );
     }
 
     /* In-place patch: person filter chip tap */
@@ -6623,8 +6618,8 @@
               : '') +
           '</div>' +
 
-          /* People chips — patched in-place by alSetPersonFilter / alTogglePeopleExpanded */
-          '<div id="al-people-row" style="padding:12px 16px 4px;flex-shrink:0;">' + alPeopleChips() + '</div>' +
+          /* People chips — patched in-place by alSetPersonFilter */
+          '<div id="al-people-row" style="position:relative;flex-shrink:0;overflow:hidden;">' + alPeopleChips() + '</div>' +
 
           /* Scrollable feed */
           '<div style="flex:1;overflow-y:auto;padding:12px 16px 24px;">' +
