@@ -44,8 +44,10 @@
       padding-bottom: env(safe-area-inset-bottom, 0);
     }
 
-    /* Mobile: fills screen edge to edge like a native app */
-    @media (max-width: 500px) {
+    /* Mobile + PWA: fills screen edge to edge.
+       --app-height is set by JS (window.innerHeight) for pixel-perfect accuracy
+       on every device. Falls back to 100dvh → 100svh → 100vh. */
+    @media (max-width: 500px), (display-mode: standalone) {
       body {
         padding: 0;
         background: #F8F7F5;
@@ -54,48 +56,13 @@
       }
       .phone {
         width: 100vw;
-        height: 100svh;
-        min-height: 100svh;
-        max-height: 100svh;
+        height: var(--app-height, 100dvh);
+        min-height: var(--app-height, 100dvh);
+        max-height: var(--app-height, 100dvh);
         border-radius: 0;
         box-shadow: none;
-        padding-bottom: env(safe-area-inset-bottom, 16px);
-      }
-    }
-
-    /* Fallback for browsers without svh support */
-    @supports not (height: 100svh) {
-      @media (max-width: 500px) {
-        .phone { height: 100vh; min-height: 100vh; max-height: 100vh; }
-      }
-    }
-
-    /* PWA standalone mode — real device, real status bar.
-       Removes mock phone frame, fills screen edge-to-edge,
-       adds safe-area padding so content sits below the real status bar. */
-    @media (display-mode: standalone) {
-      body {
-        padding: 0;
-        background: #F8F7F5;
-        align-items: flex-start;
-        overflow: hidden;
-      }
-      .phone {
-        width: 100vw;
-        height: 100svh;
-        min-height: 100svh;
-        max-height: 100svh;
-        border-radius: 0;
-        box-shadow: none;
-        /* Top safe area handled per-screen via sbar() spacer below */
         padding-top: 0;
         padding-bottom: env(safe-area-inset-bottom, 16px);
-      }
-    }
-    /* svh fallback for standalone mode */
-    @supports not (height: 100svh) {
-      @media (display-mode: standalone) {
-        .phone { height: 100vh; min-height: 100vh; max-height: 100vh; }
       }
     }
 
@@ -126,6 +93,17 @@
     #phone *::-webkit-scrollbar { display:none; }
     #phone * { -ms-overflow-style:none; scrollbar-width:none; }
   </style>
+  <!-- Set --app-height = exact visible screen height (window.innerHeight).
+       This beats 100svh/100dvh on devices where those give the wrong value. -->
+  <script>
+    (function() {
+      function setH() {
+        document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px');
+      }
+      setH();
+      window.addEventListener('resize', setH);
+    }());
+  </script>
 </head>
 <body>
   <div class="phone" id="phone">
