@@ -118,19 +118,14 @@
     /* Desktop: screen fills the 844px phone frame exactly. */
     .screen { height: 100%; }
 
-    /* Mobile / PWA: neither height:100% nor height:auto work reliably on
-       iOS Safari when the parent is position:fixed with a JS-set height.
-       iOS does not propagate the containing-block height to children in that
-       scenario, so the flex column ends up with height:0 and everything
-       stacks from the top (nav/CTA appearing midscreen).
-       Fix: use viewport units directly on .screen — 100dvh = visual viewport
-       height, completely bypasses the parent chain.
-       100vh fallback for iOS < 15.4; in PWA standalone (no address bar)
-       100vh = 100dvh = actual window height anyway. */
+    /* Mobile / PWA: JS (_setPhoneH) owns .screen height directly to avoid
+       the iOS PWA standalone bug where 100dvh = 844px (full screen height)
+       instead of window.innerHeight = 797px, which creates a visible gap
+       above the nav bar / CTA. height:auto is the CSS fallback; JS sets the
+       exact pixel value on every render and visualViewport change. */
     @media (max-width: 500px), (display-mode: standalone) {
       .screen {
-        height: 100vh;   /* fallback */
-        height: 100dvh;  /* preferred: tracks visual viewport (keyboard-aware) */
+        height: auto;  /* JS sets exact px via inline style */
       }
     }
   </style>
@@ -170,9 +165,12 @@
         }
       }
 
-      /* ── Phone height: set inline so it wins over every CSS rule ──
+      /* ── Phone + screen height: set inline so it wins over every CSS rule ──
          Uses visualViewport.height which shrinks when the keyboard opens,
-         so the nav bar / CTAs always stay above the keyboard. */
+         so the nav bar / CTAs always stay above the keyboard.
+         We also set .screen height directly because on iOS PWA standalone,
+         100dvh resolves to the full screen height (844px on iPhone 13) rather
+         than window.innerHeight (797px), causing a visible gap above the nav bar. */
       function setPhoneH() {
         if (!isMobile()) return;
         var phone = document.getElementById('phone');
@@ -181,6 +179,9 @@
         var h  = vv ? Math.round(vv.height) : window.innerHeight;
         if (h < 100) return;
         phone.style.height = h + 'px';
+        /* Also pin the active .screen to the same height */
+        var screen = phone.querySelector('.screen');
+        if (screen) screen.style.height = h + 'px';
       }
 
       /* Expose globally so boot script can call before first render() */
@@ -1144,7 +1145,7 @@
 
             '<p style="text-align:center;font-size:10px;font-weight:500;' +
                       'color:' + T.textT + ';margin-top:8px;letter-spacing:.04em;">' +
-              'v20' +
+              'v21' +
             '</p>' +
 
           '</div>' +
@@ -7653,6 +7654,13 @@
       newScreen.style.opacity    = '0';
       newScreen.style.transition = 'opacity .15s ease';
 
+      /* Pin screen height immediately to match phone height (iOS 100dvh fix) */
+      function pinScreenH(sc) {
+        var vv = window.visualViewport;
+        var h  = vv ? Math.round(vv.height) : window.innerHeight;
+        if (h > 100 && window.innerWidth <= 600) sc.style.height = h + 'px';
+      }
+
       var old = phone.querySelector('.screen');
       if (old) {
         /* Fade old screen out */
@@ -7661,6 +7669,7 @@
         setTimeout(function () {
           if (old.parentNode) old.remove();
           phone.appendChild(newScreen);
+          pinScreenH(newScreen);
           /* Fade new screen in */
           requestAnimationFrame(function () {
             requestAnimationFrame(function () {
@@ -7671,6 +7680,7 @@
         }, 100);
       } else {
         phone.appendChild(newScreen);
+        pinScreenH(newScreen);
         requestAnimationFrame(function () {
           requestAnimationFrame(function () {
             newScreen.style.opacity = '1';
