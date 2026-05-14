@@ -92,13 +92,33 @@
     /* Hide scrollbars everywhere inside the phone frame */
     #phone *::-webkit-scrollbar { display:none; }
     #phone * { -ms-overflow-style:none; scrollbar-width:none; }
+
+    /* Each screen fills the phone frame exactly.
+       height:100% is the belt-and-suspenders companion to inset:0 —
+       some Android Chrome builds don't auto-size flex containers
+       from absolute-position constraints alone. */
+    .screen { height: 100%; }
   </style>
-  <!-- Set --app-height = exact visible screen height (window.innerHeight).
-       This beats 100svh/100dvh on devices where those give the wrong value. -->
+  <!-- Set --app-height and --safe-top from JS measurements.
+       env(safe-area-inset-top) is unreliable on many Android PWA builds;
+       we measure the actual gap between screen height and viewport height instead. -->
   <script>
     (function() {
       function setH() {
-        document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px');
+        var h   = window.innerHeight;
+        var dpr = window.devicePixelRatio || 1;
+        /* Logical screen height (incl. status bar on Android) */
+        var screenH = Math.round(window.screen.height / dpr);
+        /* Gap = status bar height when innerHeight excludes it.
+           Clamp to sane range (20-80 px) to ignore rounding noise. */
+        var gap = screenH - h;
+        var safeTop = (gap >= 20 && gap <= 80) ? gap : 0;
+        document.documentElement.style.setProperty('--app-height', h + 'px');
+        /* Only set --safe-top from measurement when we get a sensible gap.
+           Otherwise leave it unset so the CSS env() fallback takes over. */
+        if (safeTop > 0) {
+          document.documentElement.style.setProperty('--safe-top', safeTop + 'px');
+        }
       }
       setH();
       window.addEventListener('resize', setH);
@@ -277,11 +297,14 @@
     function sbar(bg) {
       bg = bg || '#fff';
 
-      /* PWA / real mobile: safe-area spacer only, no fake content */
+      /* PWA / real mobile: safe-area spacer that clears the real status bar.
+         Priority: --safe-top (JS-measured gap) → env(safe-area-inset-top) → 44px fallback.
+         The 44px fallback is intentionally generous — better to have a little
+         extra breathing room than to have content hide behind the clock. */
       if (IS_PWA) {
         return (
           '<div style="' +
-            'height:env(safe-area-inset-top,24px);' +
+            'height:var(--safe-top, env(safe-area-inset-top, 44px));' +
             'background:' + bg + ';' +
             'flex-shrink:0;">' +
           '</div>'
