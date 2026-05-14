@@ -88,6 +88,12 @@
       #phone select { font-size: 16px !important; }
     }
 
+    /* People row — reveal animation for newly expanded chips */
+    @keyframes pplReveal {
+      from { opacity:0; transform:translateX(10px); }
+      to   { opacity:1; transform:translateX(0); }
+    }
+
     /* OTP error shake */
     @keyframes otpShake {
       0%,100% { transform:translateX(0); }
@@ -6441,11 +6447,16 @@
       );
     }
 
-    /* ── Helper: people chips — all members, horizontal scroll + right fade ── */
-    function alPeopleChips() {
-      var allOn = !albumSelectedPerson;
-      var chips = '';
+    /* ── Helper: people chips — show 4 + "+X" chip, tap reveals rest inline ── */
+    var AL_PEOPLE_SHOW = 4;   /* visible before expand */
 
+    function alPeopleChips() {
+      var allOn   = !albumSelectedPerson;
+      var limit   = albumPeopleExpanded ? AL_PEOPLE.length : Math.min(AL_PEOPLE_SHOW, AL_PEOPLE.length);
+      var hasMore = !albumPeopleExpanded && AL_PEOPLE.length > AL_PEOPLE_SHOW;
+      var chips   = '';
+
+      /* All button */
       chips += '<button onclick="alSetPersonFilter(\'\')" style="display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;flex-shrink:0;">' +
                  '<div style="width:44px;height:44px;border-radius:50%;background:' + (allOn ? T.blue : T.bgSub) + ';display:flex;align-items:center;justify-content:center;">' +
                    '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="' + (allOn ? '#fff' : T.textT) + '" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>' +
@@ -6453,27 +6464,59 @@
                  '<span style="font-size:10px;font-weight:600;color:' + (allOn ? T.blue : T.textS) + ';">All</span>' +
                '</button>';
 
-      for (var i = 0; i < AL_PEOPLE.length; i++) {
-        var p = AL_PEOPLE[i]; var on = (albumSelectedPerson === p.id);
-        chips += '<button onclick="alSetPersonFilter(\'' + p.id + '\')" style="display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;flex-shrink:0;">' +
-                   '<div style="width:44px;height:44px;border-radius:50%;background:' + p.bg + ';box-sizing:border-box;border:2.5px solid ' + (on ? T.blue : 'transparent') + ';display:flex;align-items:center;justify-content:center;">' +
+      /* People chips — first N or all */
+      for (var i = 0; i < limit; i++) {
+        var p   = AL_PEOPLE[i];
+        var on  = (albumSelectedPerson === p.id);
+        /* Newly revealed chips (index >= AL_PEOPLE_SHOW) get the slide-in animation */
+        var anim = (albumPeopleExpanded && i >= AL_PEOPLE_SHOW)
+          ? 'animation:pplReveal .22s ease both;animation-delay:' + ((i - AL_PEOPLE_SHOW) * 40) + 'ms;'
+          : '';
+        chips += '<button onclick="alSetPersonFilter(\'' + p.id + '\')"' +
+                        ' style="display:flex;flex-direction:column;align-items:center;gap:3px;' +
+                               'background:none;border:none;cursor:pointer;flex-shrink:0;' + anim + '">' +
+                   '<div style="width:44px;height:44px;border-radius:50%;background:' + p.bg + ';' +
+                               'box-sizing:border-box;border:2.5px solid ' + (on ? T.blue : 'transparent') + ';' +
+                               'display:flex;align-items:center;justify-content:center;">' +
                      '<span style="font-size:13px;font-weight:800;color:#fff;">' + p.id + '</span>' +
                    '</div>' +
                    '<span style="font-size:10px;font-weight:600;color:' + (on ? T.blue : T.textS) + ';">' + p.name + '</span>' +
                  '</button>';
       }
 
+      /* "+X more" chip */
+      if (hasMore) {
+        var remaining = AL_PEOPLE.length - AL_PEOPLE_SHOW;
+        chips += '<button onclick="alTogglePeopleExpanded()"' +
+                        ' style="display:flex;flex-direction:column;align-items:center;gap:3px;' +
+                               'background:none;border:none;cursor:pointer;flex-shrink:0;">' +
+                   '<div style="width:44px;height:44px;border-radius:50%;background:' + T.bgSub + ';' +
+                               'display:flex;align-items:center;justify-content:center;">' +
+                     '<span style="font-size:12px;font-weight:700;color:' + T.textS + ';">+' + remaining + '</span>' +
+                   '</div>' +
+                   '<span style="font-size:10px;font-weight:600;color:' + T.textS + ';">More</span>' +
+                 '</button>';
+      }
+
       return (
         '<div class="hscroll" style="display:flex;gap:10px;overflow-x:auto;padding:12px 16px 4px;">' +
           chips +
-          /* Spacer so last chip clears the fade gradient */
           '<div style="width:32px;flex-shrink:0;"></div>' +
         '</div>' +
-        /* Right-edge fade — hints at scrollable content */
-        '<div style="position:absolute;top:0;right:0;height:100%;width:52px;' +
-                    'background:linear-gradient(to left,' + T.bgWarm + ' 20%,transparent 100%);' +
-                    'pointer-events:none;"></div>'
+        /* Fade only while there are hidden chips */
+        (hasMore
+          ? '<div style="position:absolute;top:0;right:0;height:100%;width:52px;' +
+                        'background:linear-gradient(to left,' + T.bgWarm + ' 20%,transparent 100%);' +
+                        'pointer-events:none;"></div>'
+          : '')
       );
+    }
+
+    /* One-way expand — reveals remaining chips inline with animation */
+    function alTogglePeopleExpanded() {
+      albumPeopleExpanded = true;
+      var row = document.getElementById('al-people-row');
+      if (row) row.innerHTML = alPeopleChips();
     }
 
     /* In-place patch: person filter chip tap */
@@ -6484,12 +6527,6 @@
       alRefreshList();
     }
 
-    /* In-place patch: expand/collapse people row */
-    function alTogglePeopleExpanded() {
-      albumPeopleExpanded = !albumPeopleExpanded;
-      var row = document.getElementById('al-people-row');
-      if (row) row.innerHTML = alPeopleChips();
-    }
 
     /* In-place patch: search bar toggle */
     function alToggleSearch() {
