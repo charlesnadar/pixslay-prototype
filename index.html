@@ -1129,19 +1129,12 @@
               '</div>' +
             '</div>' +
 
-            /* Build version — triple-tap to toggle debug overlay */
-            (function(){
-              var _vt=0,_vtm=null;
-              window._vTap=function(){
-                _vt++;clearTimeout(_vtm);
-                if(_vt>=3){_vt=0;if(window._dbgToggle)window._dbgToggle();return;}
-                _vtm=setTimeout(function(){_vt=0;},600);
-              };
-            }()),
-            '<p onclick="_vTap()" style="text-align:center;font-size:10px;font-weight:500;' +
+            /* Build version — tap to toggle debug overlay */
+            '<p onclick="if(window._dbgToggle)window._dbgToggle()" ' +
+                'style="text-align:center;font-size:10px;font-weight:500;' +
                       'color:' + T.textT + ';margin-top:8px;letter-spacing:.04em;' +
                       'padding:8px 0;cursor:default;">' +
-              'v15' +
+              'v16' +
             '</p>' +
 
           '</div>' +
