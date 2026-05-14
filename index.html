@@ -51,10 +51,10 @@
     * { -webkit-tap-highlight-color: transparent; }
 
     /* ── Mobile + PWA: fills screen edge to edge ──────────────
-       --app-height  = stable full-screen height (set by JS, never shrinks)
-       --vv-height   = visual-viewport height (shrinks when keyboard opens)
-       Phone uses --vv-height so sticky CTAs stay above the keyboard.
-       No transition: avoids flash on initial load when dvh ≠ JS value. */
+       position:fixed anchors the phone to the viewport directly —
+       no JS height calculation needed, no 100dvh / --app-height guessing.
+       top/left/right:0 = full bleed; bottom = shrinks when keyboard opens
+       via --keyboard-inset (set by JS from visualViewport). */
     @media (max-width: 500px), (display-mode: standalone) {
       body {
         padding: 0;
@@ -64,10 +64,15 @@
         overscroll-behavior: none;
       }
       .phone {
-        width: 100vw;
-        height: var(--vv-height, var(--app-height, 100dvh));
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: var(--keyboard-inset, 0px);
+        width: 100%;
+        height: auto;
         min-height: 0;
-        max-height: var(--app-height, 100dvh);
+        max-height: none;
         border-radius: 0;
         box-shadow: none;
         padding-top: 0;
@@ -118,55 +123,42 @@
        from absolute-position constraints alone. */
     .screen { height: 100%; }
   </style>
-  <!-- Set --app-height and --safe-top from JS measurements.
-       env(safe-area-inset-top) is unreliable on many Android PWA builds;
-       we measure the actual gap between screen height and viewport height instead. -->
+  <!-- Measure --safe-top (status bar gap) and --keyboard-inset (keyboard height).
+       position:fixed handles phone sizing — no JS height calculation needed.
+       env(safe-area-inset-top) is unreliable on Android PWA; we derive the
+       status-bar gap from screen.height vs innerHeight instead. -->
   <script>
     (function() {
-      var _maxH = 0;
-
-      function setH() {
+      /* ── Safe-top: gap between screen top and usable viewport ── */
+      function measureSafeTop() {
         var h = window.innerHeight;
-        if (h < 100) return; /* skip if layout not ready yet */
-        if (h > _maxH) _maxH = h;
-
-        document.documentElement.style.setProperty('--app-height', _maxH + 'px');
-
+        if (h < 100) return;
         var dpr     = window.devicePixelRatio || 1;
         var screenH = Math.round(window.screen.height / dpr);
-        var gap     = screenH - _maxH;
+        var gap     = screenH - h;
         if (gap >= 20 && gap <= 80) {
           document.documentElement.style.setProperty('--safe-top', gap + 'px');
         }
       }
+      measureSafeTop();
+      document.addEventListener('DOMContentLoaded', measureSafeTop);
+      window.addEventListener('load', measureSafeTop);
+      setTimeout(measureSafeTop, 300);
 
-      /* Run immediately (may be 0 on some iOS builds) */
-      setH();
-      /* Re-run once DOM exists, once fully loaded, and once after 300 ms
-         to catch iOS standalone quirks where innerHeight settles late. */
-      document.addEventListener('DOMContentLoaded', setH);
-      window.addEventListener('load', setH);
-      setTimeout(setH, 300);
-      window.addEventListener('resize', setH);
-
-      /* VisualViewport — keyboard-aware height.
-         vv.height shrinks when keyboard opens; we set --vv-height so
-         .phone compresses and sticky CTAs stay above the keys.
-         Registered on 'load' so vv.height is fully settled first. */
-      function updateVV() {
+      /* ── Keyboard inset: how many px the keyboard pushes up ── */
+      function updateKeyboard() {
         var vv = window.visualViewport;
         if (!vv) return;
-        var h = Math.round(vv.height);
-        if (h > 100) {
-          document.documentElement.style.setProperty('--vv-height', h + 'px');
-        }
+        /* keyboard height = innerHeight minus VV height minus VV offsetTop */
+        var kbH = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+        document.documentElement.style.setProperty('--keyboard-inset', kbH + 'px');
       }
 
       window.addEventListener('load', function() {
-        updateVV();
+        updateKeyboard();
         if (window.visualViewport) {
-          window.visualViewport.addEventListener('resize', updateVV);
-          window.visualViewport.addEventListener('scroll', updateVV);
+          window.visualViewport.addEventListener('resize', updateKeyboard);
+          window.visualViewport.addEventListener('scroll', updateKeyboard);
         }
       });
     }());
@@ -1100,7 +1092,7 @@
             /* Build version — confirms which deploy is live on device */
             '<p style="text-align:center;font-size:10px;font-weight:500;' +
                       'color:' + T.textT + ';margin-top:8px;letter-spacing:.04em;">' +
-              'v10' +
+              'v11' +
             '</p>' +
 
           '</div>' +
