@@ -239,16 +239,26 @@
        Appears on every screen. position:absolute, z:9999.
        Tapping always returns to entry from anywhere.
     ───────────────────────────────────────────────────── */
+    /* ── Demo: triple-tap top-right corner → journey switcher ──
+       Invisible 48×48 zone. No visual trace on screen. */
+    var _demoTapCount = 0, _demoTapTimer = null;
+    function _demoTap() {
+      _demoTapCount++;
+      clearTimeout(_demoTapTimer);
+      if (_demoTapCount >= 3) {
+        _demoTapCount = 0;
+        go('entry');
+        return;
+      }
+      _demoTapTimer = setTimeout(function () { _demoTapCount = 0; }, 600);
+    }
     function switchPill() {
       return (
-        '<button onclick="go(\'entry\')" style="' +
-          'position:absolute;top:6px;left:50%;transform:translateX(-50%);' +
-          'z-index:9999;background:#fff;border:0.5px solid ' + T.blue + ';' +
-          'border-radius:20px;padding:4px 12px;font-family:inherit;' +
-          'font-size:10px;font-weight:500;color:' + T.blue + ';' +
-          'cursor:pointer;white-space:nowrap;">' +
-          'Switch journey' +
-        '</button>'
+        '<div onclick="_demoTap()" style="' +
+          'position:absolute;top:0;right:0;' +
+          'width:56px;height:56px;' +
+          'z-index:9999;cursor:default;">' +
+        '</div>'
       );
     }
 
@@ -267,8 +277,7 @@
     function sbar(bg) {
       bg = bg || '#fff';
 
-      /* In PWA/standalone: return a spacer that exactly matches the real
-         status bar height via env(safe-area-inset-top). No fake content. */
+      /* PWA / real mobile: safe-area spacer only, no fake content */
       if (IS_PWA) {
         return (
           '<div style="' +
@@ -279,41 +288,9 @@
         );
       }
 
-      /* Desktop demo: render the full mock status bar */
+      /* Desktop demo: plain coloured bar — no fake time or icons */
       return (
-        '<div style="' +
-          'height:44px;background:' + bg + ';' +
-          'display:flex;align-items:center;' +
-          'justify-content:space-between;' +
-          'padding:0 20px;flex-shrink:0;">' +
-          '<span style="font-size:13px;font-weight:600;color:' + T.text + ';">9:41</span>' +
-          '<div style="display:flex;align-items:center;gap:6px;">' +
-            /* Signal */
-            '<svg width="17" height="12" viewBox="0 0 17 12" fill="' + T.text + '">' +
-              '<rect x="0"    y="8"   width="3" height="4"   rx="0.5"/>' +
-              '<rect x="4.5"  y="5.5" width="3" height="6.5" rx="0.5"/>' +
-              '<rect x="9"    y="2.5" width="3" height="9.5" rx="0.5"/>' +
-              '<rect x="13.5" y="0"   width="3" height="12"  rx="0.5" opacity="0.3"/>' +
-            '</svg>' +
-            /* WiFi */
-            '<svg width="16" height="12" viewBox="0 0 16 12"' +
-                 ' fill="none" stroke="' + T.text + '"' +
-                 ' stroke-width="1.5" stroke-linecap="round">' +
-              '<path d="M1 4.5C3.5 2 12.5 2 15 4.5"/>' +
-              '<path d="M3.5 7C5.3 5.3 10.7 5.3 12.5 7"/>' +
-              '<path d="M6 9.5C6.9 8.7 9.1 8.7 10 9.5"/>' +
-              '<circle cx="8" cy="11.5" r="0.8" fill="' + T.text + '" stroke="none"/>' +
-            '</svg>' +
-            /* Battery */
-            '<svg width="25" height="12" viewBox="0 0 25 12" fill="none">' +
-              '<rect x="0.5" y="0.5" width="21" height="11" rx="3"' +
-                   ' stroke="' + T.text + '" stroke-width="1"/>' +
-              '<rect x="2" y="2" width="16" height="8" rx="2" fill="' + T.text + '"/>' +
-              '<path d="M22.5 4v4a2 2 0 0 0 0-4z"' +
-                   ' fill="' + T.text + '" opacity="0.4"/>' +
-            '</svg>' +
-          '</div>' +
-        '</div>'
+        '<div style="height:44px;background:' + bg + ';flex-shrink:0;"></div>'
       );
     }
 
@@ -3193,33 +3170,6 @@
       var old   = document.getElementById('grp-filter-ov');
       if (old) old.remove();
 
-      function fChip(key, val, label) {
-        var on = (key === 'sort' && groupFilterSort === val) ||
-                 (key === 'media' && groupFilterMedia === val);
-        return (
-          '<button onclick="' +
-                  (key === 'sort'  ? 'groupFilterSort=\'' + val + '\'' :
-                                     'groupFilterMedia=\'' + val + '\'') +
-                  ';showGroupFilterSheet()"' +
-                  ' style="height:34px;padding:0 16px;border-radius:20px;border:none;' +
-                         'font-family:inherit;font-size:13px;font-weight:' + (on ? '600' : '400') + ';' +
-                         'cursor:pointer;margin:0 6px 6px 0;' +
-                         'background:' + (on ? T.blue : T.bgSub) + ';' +
-                         'color:' + (on ? '#fff' : T.text) + ';">' +
-            label +
-          '</button>'
-        );
-      }
-      function fSection(title, chips) {
-        return (
-          '<p style="font-size:11px;font-weight:700;color:' + T.textT + ';' +
-                    'letter-spacing:.06em;text-transform:uppercase;margin:18px 0 8px;">' +
-            title +
-          '</p>' +
-          '<div style="display:flex;flex-wrap:wrap;">' + chips + '</div>'
-        );
-      }
-
       var ov = document.createElement('div');
       ov.id  = 'grp-filter-ov';
       ov.setAttribute('style',
@@ -3242,20 +3192,20 @@
           /* Title row */
           '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">' +
             '<p style="font-size:17px;font-weight:800;color:' + T.text + ';">Filter &amp; Sort</p>' +
-            '<button onclick="groupFilterSort=\'newest\';groupFilterMedia=\'all\';showGroupFilterSheet()"' +
+            '<button onclick="groupFilterSort=\'newest\';groupFilterMedia=\'all\';grpFilterRefresh()"' +
                     ' style="font-size:13px;font-weight:600;color:' + T.blue + ';' +
                            'background:none;border:none;cursor:pointer;">Reset</button>' +
           '</div>' +
 
-          fSection('Sort',
-            fChip('sort',  'newest', 'Newest first') +
-            fChip('sort',  'oldest', 'Oldest first')
-          ) +
-          fSection('Media type',
-            fChip('media', 'all',    'All') +
-            fChip('media', 'photos', 'Photos only') +
-            fChip('media', 'videos', 'Videos only')
-          ) +
+          /* Sort chips — patched in-place by grpFilterRefresh() */
+          '<p style="font-size:11px;font-weight:700;color:' + T.textT + ';' +
+                    'letter-spacing:.06em;text-transform:uppercase;margin:18px 0 8px;">Sort</p>' +
+          '<div id="grp-sort-chips" style="display:flex;flex-wrap:wrap;"></div>' +
+
+          /* Media chips — patched in-place */
+          '<p style="font-size:11px;font-weight:700;color:' + T.textT + ';' +
+                    'letter-spacing:.06em;text-transform:uppercase;margin:18px 0 8px;">Media type</p>' +
+          '<div id="grp-media-chips" style="display:flex;flex-wrap:wrap;"></div>' +
 
           '<button onclick="document.getElementById(\'grp-filter-ov\').remove();taggingSetTab(\'group\')"' +
                   ' style="display:block;width:100%;height:48px;border-radius:12px;border:none;' +
@@ -3270,9 +3220,37 @@
       requestAnimationFrame(function () {
         requestAnimationFrame(function () {
           var s = document.getElementById('grp-filter-sheet');
-          if (s) s.style.transform = 'translateY(0)';
+          if (s) {
+            s.style.transform = 'translateY(0)';
+            grpFilterRefresh(); /* populate chips after sheet is visible */
+          }
         });
       });
+    }
+
+    /* Patch chip rows in-place — sheet stays open, no flicker */
+    function grpFilterRefresh() {
+      function chip(key, val, label) {
+        var on = (key === 'sort' && groupFilterSort === val) ||
+                 (key === 'media' && groupFilterMedia === val);
+        var setter = key === 'sort'
+          ? 'groupFilterSort=\'' + val + '\''
+          : 'groupFilterMedia=\'' + val + '\'';
+        return (
+          '<button onclick="' + setter + ';grpFilterRefresh()"' +
+                  ' style="height:34px;padding:0 16px;border-radius:20px;border:none;' +
+                         'font-family:inherit;font-size:13px;font-weight:' + (on ? '600' : '400') + ';' +
+                         'cursor:pointer;margin:0 6px 6px 0;' +
+                         'background:' + (on ? T.blue : T.bgSub) + ';' +
+                         'color:' + (on ? '#fff' : T.text) + ';">' +
+            label +
+          '</button>'
+        );
+      }
+      var sc = document.getElementById('grp-sort-chips');
+      var mc = document.getElementById('grp-media-chips');
+      if (sc) sc.innerHTML = chip('sort','newest','Newest first') + chip('sort','oldest','Oldest first');
+      if (mc) mc.innerHTML = chip('media','all','All') + chip('media','photos','Photos only') + chip('media','videos','Videos only');
     }
 
     /* taggingShowThreeDot removed — replaced by showGroupFilterSheet() */
