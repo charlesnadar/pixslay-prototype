@@ -115,11 +115,20 @@
     #phone *::-webkit-scrollbar { display:none; }
     #phone * { -ms-overflow-style:none; scrollbar-width:none; }
 
-    /* Each screen fills the phone frame exactly.
-       height:100% is the belt-and-suspenders companion to inset:0 —
-       some Android Chrome builds don't auto-size flex containers
-       from absolute-position constraints alone. */
+    /* Desktop: screen fills the 844px phone frame via height:100% of the
+       explicitly-sized .phone container. */
     .screen { height: 100%; }
+
+    /* Mobile / PWA: height:100% on an absolutely-positioned child fails on
+       iOS Safari when the parent's height is set via JS (inline style on a
+       position:fixed element is not considered "explicit" for % resolution —
+       the percentage resolves to 0, bottom:0 from inset:0 is then ignored,
+       and the screen has zero height so everything stacks from the top).
+       Fix: use height:auto so the positioning algorithm uses top:0 + bottom:0
+       to compute the height directly — always equals the JS-set phone height. */
+    @media (max-width: 500px), (display-mode: standalone) {
+      .screen { height: auto; }
+    }
   </style>
   <!-- Mobile layout engine.
        position:fixed has known iOS PWA bugs when body has overflow:hidden.
@@ -1134,7 +1143,7 @@
                 'style="text-align:center;font-size:10px;font-weight:500;' +
                       'color:' + T.textT + ';margin-top:8px;letter-spacing:.04em;' +
                       'padding:8px 0;cursor:default;">' +
-              'v16' +
+              'v17' +
             '</p>' +
 
           '</div>' +
