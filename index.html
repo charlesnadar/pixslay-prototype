@@ -1073,7 +1073,7 @@
 
             '<p style="text-align:center;font-size:10px;font-weight:500;' +
                       'color:' + T.textT + ';margin-top:8px;letter-spacing:.04em;">' +
-              'v30' +
+              'v31' +
             '</p>' +
 
           '</div>' +
@@ -5664,77 +5664,120 @@
 
     /* ── A1: Scene-setter — push notification, power user ── */
     function screenAnandScene() {
+      /* Helper: right bubble (Varun / You) */
+      function rBubble(msg, time) {
+        return (
+          '<div style="display:flex;justify-content:flex-end;margin-bottom:6px;">' +
+            '<div style="background:#DCF8C6;border-radius:10px 0 10px 10px;' +
+                        'padding:7px 10px 5px;max-width:80%;' +
+                        'box-shadow:0 1px 2px rgba(0,0,0,.1);">' +
+              '<p style="font-size:13px;color:#111;line-height:1.4;margin-bottom:3px;">' + msg + '</p>' +
+              '<p style="font-size:10px;color:#999;text-align:right;">' + time + ' ✓✓</p>' +
+            '</div>' +
+          '</div>'
+        );
+      }
+      /* Helper: left bubble (Anand) */
+      function lBubble(msg, time) {
+        return (
+          '<div style="display:flex;justify-content:flex-start;margin-bottom:6px;">' +
+            '<div style="background:#fff;border-radius:0 10px 10px 10px;' +
+                        'padding:7px 10px 5px;max-width:80%;' +
+                        'box-shadow:0 1px 2px rgba(0,0,0,.1);">' +
+              '<p style="font-size:13px;color:#111;line-height:1.4;margin-bottom:3px;">' + msg + '</p>' +
+              '<p style="font-size:10px;color:#999;text-align:right;">' + time + ' ✓</p>' +
+            '</div>' +
+          '</div>'
+        );
+      }
+
       return (
         '<div class="screen"' +
              ' style="position:absolute;inset:0;display:flex;flex-direction:column;' +
-                    'background:' + T.bgWarm + ';">' +
+                    'background:#E2DDD5;">' +
 
           switchPill() +
-          sbar(T.bgWarm) +
+          sbar('#075E54') +
 
-          '<div style="flex:1;display:flex;flex-direction:column;' +
-               'justify-content:center;padding:28px 24px 40px;">' +
+          /* WhatsApp DM header */
+          '<div style="background:#075E54;padding:10px 14px;flex-shrink:0;' +
+                      'display:flex;align-items:center;gap:10px;">' +
+            '<svg width="20" height="20" viewBox="0 0 24 24" fill="none"' +
+                 ' stroke="rgba(255,255,255,.85)" stroke-width="2.5"' +
+                 ' stroke-linecap="round" stroke-linejoin="round">' +
+              '<polyline points="15 18 9 12 15 6"/>' +
+            '</svg>' +
+            '<div style="width:38px;height:38px;border-radius:50%;' +
+                        'background:linear-gradient(135deg,#006064,#00838F);' +
+                        'display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+              '<span style="font-size:14px;font-weight:700;color:#fff;">AN</span>' +
+            '</div>' +
+            '<div style="flex:1;">' +
+              '<p style="font-size:14px;font-weight:700;color:#fff;margin-bottom:1px;">Anand</p>' +
+              '<p style="font-size:11px;color:rgba(255,255,255,.7);">online</p>' +
+            '</div>' +
+            '<svg width="20" height="20" viewBox="0 0 24 24" fill="none"' +
+                 ' stroke="rgba(255,255,255,.85)" stroke-width="2"' +
+                 ' stroke-linecap="round" stroke-linejoin="round">' +
+              '<circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>' +
+            '</svg>' +
+          '</div>' +
 
-            /* Time label */
-            '<p style="font-size:12px;font-weight:600;color:' + T.textT + ';' +
-                      'letter-spacing:.07em;text-transform:uppercase;' +
-                      'text-align:center;margin-bottom:10px;">' +
-              'Saturday, 24 May · 7:48 AM' +
-            '</p>' +
+          /* Chat area */
+          '<div style="flex:1;overflow-y:auto;padding:10px 8px 6px;" class="pscroll">' +
 
-            /* Context */
-            '<p style="font-size:20px;font-weight:800;color:' + T.text + ';' +
-                      'line-height:1.35;text-align:center;margin-bottom:32px;' +
-                      'letter-spacing:-.3px;">' +
-              'You already accepted this trip. Tap the notification and you\'re straight inside — no invite screen, no steps.' +
-            '</p>' +
-
-            /* iOS-style dark notification banner */
-            '<div style="background:#1C1C1E;border-radius:16px;' +
-                        'padding:14px 16px;margin-bottom:36px;' +
-                        'box-shadow:0 8px 32px rgba(0,0,0,.3);">' +
-
-              '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">' +
-                '<div style="width:30px;height:30px;border-radius:7px;' +
-                             'background:#006064;flex-shrink:0;' +
-                             'display:flex;align-items:center;justify-content:center;">' +
-                  '<svg width="16" height="16" viewBox="0 0 20 20" fill="none"' +
-                       ' stroke="white" stroke-width="2"' +
-                       ' stroke-linecap="round" stroke-linejoin="round">' +
-                    '<rect x="1" y="3" width="18" height="14" rx="2"/>' +
-                    '<circle cx="10" cy="10" r="3"/>' +
-                    '<circle cx="10" cy="10" r="1" fill="white" stroke="none"/>' +
-                  '</svg>' +
-                '</div>' +
-                '<span style="font-size:11px;font-weight:700;' +
-                             'color:rgba(255,255,255,.55);letter-spacing:.05em;flex:1;">' +
-                  'PIXSLAY' +
-                '</span>' +
-                '<span style="font-size:11px;color:rgba(255,255,255,.35);">now</span>' +
-              '</div>' +
-
-              '<p style="font-size:14px;font-weight:700;color:#fff;margin-bottom:3px;">' +
-                'Mumbai — Karjat · 34 new photos' +
-              '</p>' +
-
-              '<p style="font-size:13px;font-weight:400;' +
-                        'color:rgba(255,255,255,.7);line-height:1.4;">' +
-                'New photos added since your last visit. Tap to jump back in.' +
-              '</p>' +
-
+            '<div style="text-align:center;margin:4px 0 10px;">' +
+              '<span style="background:rgba(0,0,0,.18);color:#fff;font-size:11px;' +
+                           'padding:3px 12px;border-radius:8px;">Sat, 24 May</span>' +
             '</div>' +
 
-            /* CTA */
-            '<button onclick="taggingOpenTab=\'group\';go(\'varun-tagging\')"' +
-              ' style="display:block;width:100%;height:50px;' +
-                     'border-radius:12px;border:none;' +
-                     'background:#006064;color:#fff;' +
-                     'font-family:inherit;font-size:15px;font-weight:600;' +
-                     'cursor:pointer;' +
-                     'box-shadow:0 4px 14px rgba(0,96,100,.35);">' +
-              'Tap the notification' +
-            '</button>' +
+            rBubble('ye drama queen 😂 kya hua', '9:14 AM') +
+            lBubble('mere Amazon voucher chori hogaya 😭', '9:15 AM') +
+            rBubble('bol seriously... trip toh aa raha na?', '9:15 AM') +
+            lBubble('haan bhai pakka 🤙', '9:16 AM') +
+            rBubble('ok sun, trip ke photos sab ek jagah share karne ke liye ek app try kar rahe hain', '9:17 AM') +
 
+            /* PixSlay link card */
+            '<div style="display:flex;justify-content:flex-end;margin-bottom:8px;">' +
+              '<div style="background:#DCF8C6;border-radius:10px 0 10px 10px;' +
+                          'padding:8px 10px 6px;max-width:86%;' +
+                          'box-shadow:0 1px 2px rgba(0,0,0,.1);">' +
+                '<div onclick="openApp(\'anand-home\')"' +
+                     ' style="background:#f5f5f5;border-radius:8px;padding:10px 12px;' +
+                             'display:flex;align-items:center;gap:10px;cursor:pointer;' +
+                             'border:1px solid #e0e0e0;margin-bottom:4px;">' +
+                  '<div style="width:36px;height:36px;border-radius:8px;flex-shrink:0;' +
+                              'background:linear-gradient(135deg,#1B4FD8,#2D7DD2);' +
+                              'display:flex;align-items:center;justify-content:center;">' +
+                    '<span style="font-size:18px;">📷</span>' +
+                  '</div>' +
+                  '<div>' +
+                    '<p style="font-size:12px;font-weight:700;color:#111;margin-bottom:2px;">PixSlay</p>' +
+                    '<p style="font-size:10px;color:#1B4FD8;margin-bottom:1px;">pixslay.app/join/karjat-2405</p>' +
+                    '<p style="font-size:10px;color:#888;">Mumbai — Karjat · 34 photos</p>' +
+                  '</div>' +
+                '</div>' +
+                '<p style="font-size:10px;color:#999;text-align:right;">9:17 AM ✓✓</p>' +
+              '</div>' +
+            '</div>' +
+
+          '</div>' +
+
+          /* WhatsApp input bar */
+          '<div style="background:#F0F0F0;padding:8px 10px;flex-shrink:0;' +
+                      'display:flex;align-items:center;gap:8px;">' +
+            '<div style="flex:1;background:#fff;border-radius:22px;padding:10px 16px;' +
+                        'font-size:14px;color:#aaa;">Type a message</div>' +
+            '<div style="width:44px;height:44px;border-radius:50%;background:#25D366;' +
+                        'display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+              '<svg width="20" height="20" viewBox="0 0 24 24" fill="none"' +
+                   ' stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                '<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>' +
+                '<path d="M19 10v2a7 7 0 0 1-14 0v-2"/>' +
+                '<line x1="12" y1="19" x2="12" y2="23"/>' +
+                '<line x1="8" y1="23" x2="16" y2="23"/>' +
+              '</svg>' +
+            '</div>' +
           '</div>' +
 
         '</div>'
