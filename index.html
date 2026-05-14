@@ -3081,8 +3081,16 @@
             '<polyline points="15 18 9 12 15 6"/>' +
           '</svg>' +
         '</button>' +
-        '<span style="font-size:16px;font-weight:700;color:' + T.text + ';">' +
+        '<span onclick="showEditTripSheet()"' +
+             ' style="font-size:16px;font-weight:700;color:' + T.text + ';cursor:pointer;' +
+                    'display:flex;align-items:center;gap:5px;">' +
           'Mumbai — Karjat' +
+          '<svg width="12" height="12" viewBox="0 0 24 24" fill="none"' +
+               ' stroke="' + T.textS + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"' +
+               ' style="flex-shrink:0;margin-top:1px;">' +
+            '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>' +
+            '<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>' +
+          '</svg>' +
         '</span>' +
         '<div style="display:flex;gap:6px;align-items:center;">' +
           /* Activity entry point — stacked avatars + pulse dot */
@@ -3280,6 +3288,150 @@
     var groupCreated     = false;      /* true once Varun taps Create group */
     var groupFilterSort  = 'newest';   /* 'newest' | 'oldest' */
     var groupFilterMedia = 'all';      /* 'all' | 'photos' | 'videos' */
+
+    /* ─────────────────────────────────────────────────────
+       EDIT TRIP DETAILS SHEET
+    ───────────────────────────────────────────────────── */
+    function showEditTripSheet() {
+      var old = document.getElementById('edit-trip-ov');
+      if (old) old.remove();
+
+      var ov = document.createElement('div');
+      ov.id = 'edit-trip-ov';
+      ov.style.cssText = (
+        'position:absolute;inset:0;z-index:600;' +
+        'background:rgba(0,0,0,0);' +
+        'display:flex;flex-direction:column;justify-content:flex-end;' +
+        'transition:background .25s ease;'
+      );
+
+      ov.innerHTML = (
+        '<div id="edit-trip-sheet"' +
+             ' style="background:#fff;border-radius:20px 20px 0 0;' +
+                    'padding:0 0 40px;' +
+                    'transform:translateY(100%);transition:transform .32s cubic-bezier(.22,1,.36,1);">' +
+
+          /* Handle */
+          '<div style="display:flex;justify-content:center;padding:12px 0 4px;">' +
+            '<div style="width:36px;height:4px;border-radius:2px;background:#E2E8F0;"></div>' +
+          '</div>' +
+
+          /* Header */
+          '<div style="display:flex;align-items:center;justify-content:space-between;' +
+                      'padding:8px 20px 16px;">' +
+            '<span style="font-size:17px;font-weight:700;color:' + T.text + ';">Edit trip details</span>' +
+            '<button onclick="closeEditTripSheet()"' +
+                    ' style="width:30px;height:30px;border-radius:50%;border:none;' +
+                           'background:' + T.bgSub + ';cursor:pointer;' +
+                           'display:flex;align-items:center;justify-content:center;">' +
+              '<svg width="14" height="14" viewBox="0 0 24 24" fill="none"' +
+                   ' stroke="' + T.textS + '" stroke-width="2.5"' +
+                   ' stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/>' +
+                '<line x1="6" y1="6" x2="18" y2="18"/></svg>' +
+            '</button>' +
+          '</div>' +
+
+          /* Fields */
+          '<div style="padding:0 20px;display:flex;flex-direction:column;gap:14px;">' +
+
+            /* Trip name */
+            '<div>' +
+              '<label style="font-size:11px;font-weight:600;color:' + T.textS + ';' +
+                            'text-transform:uppercase;letter-spacing:.06em;' +
+                            'display:block;margin-bottom:6px;">Trip name</label>' +
+              '<input id="edt-name" type="text" value="Mumbai — Karjat"' +
+                     ' style="width:100%;height:46px;border:1px solid ' + T.bgSub + ';' +
+                            'border-radius:10px;background:#fff;padding:0 14px;' +
+                            'font-family:inherit;font-size:14px;color:' + T.text + ';' +
+                            'outline:none;box-sizing:border-box;"' +
+                     ' onfocus="this.style.border=\'1.5px solid ' + T.blue + '\'"' +
+                     ' onblur="this.style.border=\'1px solid ' + T.bgSub + '\'">' +
+            '</div>' +
+
+            /* Location */
+            '<div>' +
+              '<label style="font-size:11px;font-weight:600;color:' + T.textS + ';' +
+                            'text-transform:uppercase;letter-spacing:.06em;' +
+                            'display:block;margin-bottom:6px;">Location</label>' +
+              '<input id="edt-loc" type="text" value="Karjat, Maharashtra"' +
+                     ' style="width:100%;height:46px;border:1px solid ' + T.bgSub + ';' +
+                            'border-radius:10px;background:#fff;padding:0 14px;' +
+                            'font-family:inherit;font-size:14px;color:' + T.text + ';' +
+                            'outline:none;box-sizing:border-box;"' +
+                     ' onfocus="this.style.border=\'1.5px solid ' + T.blue + '\'"' +
+                     ' onblur="this.style.border=\'1px solid ' + T.bgSub + '\'">' +
+            '</div>' +
+
+            /* Date range */
+            '<div style="display:flex;gap:12px;">' +
+              '<div style="flex:1;">' +
+                '<label style="font-size:11px;font-weight:600;color:' + T.textS + ';' +
+                              'text-transform:uppercase;letter-spacing:.06em;' +
+                              'display:block;margin-bottom:6px;">From</label>' +
+                '<input id="edt-from" type="text" value="May 18, 2025"' +
+                       ' style="width:100%;height:46px;border:1px solid ' + T.bgSub + ';' +
+                              'border-radius:10px;background:#fff;padding:0 14px;' +
+                              'font-family:inherit;font-size:14px;color:' + T.text + ';' +
+                              'outline:none;box-sizing:border-box;"' +
+                       ' onfocus="this.style.border=\'1.5px solid ' + T.blue + '\'"' +
+                       ' onblur="this.style.border=\'1px solid ' + T.bgSub + '\'">' +
+              '</div>' +
+              '<div style="flex:1;">' +
+                '<label style="font-size:11px;font-weight:600;color:' + T.textS + ';' +
+                              'text-transform:uppercase;letter-spacing:.06em;' +
+                              'display:block;margin-bottom:6px;">To</label>' +
+                '<input id="edt-to" type="text" value="May 20, 2025"' +
+                       ' style="width:100%;height:46px;border:1px solid ' + T.bgSub + ';' +
+                              'border-radius:10px;background:#fff;padding:0 14px;' +
+                              'font-family:inherit;font-size:14px;color:' + T.text + ';' +
+                              'outline:none;box-sizing:border-box;"' +
+                       ' onfocus="this.style.border=\'1.5px solid ' + T.blue + '\'"' +
+                       ' onblur="this.style.border=\'1px solid ' + T.bgSub + '\'">' +
+              '</div>' +
+            '</div>' +
+
+            /* Save button */
+            '<button onclick="saveEditTrip()"' +
+                    ' style="width:100%;height:50px;border-radius:12px;border:none;' +
+                           'background:' + T.blue + ';color:#fff;' +
+                           'font-family:inherit;font-size:15px;font-weight:600;' +
+                           'cursor:pointer;margin-top:4px;">' +
+              'Save changes' +
+            '</button>' +
+
+          '</div>' +
+
+        '</div>'
+      );
+
+      /* Tap backdrop to close */
+      ov.addEventListener('click', function(e) {
+        if (e.target === ov) closeEditTripSheet();
+      });
+
+      document.getElementById('phone').appendChild(ov);
+
+      /* Animate in */
+      requestAnimationFrame(function() {
+        ov.style.background = 'rgba(0,0,0,.45)';
+        var sheet = document.getElementById('edit-trip-sheet');
+        if (sheet) sheet.style.transform = 'translateY(0)';
+      });
+    }
+
+    function closeEditTripSheet() {
+      var ov = document.getElementById('edit-trip-ov');
+      if (!ov) return;
+      ov.style.background = 'rgba(0,0,0,0)';
+      var sheet = document.getElementById('edit-trip-sheet');
+      if (sheet) sheet.style.transform = 'translateY(100%)';
+      setTimeout(function() { if (ov) ov.remove(); }, 320);
+    }
+
+    function saveEditTrip() {
+      closeEditTripSheet();
+      setTimeout(function() { showToast('Trip details updated ✓'); }, 180);
+    }
 
     function showGroupFilterSheet() {
       var phone = document.getElementById('phone');
@@ -4357,13 +4509,20 @@
                 '<polyline points="15 18 9 12 15 6"/>' +
               '</svg>' +
             '</button>' +
-            '<span ontouchstart="window._grpHoldTimer=setTimeout(function(){showGroupDeletePopup()},700)"' +
+            '<span onclick="showEditTripSheet()"' +
+                  ' ontouchstart="window._grpHoldTimer=setTimeout(function(){showGroupDeletePopup()},700)"' +
                   ' ontouchend="clearTimeout(window._grpHoldTimer)"' +
                   ' ontouchmove="clearTimeout(window._grpHoldTimer)"' +
                   ' ondblclick="showGroupDeletePopup()"' +
                   ' style="font-size:17px;font-weight:700;color:' + T.text + ';letter-spacing:-.02em;' +
-                         'user-select:none;cursor:default;">' +
+                         'user-select:none;cursor:pointer;display:flex;align-items:center;gap:5px;">' +
               'Mumbai — Karjat' +
+              '<svg width="13" height="13" viewBox="0 0 24 24" fill="none"' +
+                   ' stroke="' + T.textS + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"' +
+                   ' style="flex-shrink:0;margin-top:1px;">' +
+                '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>' +
+                '<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>' +
+              '</svg>' +
             '</span>' +
             '<div style="display:flex;gap:6px;align-items:center;">' +
 
