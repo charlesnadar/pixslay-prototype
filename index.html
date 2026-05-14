@@ -382,6 +382,40 @@
       go('entry');
     }
 
+    /* ─────────────────────────────────────────────────────
+       SHARED: screenHeader
+       Consistent top bar — back arrow | centred title | optional right slot.
+       backDest: route string, or '__back__' to call handleBack(), or null for no arrow.
+       title: string or null (onboarding screens have no centred title).
+       rightAction: raw HTML string for right slot, or null.
+    ───────────────────────────────────────────────────── */
+    function screenHeader(title, backDest, rightAction) {
+      var backBtn = backDest
+        ? '<button onclick="' + (backDest === '__back__' ? 'handleBack()' : 'go(\'' + backDest + '\')') + '"' +
+                 ' style="width:34px;height:34px;border-radius:10px;border:none;' +
+                        'background:' + T.bgSub + ';cursor:pointer;display:flex;' +
+                        'align-items:center;justify-content:center;flex-shrink:0;">' +
+            '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"' +
+                 ' stroke="' + T.text + '" stroke-width="2.5" stroke-linecap="round">' +
+              '<polyline points="15 18 9 12 15 6"/>' +
+            '</svg>' +
+          '</button>'
+        : '<div style="width:34px;height:34px;flex-shrink:0;"></div>';
+
+      return (
+        '<div style="height:52px;display:flex;align-items:center;' +
+             'padding:0 16px;flex-shrink:0;position:relative;">' +
+          backBtn +
+          (title
+            ? '<span style="position:absolute;left:50%;transform:translateX(-50%);' +
+                     'font-size:16px;font-weight:700;color:' + T.text + ';white-space:nowrap;">' + title + '</span>'
+            : '') +
+          '<div style="flex:1;"></div>' +
+          (rightAction || '<div style="width:34px;height:34px;flex-shrink:0;"></div>') +
+        '</div>'
+      );
+    }
+
     /* ═════════════════════════════════════════════════════
        SCREEN: varun-reg  (Varun — Screen 1: Phone Registration)
        ─────────────────────────────────────────────────────
@@ -408,74 +442,78 @@
 
           switchPill() +
           sbar('#fff') +
+          screenHeader(null, '__back__') +
 
           /* ── Scrollable body ── */
-          '<div style="flex:1;overflow-y:auto;padding:0 16px;' +
+          '<div style="flex:1;overflow-y:auto;padding:0 24px;' +
                'display:flex;flex-direction:column;">' +
 
-            /* Logo: left-aligned, matches headline/copy margin */
-            '<div style="padding-top:60px;margin-bottom:40px;">' +
+            /* Logo */
+            '<div style="margin-bottom:36px;">' +
               logo(28, 22) +
             '</div>' +
 
-            /* Headline: 24px 800 #1A1917, left-aligned (parent provides 16px margin) */
-            '<h1 style="font-size:24px;font-weight:800;' +
-                       'color:' + T.text + ';letter-spacing:-0.5px;' +
-                       'line-height:1.25;margin-bottom:8px;">' +
-              'Your photos from every gathering.' +
+            /* Headline */
+            '<h1 style="font-size:26px;font-weight:800;' +
+                       'color:' + T.text + ';letter-spacing:-0.6px;' +
+                       'line-height:1.2;margin-bottom:10px;">' +
+              'Every gathering.<br>Every photo.<br>One place.' +
             '</h1>' +
 
-            /* Subhead: 13px 400 #6B6864 */
             '<p style="font-size:13px;font-weight:400;' +
                       'color:' + T.textS + ';line-height:1.55;' +
-                      'margin-bottom:28px;">' +
-              'Start with your number. We\'ll send a quick code.' +
+                      'margin-bottom:32px;">' +
+              'Start with your number — we\'ll send a quick code.' +
             '</p>' +
 
-            /* Phone field: empty, label acts as watermark */
-            floatInput('Your phone number', 'phone-inp', '', 'tel', 'onPhoneInput(this)') +
+            /* Phone row: +91 chip + input */
+            '<div style="display:flex;gap:8px;align-items:stretch;margin-bottom:4px;">' +
 
-            /* Hint: 11px 500 #A8A49F left-aligned to match headline/subhead */
-            '<p style="font-size:11px;font-weight:500;' +
-                      'color:' + T.textT + ';' +
-                      'margin-top:4px;">' +
+              /* Country code chip */
+              '<div style="height:46px;min-width:56px;border-radius:10px;' +
+                          'border:0.5px solid ' + T.bgSub + ';background:#fff;' +
+                          'display:flex;align-items:center;justify-content:center;' +
+                          'gap:4px;flex-shrink:0;cursor:pointer;' +
+                          'font-size:14px;font-weight:600;color:' + T.text + ';"' +
+                   ' onclick="showToast(\'Country code selection coming soon\')">' +
+                '🇮🇳 +91' +
+              '</div>' +
+
+              /* Phone number float input */
+              '<div style="flex:1;position:relative;">' +
+                '<input id="phone-inp" type="tel" inputmode="numeric"' +
+                       ' placeholder="Phone number"' +
+                       ' oninput="onPhoneInput(this)"' +
+                       ' style="width:100%;height:46px;border:0.5px solid ' + T.bgSub + ';' +
+                              'border-radius:10px;background:#fff;' +
+                              'font-family:inherit;font-size:14px;color:' + T.text + ';' +
+                              'padding:0 14px;outline:none;' +
+                              'transition:border .15s;"' +
+                       ' onfocus="this.style.border=\'1px solid ' + T.blue + '\';"' +
+                       ' onblur="this.style.border=\'0.5px solid ' + T.bgSub + '\';">' +
+              '</div>' +
+
+            '</div>' +
+
+            '<p style="font-size:11px;font-weight:400;color:' + T.textT + ';' +
+                      'margin-bottom:0;">' +
               'We\'ll send a one-time code to verify.' +
             '</p>' +
 
-            /* Spacer: absorbs extra height; keyboard pushes buttons up on mobile */
             '<div style="flex:1;min-height:24px;"></div>' +
 
           '</div>' +
 
-          /* ── Button area — pinned to bottom ── */
-          '<div style="padding:0 16px 32px;flex-shrink:0;">' +
-
-            /* Continue — primary 50px, 12px radius, full width */
-            /* Disabled: bg #F0EEEB text #A8A49F cursor default     */
-            /* Active:   bg #1B4FD8 text #fff   cursor pointer      */
+          /* ── Sticky CTA ── */
+          '<div style="padding:0 24px 36px;flex-shrink:0;">' +
             '<button id="continue-btn" disabled' +
               ' onclick="if(!this.disabled) go(\'varun-otp\')"' +
-              ' style="' +
-                'display:block;width:100%;height:50px;' +
-                'border-radius:12px;border:none;' +
-                'background:' + T.bgSub + ';color:' + T.textT + ';' +
-                'font-family:inherit;font-size:15px;font-weight:600;' +
-                'cursor:default;margin-bottom:8px;' +
-                'transition:background .15s,color .15s;">' +
+              ' style="display:block;width:100%;height:50px;border-radius:12px;border:none;' +
+                     'background:' + T.bgSub + ';color:' + T.textT + ';' +
+                     'font-family:inherit;font-size:15px;font-weight:600;' +
+                     'cursor:default;transition:background .15s,color .15s;">' +
               'Continue' +
             '</button>' +
-
-            /* Back — ghost 44px, same width, always enabled */
-            '<button onclick="handleBack()"' +
-              ' style="' +
-                'display:block;width:100%;height:44px;' +
-                'border-radius:12px;border:none;' +
-                'background:transparent;color:' + T.textS + ';' +
-                'font-family:inherit;font-size:13px;font-weight:500;' +
-                'cursor:pointer;">' +
-              'Back' +
-            '</button>' +
-
           '</div>' +
 
         '</div>'
@@ -490,6 +528,26 @@
     var otpResendInt = null;
     var otpExpiryTO  = null;
     var otpSecs      = 30;
+
+    /* Demo shortcut — tap any box to fill all 4 and auto-proceed.
+       Guard prevents double-fire from focus + click landing together. */
+    var _otpFilling = false;
+    function fillOtp() {
+      if (_otpFilling) return;
+      _otpFilling = true;
+      var demo = ['1','2','3','4'];
+      for (var i = 0; i < 4; i++) {
+        var box = document.getElementById('otp-' + i);
+        if (box) {
+          box.value            = demo[i];
+          box.style.background = T.blueTint;
+          box.style.border     = '1.5px solid ' + T.blueBdr;
+        }
+      }
+      clearInterval(otpResendInt);
+      clearTimeout(otpExpiryTO);
+      setTimeout(function () { _otpFilling = false; go(otpDest); }, 420);
+    }
 
     /* Auto-advance on digit entry. Auto-submit on 6th box. */
     function otpInput(id, i, dest, el) {
@@ -588,11 +646,40 @@
     function onNameInput(el) {
       var btn = document.getElementById('profile-continue-btn');
       if (!btn) return;
-      var ok = el.value.trim().length >= 2;
+      var val = el.value.trim();
+      var ok  = val.length >= 2;
       btn.disabled         = !ok;
-      btn.style.background = ok ? T.blue   : T.bgSub;
-      btn.style.color      = ok ? '#fff'   : T.textT;
-      btn.style.cursor     = ok ? 'pointer': 'default';
+      btn.style.background = ok ? T.blue    : T.bgSub;
+      btn.style.color      = ok ? '#fff'    : T.textT;
+      btn.style.cursor     = ok ? 'pointer' : 'default';
+
+      /* Live avatar initials — update as user types */
+      var circle = document.getElementById('avatar-circle');
+      if (circle) {
+        if (val) {
+          var parts    = val.split(' ');
+          var initials = parts[0].charAt(0).toUpperCase() +
+                         (parts.length > 1 ? parts[parts.length - 1].charAt(0).toUpperCase() : '');
+          circle.style.background = 'linear-gradient(135deg,' + T.blueH + ',' + T.blue + ')';
+          circle.style.border     = 'none';
+          circle.innerHTML =
+            '<span style="font-size:22px;font-weight:800;color:#fff;' +
+                         'letter-spacing:-0.5px;pointer-events:none;">' + initials + '</span>';
+          avatarSet = true;
+        } else {
+          circle.style.background = T.blueTint;
+          circle.style.border     = '1.5px dashed ' + T.blueBdr;
+          circle.innerHTML =
+            '<svg width="28" height="28" viewBox="0 0 24 24" fill="none"' +
+                 ' stroke="' + T.blueBdr + '" stroke-width="1.5"' +
+                 ' stroke-linecap="round" stroke-linejoin="round"' +
+                 ' style="pointer-events:none;">' +
+              '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>' +
+              '<circle cx="12" cy="7" r="4"/>' +
+            '</svg>';
+          avatarSet = false;
+        }
+      }
     }
 
     function avatarTap() {
@@ -926,7 +1013,7 @@
     }
 
     function screenVarunOtp() {
-      /* Build 6 OTP input boxes */
+      /* 4 OTP input boxes — oninput auto-advances exactly as original */
       var boxes = '';
       for (var bi = 0; bi < 4; bi++) {
         boxes += (
@@ -937,16 +1024,16 @@
             ' maxlength="1"' +
             (bi === 0 ? ' autocomplete="one-time-code"' : ' autocomplete="off"') +
             ' style="' +
-              'width:44px;height:52px;' +
-              'border:0.5px solid ' + T.bgSub + ';' +
-              'border-radius:10px;background:#fff;' +
-              'font-family:inherit;font-size:24px;font-weight:800;' +
+              'width:56px;height:64px;' +
+              'border:1.5px solid ' + T.bgSub + ';' +
+              'border-radius:14px;background:#fff;' +
+              'font-family:inherit;font-size:28px;font-weight:800;' +
               'color:' + T.blue + ';' +
               'text-align:center;outline:none;' +
               'caret-color:' + T.blue + ';' +
               'transition:border .12s,background .12s;"' +
-            ' onfocus="this.style.border=\'1.5px solid ' + T.blue + '\';"' +
-            ' onblur="if(!this.value){this.style.border=\'0.5px solid ' + T.bgSub + '\';}"' +
+            ' onfocus="this.style.border=\'2px solid ' + T.blue + '\';"' +
+            ' onblur="if(!this.value){this.style.border=\'1.5px solid ' + T.bgSub + '\';}"' +
             ' oninput="otpInput(\'otp\',' + bi + ',otpDest,this)"' +
             ' onkeydown="otpBack(\'otp\',' + bi + ',event)"' +
           '>'
@@ -961,68 +1048,52 @@
 
           switchPill() +
           sbar('#fff') +
+          screenHeader(null, 'varun-reg') +
 
-          /* ── Scrollable body ── */
           '<div style="flex:1;overflow-y:auto;padding:0 24px;' +
                'display:flex;flex-direction:column;">' +
 
-            /* Back arrow button */
-            '<button onclick="go(\'varun-reg\')"' +
-              ' style="' +
-                'align-self:flex-start;' +
-                'margin-top:16px;margin-bottom:32px;' +
-                'background:none;border:none;cursor:pointer;padding:0;' +
-                'display:flex;align-items:center;gap:4px;' +
-                'font-family:inherit;font-size:13px;font-weight:500;' +
-                'color:' + T.textS + ';">' +
-              '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"' +
-                   ' stroke="' + T.textS + '" stroke-width="2.2"' +
-                   ' stroke-linecap="round" stroke-linejoin="round">' +
-                '<polyline points="15 18 9 12 15 6"/>' +
-              '</svg>' +
-              'Back' +
-            '</button>' +
-
-            /* Headline */
-            '<h1 style="font-size:24px;font-weight:800;' +
-                       'color:' + T.text + ';letter-spacing:-0.5px;' +
-                       'line-height:1.25;margin-bottom:10px;">' +
+            '<h1 style="font-size:26px;font-weight:800;' +
+                       'color:' + T.text + ';letter-spacing:-0.6px;' +
+                       'line-height:1.2;margin-bottom:10px;">' +
               'Enter the code' +
             '</h1>' +
 
-            /* Phone confirmation line — tap to edit number */
-            '<p style="font-size:13px;font-weight:400;' +
-                      'color:' + T.textS + ';line-height:1.55;' +
-                      'margin-bottom:36px;">' +
+            '<p style="font-size:14px;color:' + T.textS + ';line-height:1.55;margin-bottom:36px;">' +
               'Sent to ' +
-              '<span onclick="go(\'varun-reg\')" style="' +
-                'color:' + T.blue + ';font-weight:600;' +
-                'text-decoration:underline;cursor:pointer;">' +
-                '+91 98765 43210' +
+              '<span onclick="go(\'varun-reg\')"' +
+                    ' style="color:' + T.blue + ';font-weight:600;cursor:pointer;' +
+                           'border-bottom:1.5px solid ' + T.blueBdr + ';">' +
+                '+91 98765 ●●●●●' +
               '</span>' +
             '</p>' +
 
-            /* OTP box row */
-            '<div id="otp-row"' +
-                 ' style="display:flex;gap:8px;margin-bottom:16px;">' +
+            /* OTP row */
+            '<div id="otp-row" style="display:flex;gap:12px;margin-bottom:20px;">' +
               boxes +
             '</div>' +
 
-            /* Error text — hidden by default, shake on wrong entry */
+            /* Error */
             '<p id="otp-err"' +
-               ' style="font-size:12px;font-weight:500;' +
-                       'color:' + T.alert + ';' +
-                       'margin-bottom:24px;min-height:16px;' +
-                       'visibility:hidden;">' +
+               ' style="font-size:12px;font-weight:500;color:' + T.alert + ';' +
+                       'margin-bottom:16px;min-height:16px;visibility:hidden;">' +
               'Incorrect code. Try again.' +
             '</p>' +
 
-            /* Resend row — shows countdown, becomes button at 0 */
+            /* Resend */
             '<p id="otp-resend"' +
-               ' style="font-size:13px;font-weight:400;' +
-                       'color:' + T.textT + ';">' +
+               ' style="font-size:13px;color:' + T.textT + ';margin-bottom:28px;">' +
               'Resend in 0:30' +
             '</p>' +
+
+            /* Demo shortcut */
+            '<button onclick="fillOtp()"' +
+                    ' style="align-self:flex-start;height:32px;padding:0 16px;' +
+                           'border-radius:20px;border:none;' +
+                           'background:' + T.bgSub + ';color:' + T.textS + ';' +
+                           'font-family:inherit;font-size:12px;font-weight:500;cursor:pointer;">' +
+              '↓ Auto-fill demo code' +
+            '</button>' +
 
             '<div style="flex:1;min-height:24px;"></div>' +
 
@@ -1036,9 +1107,29 @@
        SCREEN: varun-profile  (Varun — Screen 3: Profile Setup)
     ═════════════════════════════════════════════════════ */
     function screenVarunProfile() {
-      /* Pre-fill name only for Varun's journey; others start blank */
+      /* Pre-fill name only for Varun's journey */
       var nameVal = (activeJourney === 'varun') ? 'Varun' : '';
       var nameOk  = nameVal.trim().length >= 2;
+
+      /* Show initials if name pre-filled */
+      var avatarInner = nameOk
+        ? '<span style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.5px;">VR</span>'
+        : '<svg width="28" height="28" viewBox="0 0 24 24" fill="none"' +
+                ' stroke="' + T.blueBdr + '" stroke-width="1.5"' +
+                ' stroke-linecap="round" stroke-linejoin="round">' +
+            '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>' +
+            '<circle cx="12" cy="7" r="4"/>' +
+          '</svg>';
+      var avatarBg = nameOk
+        ? 'linear-gradient(135deg,' + T.blueH + ',' + T.blue + ')'
+        : T.blueTint;
+      var avatarBorder = nameOk ? 'none' : '1.5px dashed ' + T.blueBdr;
+
+      var nextDest = (activeJourney === 'beulah'  ? 'beulah-home'  :
+                      activeJourney === 'kavitha' ? 'kavitha-home' :
+                      activeJourney === 'vishal'  ? 'vishal-home'  :
+                      activeJourney === 'anand'   ? 'anand-home'   :
+                                                    'varun-create-group');
 
       return (
         '<div class="screen"' +
@@ -1048,123 +1139,70 @@
 
           switchPill() +
           sbar('#fff') +
+          screenHeader(null, 'varun-otp') +
 
           /* ── Scrollable body ── */
           '<div style="flex:1;overflow-y:auto;padding:0 24px;' +
                'display:flex;flex-direction:column;">' +
 
-            /* Back arrow */
-            '<button onclick="go(\'varun-otp\')"' +
-              ' style="align-self:flex-start;' +
-                     'margin-top:16px;margin-bottom:24px;' +
-                     'background:none;border:none;cursor:pointer;padding:0;' +
-                     'display:flex;align-items:center;gap:4px;' +
-                     'font-family:inherit;font-size:13px;font-weight:500;' +
-                     'color:' + T.textS + ';">' +
-              '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"' +
-                   ' stroke="' + T.textS + '" stroke-width="2.2"' +
-                   ' stroke-linecap="round" stroke-linejoin="round">' +
-                '<polyline points="15 18 9 12 15 6"/>' +
-              '</svg>' +
-              'Back' +
-            '</button>' +
-
-            /* Progress dots: 3 steps, step 2 active */
-            '<div style="display:flex;align-items:center;gap:6px;' +
-                        'margin-bottom:28px;">' +
-              '<div style="width:6px;height:6px;border-radius:3px;' +
-                          'background:' + T.blue + ';opacity:0.4;"></div>' +
-              '<div style="width:18px;height:6px;border-radius:3px;' +
-                          'background:' + T.blue + ';"></div>' +
-              '<div style="width:6px;height:6px;border-radius:3px;' +
-                          'background:' + T.bgSub + ';"></div>' +
+            /* Progress dots: step 3 of 3 active */
+            '<div style="display:flex;align-items:center;gap:6px;margin-bottom:28px;">' +
+              '<div style="width:6px;height:6px;border-radius:3px;background:' + T.blue + ';opacity:0.35;"></div>' +
+              '<div style="width:6px;height:6px;border-radius:3px;background:' + T.blue + ';opacity:0.35;"></div>' +
+              '<div style="width:18px;height:6px;border-radius:3px;background:' + T.blue + ';"></div>' +
             '</div>' +
 
-            /* Headline */
-            '<h1 style="font-size:24px;font-weight:800;' +
-                       'color:' + T.text + ';letter-spacing:-0.5px;' +
-                       'line-height:1.25;margin-bottom:8px;">' +
-              'What do we call you?' +
+            '<h1 style="font-size:26px;font-weight:800;' +
+                       'color:' + T.text + ';letter-spacing:-0.6px;' +
+                       'line-height:1.2;margin-bottom:10px;">' +
+              'What do we<br>call you?' +
             '</h1>' +
 
-            /* Subhead */
             '<p style="font-size:13px;font-weight:400;' +
                       'color:' + T.textS + ';line-height:1.55;' +
                       'margin-bottom:32px;">' +
-              'Just the basics. You can always add more later.' +
+              'Just the basics — you can add more later.' +
             '</p>' +
 
-            /* Avatar area */
-            '<div style="display:flex;flex-direction:column;' +
-                        'align-items:center;margin-bottom:28px;">' +
-
+            /* Avatar — updates live as user types */
+            '<div style="display:flex;flex-direction:column;align-items:center;margin-bottom:28px;">' +
               '<div id="avatar-circle" onclick="avatarTap()"' +
-                   ' style="width:72px;height:72px;border-radius:50%;' +
-                          'background:' + T.blueTint + ';' +
-                          'border:1.5px dashed ' + T.blueBdr + ';' +
+                   ' style="width:80px;height:80px;border-radius:50%;' +
+                          'background:' + avatarBg + ';' +
+                          'border:' + avatarBorder + ';' +
                           'display:flex;align-items:center;justify-content:center;' +
-                          'cursor:pointer;position:relative;' +
-                          'margin-bottom:10px;flex-shrink:0;">' +
-                '<svg width="28" height="28" viewBox="0 0 24 24" fill="none"' +
-                     ' stroke="' + T.blueBdr + '" stroke-width="1.5"' +
-                     ' stroke-linecap="round" stroke-linejoin="round"' +
-                     ' style="pointer-events:none;">' +
-                  '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>' +
-                  '<circle cx="12" cy="7" r="4"/>' +
-                '</svg>' +
+                          'cursor:pointer;position:relative;margin-bottom:10px;flex-shrink:0;' +
+                          'box-shadow:0 4px 18px rgba(0,0,0,.10);">' +
+                avatarInner +
               '</div>' +
-
-              '<p style="font-size:11px;font-weight:400;' +
-                        'color:' + T.textT + ';text-align:center;">' +
-                'Add a photo so friends recognise you' +
-              '</p>' +
-
+              '<p style="font-size:12px;font-weight:500;color:' + T.blue + ';cursor:pointer;"' +
+                  ' onclick="avatarTap()">Add a photo</p>' +
             '</div>' +
 
-            /* Name field — pre-filled Varun, oninput enables Continue */
-            floatInput('Your full name', 'profile-name', nameVal,
-                       'text', 'onNameInput(this)', 'text') +
+            /* Name — live updates avatar */
+            floatInput('Your full name', 'profile-name', nameVal, 'text', 'onNameInput(this)', 'text') +
 
-            /* Email field — optional, no validation needed */
-            floatInput('Your email (optional)', 'profile-email', '',
-                       'text', '', 'email') +
+            /* Email — clearly optional */
+            floatInput('Email (optional)', 'profile-email', '', 'text', '', 'email') +
 
             '<div style="flex:1;min-height:24px;"></div>' +
 
           '</div>' +
 
-          /* ── Button area ── */
-          '<div style="padding:0 24px 32px;flex-shrink:0;">' +
-
+          /* ── Sticky CTA — no Back button ── */
+          '<div style="padding:0 24px 36px;flex-shrink:0;">' +
             '<button id="profile-continue-btn"' +
               (nameOk ? '' : ' disabled') +
-              ' onclick="if(!this.disabled) go(\'' +
-                (activeJourney === 'beulah'  ? 'beulah-home'       :
-                 activeJourney === 'kavitha' ? 'kavitha-home'       :
-                 activeJourney === 'vishal'  ? 'vishal-home'        :
-                 activeJourney === 'anand'   ? 'anand-home'         :
-                                               'varun-create-group') +
-              '\')"' +
-              ' style="display:block;width:100%;height:50px;' +
-                     'border-radius:12px;border:none;' +
+              ' onclick="if(!this.disabled) go(\'' + nextDest + '\')"' +
+              ' style="display:block;width:100%;height:50px;border-radius:12px;border:none;' +
                      'background:' + (nameOk ? T.blue : T.bgSub) + ';' +
                      'color:' + (nameOk ? '#fff' : T.textT) + ';' +
                      'font-family:inherit;font-size:15px;font-weight:600;' +
                      'cursor:' + (nameOk ? 'pointer' : 'default') + ';' +
-                     'margin-bottom:8px;' +
-                     'transition:background .15s,color .15s;">' +
+                     'transition:background .15s,color .15s;' +
+                     'box-shadow:' + (nameOk ? '0 4px 14px rgba(27,79,216,.28)' : 'none') + ';">' +
               'Continue' +
             '</button>' +
-
-            '<button onclick="go(\'varun-otp\')"' +
-              ' style="display:block;width:100%;height:44px;' +
-                     'border-radius:12px;border:none;' +
-                     'background:transparent;color:' + T.textS + ';' +
-                     'font-family:inherit;font-size:13px;font-weight:500;' +
-                     'cursor:pointer;">' +
-              'Back' +
-            '</button>' +
-
           '</div>' +
 
         '</div>'
@@ -1276,88 +1314,67 @@
           '</div>' +
 
           /* ── Scrollable content ── */
-          '<div style="flex:1;overflow-y:auto;padding:16px 16px 24px;">' +
+          '<div style="flex:1;overflow-y:auto;padding:16px 16px 24px;' +
+               'display:flex;flex-direction:column;">' +
 
-            /* ── Mumbai — Karjat LIVE album card ── */
-            '<div onclick="taggingOpenTab=\'group\';go(\'varun-tagging\')"' +
-                 ' style="background:#fff;border-radius:18px;' +
-                         'overflow:hidden;cursor:pointer;' +
-                         'box-shadow:0 2px 16px rgba(0,0,0,.08);' +
-                         'margin-bottom:20px;">' +
-
-              /* Card visual — real photo cover */
-              '<div style="height:160px;position:relative;overflow:hidden;">' +
-
-                /* Cover photo */
-                '<img src="photos/k9.jpg"' +
-                     ' style="width:100%;height:100%;object-fit:cover;display:block;">' +
-                /* Dark gradient overlay for legibility */
-                '<div style="position:absolute;inset:0;' +
-                             'background:linear-gradient(to bottom,' +
-                               'rgba(0,0,0,.08) 0%,rgba(0,0,0,.55) 100%);"></div>' +
-
-                /* LIVE badge */
-                '<div style="position:absolute;top:12px;right:12px;' +
-                             'background:rgba(0,0,0,.28);' +
-                             'border:1px solid rgba(255,255,255,.35);' +
-                             'border-radius:20px;backdrop-filter:blur(8px);' +
-                             'padding:3px 10px;' +
-                             'display:flex;align-items:center;gap:5px;">' +
-                  '<div style="width:6px;height:6px;border-radius:50%;' +
-                               'background:#4ade80;' +
-                               'box-shadow:0 0 0 2px rgba(74,222,128,.35);"></div>' +
-                  '<span style="font-size:11px;font-weight:700;' +
-                               'color:#fff;letter-spacing:.5px;">LIVE</span>' +
-                '</div>' +
-
-                /* Mini photo strip — bottom left */
-                '<div style="position:absolute;bottom:12px;left:14px;' +
-                             'display:flex;gap:4px;">' +
-                  (function () {
-                    var thumbs = [0, 3, 8, 12]; /* k1, k4, k9, k13 */
-                    var out = '';
-                    for (var si = 0; si < thumbs.length; si++) {
-                      out += (
-                        '<div style="width:34px;height:34px;border-radius:6px;' +
-                                    'overflow:hidden;border:1.5px solid rgba(255,255,255,.5);">' +
-                          '<img src="' + PHOTO_FILES[thumbs[si]] + '"' +
-                               ' style="width:100%;height:100%;object-fit:cover;display:block;">' +
-                        '</div>'
-                      );
-                    }
-                    return out;
-                  }()) +
-                  '<div style="width:34px;height:34px;border-radius:6px;' +
-                               'background:rgba(0,0,0,.35);backdrop-filter:blur(4px);' +
-                               'border:1.5px solid rgba(255,255,255,.3);' +
-                               'display:flex;align-items:center;justify-content:center;">' +
-                    '<span style="font-size:10px;font-weight:700;color:#fff;">+30</span>' +
-                  '</div>' +
-                '</div>' +
-
-              '</div>' +
-
-              /* Card footer */
-              '<div style="padding:14px 16px 16px;' +
-                   'display:flex;align-items:center;justify-content:space-between;">' +
-
-                '<div>' +
-                  '<p style="font-size:15px;font-weight:700;color:' + T.text + ';' +
-                            'margin-bottom:2px;">Mumbai — Karjat</p>' +
-                  '<p style="font-size:12px;font-weight:400;color:' + T.textS + ';">' +
-                    '34 photos · 5 people' +
+            /* ── no group yet → empty state ── */
+            (!groupCreated
+              ? '<div style="flex:1;display:flex;flex-direction:column;' +
+                            'align-items:center;justify-content:center;' +
+                            'text-align:center;padding:32px;">' +
+                  '<div style="font-size:52px;margin-bottom:20px;">📸</div>' +
+                  '<p style="font-size:20px;font-weight:800;color:' + T.text + ';' +
+                            'letter-spacing:-0.4px;margin-bottom:10px;line-height:1.3;">' +
+                    'Every trip deserves\na home.' +
                   '</p>' +
-                '</div>' +
+                  '<p style="font-size:14px;color:' + T.textS + ';line-height:1.6;margin-bottom:32px;">' +
+                    'Create a group, invite your people,\nand let PixSlay bring it all together.' +
+                  '</p>' +
+                  '<button onclick="go(\'varun-create-group\')"' +
+                    ' style="height:50px;padding:0 32px;border-radius:14px;border:none;' +
+                           'background:' + T.blue + ';color:#fff;' +
+                           'font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;' +
+                           'box-shadow:0 4px 16px rgba(27,79,216,.28);">' +
+                    '+ Create a group' +
+                  '</button>' +
+                '</div>'
+              : '') +
 
-                /* Arrow */
-                '<svg width="20" height="20" viewBox="0 0 24 24" fill="none"' +
-                     ' stroke="' + T.textT + '" stroke-width="2"' +
-                     ' stroke-linecap="round" stroke-linejoin="round">' +
-                  '<polyline points="9 18 15 12 9 6"/>' +
-                '</svg>' +
-
-              '</div>' +
-            '</div>' +
+            /* ── Mumbai — Karjat LIVE album card (only after group created) ── */
+            (groupCreated
+              ? '<div onclick="taggingOpenTab=\'group\';go(\'varun-tagging\')"' +
+                     ' style="background:#fff;border-radius:18px;' +
+                             'overflow:hidden;cursor:pointer;' +
+                             'box-shadow:0 2px 16px rgba(0,0,0,.08);' +
+                             'margin-bottom:20px;">' +
+                  '<div style="height:160px;position:relative;overflow:hidden;">' +
+                    '<img src="photos/k9.jpg" style="width:100%;height:100%;object-fit:cover;display:block;">' +
+                    '<div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.08) 0%,rgba(0,0,0,.55) 100%);"></div>' +
+                    '<div style="position:absolute;top:12px;right:12px;background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.35);border-radius:20px;backdrop-filter:blur(8px);padding:3px 10px;display:flex;align-items:center;gap:5px;">' +
+                      '<div style="width:6px;height:6px;border-radius:50%;background:#4ade80;box-shadow:0 0 0 2px rgba(74,222,128,.35);"></div>' +
+                      '<span style="font-size:11px;font-weight:700;color:#fff;letter-spacing:.5px;">LIVE</span>' +
+                    '</div>' +
+                    '<div style="position:absolute;bottom:12px;left:14px;display:flex;gap:4px;">' +
+                      (function () {
+                        var thumbs = [0, 3, 8, 12];
+                        var out = '';
+                        for (var si = 0; si < thumbs.length; si++) {
+                          out += '<div style="width:34px;height:34px;border-radius:6px;overflow:hidden;border:1.5px solid rgba(255,255,255,.5);"><img src="' + PHOTO_FILES[thumbs[si]] + '" style="width:100%;height:100%;object-fit:cover;display:block;"></div>';
+                        }
+                        return out;
+                      }()) +
+                      '<div style="width:34px;height:34px;border-radius:6px;background:rgba(0,0,0,.35);backdrop-filter:blur(4px);border:1.5px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;"><span style="font-size:10px;font-weight:700;color:#fff;">+30</span></div>' +
+                    '</div>' +
+                  '</div>' +
+                  '<div style="padding:14px 16px 16px;display:flex;align-items:center;justify-content:space-between;">' +
+                    '<div>' +
+                      '<p style="font-size:15px;font-weight:700;color:' + T.text + ';margin-bottom:2px;">Mumbai — Karjat</p>' +
+                      '<p style="font-size:12px;font-weight:400;color:' + T.textS + ';">34 photos · 5 people</p>' +
+                    '</div>' +
+                    '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="' + T.textT + '" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>' +
+                  '</div>' +
+                '</div>'
+              : '') +
 
 
           '</div>' +
@@ -1503,34 +1520,16 @@
 
           switchPill() +
           sbar('#fff') +
-
-          /* ── Top bar ── */
-          '<div style="height:52px;display:flex;align-items:center;' +
-               'padding:0 4px;flex-shrink:0;position:relative;">' +
-            '<button onclick="go(\'varun-profile\')"' +
-              ' style="width:44px;height:44px;background:none;border:none;' +
-                     'display:flex;align-items:center;justify-content:center;' +
-                     'cursor:pointer;flex-shrink:0;">' +
-              '<svg width="22" height="22" viewBox="0 0 24 24" fill="none"' +
-                   ' stroke="' + T.blue + '" stroke-width="2"' +
-                   ' stroke-linecap="round" stroke-linejoin="round">' +
-                '<polyline points="15 18 9 12 15 6"/>' +
-              '</svg>' +
-            '</button>' +
-            '<span style="position:absolute;left:50%;transform:translateX(-50%);' +
-                         'font-size:15px;font-weight:600;color:' + T.text + ';">' +
-              'New group' +
-            '</span>' +
-          '</div>' +
+          screenHeader('New group', 'varun-home') +
 
           /* ── Scrollable content ── */
-          '<div style="flex:1;overflow-y:auto;padding:16px 16px 0;' +
+          '<div style="flex:1;overflow-y:auto;padding:8px 16px 0;' +
                'display:flex;flex-direction:column;">' +
 
             /* Cover photo circle */
             '<div style="display:flex;justify-content:center;margin-bottom:20px;">' +
               '<div id="cg-cover" onclick="cgCoverTap()"' +
-                   ' style="width:56px;height:56px;border-radius:50%;' +
+                   ' style="width:60px;height:60px;border-radius:50%;' +
                           'background:' + T.blueTint + ';' +
                           'border:1.5px dashed ' + T.blueBdr + ';' +
                           'display:flex;align-items:center;justify-content:center;' +
@@ -1546,35 +1545,45 @@
               '</div>' +
             '</div>' +
 
-            /* Group name — pre-filled, auto-focused */
+            /* Group name */
             floatInput('What are you calling this one?', 'cg-name',
                        nameVal, 'text', 'onGroupNameInput(this)', 'text') +
 
             /* Destination */
-            floatInput('Where are you headed? (optional)', 'cg-dest',
+            floatInput('Destination (optional)', 'cg-dest',
                        'Karjat, Maharashtra', 'text', '', 'text') +
 
-            /* Date range — two fields side by side */
-            '<div style="display:flex;gap:8px;">' +
-              '<div style="flex:1;min-width:0;">' +
-                floatInput('From', 'cg-from', 'Sat 24 May', 'text', '', 'text') +
-              '</div>' +
-              '<div style="flex:1;min-width:0;">' +
-                floatInput('To', 'cg-to', 'Sun 25 May', 'text', '', 'text') +
-              '</div>' +
+            /* Trip window — compact single row instead of 4 separate fields */
+            '<div onclick="showSyncReassuranceSheet()"' +
+                 ' style="display:flex;align-items:center;gap:10px;' +
+                        'height:46px;border:0.5px solid ' + T.bgSub + ';' +
+                        'border-radius:10px;padding:0 14px;' +
+                        'margin-bottom:12px;cursor:pointer;' +
+                        'background:#fff;transition:border .15s;">' +
+              '<svg width="15" height="15" viewBox="0 0 24 24" fill="none"' +
+                   ' stroke="' + T.textT + '" stroke-width="2" stroke-linecap="round">' +
+                '<rect x="3" y="4" width="18" height="18" rx="2"/>' +
+                '<line x1="16" y1="2" x2="16" y2="6"/>' +
+                '<line x1="8" y1="2" x2="8" y2="6"/>' +
+                '<line x1="3" y1="10" x2="21" y2="10"/>' +
+              '</svg>' +
+              '<span style="flex:1;font-size:14px;font-weight:400;color:' + T.text + ';">' +
+                state.syncTiming.fromDate + ' → ' + state.syncTiming.toDate +
+              '</span>' +
+              '<svg width="15" height="15" viewBox="0 0 24 24" fill="none"' +
+                   ' stroke="' + T.textT + '" stroke-width="2" stroke-linecap="round">' +
+                '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>' +
+                '<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>' +
+              '</svg>' +
             '</div>' +
 
-            /* Accommodation */
-            floatInput('Resort, hotel or homestay (optional)', 'cg-stay',
-                       '', 'text', '', 'text') +
-
-            /* Who\'s coming label */
+            /* Who's coming label */
             '<p style="font-size:11px;font-weight:600;letter-spacing:0.06em;' +
                       'color:' + T.textT + ';margin-bottom:14px;">' +
               'WHO\'S COMING' +
             '</p>' +
 
-            /* Contact chips — horizontal scroll, no scrollbar (mobile scroll cue) */
+            /* Contact chips */
             '<div class="hscroll"' +
                  ' style="overflow-x:auto;margin:0 -16px;padding:4px 16px 4px;' +
                          'margin-bottom:20px;">' +
@@ -1583,50 +1592,29 @@
               '</div>' +
             '</div>' +
 
-            /* Link card */
-            '<div style="background:' + T.blueTint + ';border-radius:10px;' +
-                        'padding:12px 14px;margin-bottom:20px;">' +
-              '<p style="font-size:12px;font-weight:600;' +
-                        'color:' + T.blueDk + ';margin-bottom:3px;">' +
-                'Share a link instead' +
-              '</p>' +
-              '<p style="font-size:11px;font-weight:400;' +
-                        'color:' + T.blueDp + ';margin-bottom:10px;">' +
-                'Anyone with this link can join the group.' +
-              '</p>' +
-              '<div style="display:flex;gap:8px;">' +
-                '<button onclick="cgCopyLink()"' +
-                  ' style="flex:1;height:34px;border-radius:8px;border:none;' +
-                         'background:' + T.blue + ';color:#fff;' +
-                         'font-family:inherit;font-size:12px;font-weight:600;' +
-                         'cursor:pointer;">' +
-                  'Copy link' +
-                '</button>' +
-                '<button onclick="cgShareWhatsApp()"' +
-                  ' style="flex:1;height:34px;border-radius:8px;background:#fff;' +
-                         'border:0.5px solid ' + T.blue + ';color:' + T.blue + ';' +
-                         'font-family:inherit;font-size:12px;font-weight:600;' +
-                         'cursor:pointer;">' +
-                  'Share on WhatsApp' +
-                '</button>' +
-              '</div>' +
-            '</div>' +
-
             '<div style="min-height:8px;"></div>' +
 
           '</div>' +
 
-          /* ── Create group button — pinned ── */
+          /* ── Sticky CTA ── */
           '<div style="padding:12px 16px 32px;flex-shrink:0;' +
                'border-top:0.5px solid ' + T.bgSub + ';background:#fff;">' +
             '<button id="cg-create-btn"' +
-              ' onclick="if(!this.disabled) go(\'varun-sync\')"' +
+              ' onclick="if(!this.disabled){groupCreated=true;go(\'varun-sync\')}"' +
               ' style="display:block;width:100%;height:50px;' +
                      'border-radius:12px;border:none;' +
                      'background:' + T.blue + ';color:#fff;' +
                      'font-family:inherit;font-size:15px;font-weight:600;' +
-                     'cursor:pointer;">' +
+                     'cursor:pointer;margin-bottom:8px;' +
+                     'box-shadow:0 4px 14px rgba(27,79,216,.28);">' +
               'Create group' +
+            '</button>' +
+            '<button onclick="go(\'varun-home\')"' +
+              ' style="display:block;width:100%;height:44px;' +
+                     'border-radius:12px;border:none;background:transparent;' +
+                     'color:' + T.textS + ';font-family:inherit;' +
+                     'font-size:13px;font-weight:500;cursor:pointer;">' +
+              'I\'ll do this later' +
             '</button>' +
           '</div>' +
 
@@ -1880,6 +1868,8 @@
         }, 300);
       }
       syncSetStickyState('done');
+      var laterBtn = document.getElementById('sync-later-btn');
+      if (laterBtn) laterBtn.style.display = 'none';
     }
 
     /* ─── Shared: invite link sheet ─── */
@@ -2044,25 +2034,8 @@
 
           switchPill() +
           sbar('#fff') +
-
-          /* ── Top bar ── */
-          '<div style="height:52px;display:flex;align-items:center;' +
-               'padding:0 4px;flex-shrink:0;position:relative;">' +
-            '<button onclick="go(\'' + (activeJourney === 'kavitha' ? 'kavitha-home' : 'varun-home') + '\')"' +
-              ' style="width:44px;height:44px;background:none;border:none;' +
-                     'display:flex;align-items:center;justify-content:center;' +
-                     'cursor:pointer;flex-shrink:0;">' +
-              '<svg width="22" height="22" viewBox="0 0 24 24" fill="none"' +
-                   ' stroke="' + T.blue + '" stroke-width="2"' +
-                   ' stroke-linecap="round" stroke-linejoin="round">' +
-                '<polyline points="15 18 9 12 15 6"/>' +
-              '</svg>' +
-            '</button>' +
-            '<span style="position:absolute;left:50%;transform:translateX(-50%);' +
-                         'font-size:15px;font-weight:600;color:' + T.text + ';">' +
-              'Mumbai — Karjat' +
-            '</span>' +
-          '</div>' +
+          screenHeader('Mumbai — Karjat',
+            activeJourney === 'kavitha' ? 'kavitha-home' : 'varun-home') +
 
           /* ── Scrollable content ── */
           '<div style="flex:1;overflow-y:auto;padding:16px;' +
@@ -2072,14 +2045,14 @@
             '<div style="background:#fff;border-radius:16px;' +
                  'border:0.5px solid ' + T.bgSub + ';padding:20px;">' +
               '<p id="sync-card-title"' +
-                 ' style="font-size:16px;font-weight:700;color:' + T.text + ';' +
-                         'margin-bottom:6px;">' +
+                 ' style="font-size:17px;font-weight:800;color:' + T.text + ';' +
+                         'letter-spacing:-0.3px;margin-bottom:6px;">' +
                 'Your Karjat memories start here.' +
               '</p>' +
               '<p id="sync-card-sub"' +
                  ' style="font-size:13px;font-weight:400;color:' + T.textS + ';' +
-                         'line-height:1.5;margin-bottom:4px;">' +
-                'We\'ll quietly collect photos from this trip.' +
+                         'line-height:1.55;margin-bottom:4px;">' +
+                'We\'ll only scan photos from your trip window — never your full library.' +
               '</p>' +
               /* Trip window — visible in initial state, hidden once sync starts */
               '<p id="sync-card-window"' +
@@ -2167,10 +2140,18 @@
                 '</div>' +
 
                 /* Privacy line */
-                '<p style="font-size:12px;font-weight:400;color:' + T.textT + ';' +
-                          'text-align:center;line-height:1.5;">' +
-                  'These are in your private space. Nobody can see them yet.' +
-                '</p>' +
+                '<div style="display:flex;align-items:flex-start;gap:8px;' +
+                            'background:' + T.bgSub + ';border-radius:10px;padding:10px 12px;">' +
+                  '<svg width="14" height="14" viewBox="0 0 24 24" fill="none"' +
+                       ' stroke="' + T.ok + '" stroke-width="2.5" stroke-linecap="round"' +
+                       ' style="flex-shrink:0;margin-top:1px;">' +
+                    '<rect x="3" y="11" width="18" height="11" rx="2"/>' +
+                    '<path d="M7 11V7a5 5 0 0 1 10 0v4"/>' +
+                  '</svg>' +
+                  '<p style="font-size:12px;font-weight:400;color:' + T.textS + ';line-height:1.5;margin:0;">' +
+                    'Only photos from May 24–25. Your other photos were never accessed.' +
+                  '</p>' +
+                '</div>' +
 
               '</div>' +
 
@@ -2197,6 +2178,33 @@
               '</span>' +
             '</div>' +
 
+            /* Share card — only for group creator, not invited members */
+            (activeJourney !== 'kavitha'
+              ? '<div style="background:' + T.blueTint + ';border-radius:14px;' +
+                            'padding:14px 16px;">' +
+                  '<p style="font-size:13px;font-weight:700;color:' + T.blueDk + ';margin-bottom:3px;">' +
+                    'Invite your group' +
+                  '</p>' +
+                  '<p style="font-size:12px;font-weight:400;color:' + T.blueDp + ';margin-bottom:12px;line-height:1.5;">' +
+                    'Share a link so everyone can add their photos too.' +
+                  '</p>' +
+                  '<div style="display:flex;gap:8px;">' +
+                    '<button onclick="cgCopyLink()"' +
+                      ' style="flex:1;height:36px;border-radius:10px;border:none;' +
+                             'background:' + T.blue + ';color:#fff;' +
+                             'font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;">' +
+                      'Copy link' +
+                    '</button>' +
+                    '<button onclick="cgShareWhatsApp()"' +
+                      ' style="flex:1;height:36px;border-radius:10px;background:#fff;' +
+                             'border:0.5px solid ' + T.blue + ';color:' + T.blue + ';' +
+                             'font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;">' +
+                      'Share on WhatsApp' +
+                    '</button>' +
+                  '</div>' +
+                '</div>'
+              : '') +
+
             '<div style="flex:1;min-height:8px;"></div>' +
 
           '</div>' +
@@ -2215,9 +2223,10 @@
                      'font-family:inherit;font-size:15px;font-weight:600;' +
                      'cursor:pointer;margin-bottom:8px;' +
                      'transition:background .2s,color .2s;">' +
-              'Set up trip photos' +
+              'Find my trip photos' +
             '</button>' +
-            '<button onclick="taggingOpenTab=\'group\';go(\'varun-tagging\')"' +
+            '<button id="sync-later-btn"' +
+              ' onclick="taggingOpenTab=\'my-photos\';go(\'varun-tagging\')"' +
               ' style="display:block;width:100%;height:44px;' +
                      'border-radius:12px;border:none;background:transparent;' +
                      'color:' + T.textS + ';font-family:inherit;' +
@@ -2255,6 +2264,9 @@
     var inviteAccepted         = false;           /* true once user taps Accept & view trip */
     var profileCircleTab       = 'identified';    /* 'identified' | 'unknown' */
     var profileNotifs          = { shared:true, identified:true, newMemories:true, unknownFaces:true };
+    var selectedPlan           = '';              /* overrides cfg.plan on subscription screen */
+    var seeAllSection          = 'recent';        /* 'recent' | 'memories' — for see-all screen */
+    var notifTab               = 'all';           /* 'all'|'uploads'|'mentions'|'memories' */
     var taggingPreviewIndex    = -1;
     var taggingPreviewTimer    = null;
     var taggingPreviewTouchX   = null;
@@ -2991,6 +3003,98 @@
     }
 
     /* ─── three-dot menu (group screen only) ─── */
+    /* ── Group photo filter sheet ── */
+    var groupCreated     = false;      /* true once Varun taps Create group */
+    var groupFilterSort  = 'newest';   /* 'newest' | 'oldest' */
+    var groupFilterMedia = 'all';      /* 'all' | 'photos' | 'videos' */
+
+    function showGroupFilterSheet() {
+      var phone = document.getElementById('phone');
+      var old   = document.getElementById('grp-filter-ov');
+      if (old) old.remove();
+
+      function fChip(key, val, label) {
+        var on = (key === 'sort' && groupFilterSort === val) ||
+                 (key === 'media' && groupFilterMedia === val);
+        return (
+          '<button onclick="' +
+                  (key === 'sort'  ? 'groupFilterSort=\'' + val + '\'' :
+                                     'groupFilterMedia=\'' + val + '\'') +
+                  ';showGroupFilterSheet()"' +
+                  ' style="height:34px;padding:0 16px;border-radius:20px;border:none;' +
+                         'font-family:inherit;font-size:13px;font-weight:' + (on ? '600' : '400') + ';' +
+                         'cursor:pointer;margin:0 6px 6px 0;' +
+                         'background:' + (on ? T.blue : T.bgSub) + ';' +
+                         'color:' + (on ? '#fff' : T.text) + ';">' +
+            label +
+          '</button>'
+        );
+      }
+      function fSection(title, chips) {
+        return (
+          '<p style="font-size:11px;font-weight:700;color:' + T.textT + ';' +
+                    'letter-spacing:.06em;text-transform:uppercase;margin:18px 0 8px;">' +
+            title +
+          '</p>' +
+          '<div style="display:flex;flex-wrap:wrap;">' + chips + '</div>'
+        );
+      }
+
+      var ov = document.createElement('div');
+      ov.id  = 'grp-filter-ov';
+      ov.setAttribute('style',
+        'position:absolute;inset:0;background:rgba(0,0,0,.4);' +
+        'z-index:8000;display:flex;flex-direction:column;justify-content:flex-end;'
+      );
+      ov.onclick = function (e) { if (e.target === ov) ov.remove(); };
+      ov.innerHTML = (
+        '<div id="grp-filter-sheet" onclick="event.stopPropagation()"' +
+             ' style="background:#fff;border-radius:24px 24px 0 0;' +
+                    'padding:0 20px 36px;' +
+                    'transform:translateY(100%);' +
+                    'transition:transform .25s cubic-bezier(0.4,0,0.2,1);">' +
+
+          /* Handle */
+          '<div style="display:flex;justify-content:center;padding:10px 0 16px;">' +
+            '<div style="width:36px;height:4px;border-radius:2px;background:' + T.bgSub + ';"></div>' +
+          '</div>' +
+
+          /* Title row */
+          '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">' +
+            '<p style="font-size:17px;font-weight:800;color:' + T.text + ';">Filter &amp; Sort</p>' +
+            '<button onclick="groupFilterSort=\'newest\';groupFilterMedia=\'all\';showGroupFilterSheet()"' +
+                    ' style="font-size:13px;font-weight:600;color:' + T.blue + ';' +
+                           'background:none;border:none;cursor:pointer;">Reset</button>' +
+          '</div>' +
+
+          fSection('Sort',
+            fChip('sort',  'newest', 'Newest first') +
+            fChip('sort',  'oldest', 'Oldest first')
+          ) +
+          fSection('Media type',
+            fChip('media', 'all',    'All') +
+            fChip('media', 'photos', 'Photos only') +
+            fChip('media', 'videos', 'Videos only')
+          ) +
+
+          '<button onclick="document.getElementById(\'grp-filter-ov\').remove();showToast(\'Filters applied\')"' +
+                  ' style="display:block;width:100%;height:48px;border-radius:12px;border:none;' +
+                         'background:' + T.blue + ';color:#fff;font-family:inherit;' +
+                         'font-size:15px;font-weight:700;cursor:pointer;margin-top:20px;">' +
+            'Apply' +
+          '</button>' +
+
+        '</div>'
+      );
+      phone.appendChild(ov);
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          var s = document.getElementById('grp-filter-sheet');
+          if (s) s.style.transform = 'translateY(0)';
+        });
+      });
+    }
+
     function taggingShowThreeDot() {
       var phone = document.getElementById('phone');
       var old   = document.getElementById('tag3dot-overlay');
@@ -3019,27 +3123,6 @@
           /* Handle */
           '<div style="width:36px;height:4px;background:' + T.bgSub + ';' +
                       'border-radius:2px;margin:0 auto 8px;"></div>' +
-
-          /* Share invite link */
-          '<div onclick="document.getElementById(\'tag3dot-overlay\').remove();showGroupInviteSheet()"' +
-               ' style="height:54px;display:flex;align-items:center;' +
-                      'padding:0 20px;gap:14px;cursor:pointer;">' +
-            '<svg width="20" height="20" viewBox="0 0 24 24" fill="none"' +
-                 ' stroke="' + T.text + '" stroke-width="1.8"' +
-                 ' stroke-linecap="round" stroke-linejoin="round">' +
-              '<circle cx="18" cy="5" r="3"/>' +
-              '<circle cx="6" cy="12" r="3"/>' +
-              '<circle cx="18" cy="19" r="3"/>' +
-              '<line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>' +
-              '<line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>' +
-            '</svg>' +
-            '<span style="font-size:15px;font-weight:500;color:' + T.text + ';">' +
-              'Share invite link' +
-            '</span>' +
-          '</div>' +
-
-          /* Divider */
-          '<div style="height:0.5px;background:' + T.bgSub + ';margin:0 20px;"></div>' +
 
           /* Delete group */
           '<div onclick="document.getElementById(\'tag3dot-overlay\').remove();showGroupDeletePopup()"' +
@@ -4008,6 +4091,9 @@
       if (taggingTab === 'my-photos' && !hasSynced) {
         /* show sync nudge inline — taggingSetTab will also handle tab switches */
         gridHTML = '';
+      } else if (taggingTab === 'group' && !hasSynced) {
+        /* group is empty — no one has synced yet */
+        gridHTML = '';
       } else if (taggingTab === 'group') {
         var shown = Math.min(groupPoolCount, TRIP_PHOTOS.length);
         for (var gi = 0; gi < shown; gi++) {
@@ -4051,12 +4137,47 @@
                 '<polyline points="15 18 9 12 15 6"/>' +
               '</svg>' +
             '</button>' +
-            '<span style="font-size:17px;font-weight:700;color:' + T.text + ';letter-spacing:-.02em;">' +
+            '<span ontouchstart="window._grpHoldTimer=setTimeout(function(){showGroupDeletePopup()},700)"' +
+                  ' ontouchend="clearTimeout(window._grpHoldTimer)"' +
+                  ' ontouchmove="clearTimeout(window._grpHoldTimer)"' +
+                  ' ondblclick="showGroupDeletePopup()"' +
+                  ' style="font-size:17px;font-weight:700;color:' + T.text + ';letter-spacing:-.02em;' +
+                         'user-select:none;cursor:default;">' +
               'Mumbai — Karjat' +
             '</span>' +
-            '<div style="display:flex;gap:10px;">' +
+            '<div style="display:flex;gap:6px;align-items:center;">' +
+
+              /* Activity entry point — stacked avatars + pulse dot */
+              '<button onclick="go(\'activity\')"' +
+                ' style="height:36px;padding:0 10px;border-radius:20px;border:none;' +
+                       'background:' + T.bgSub + ';cursor:pointer;' +
+                       'display:flex;align-items:center;gap:6px;position:relative;">' +
+                /* Stacked micro-avatars */
+                '<div style="display:flex;align-items:center;">' +
+                  '<div style="width:22px;height:22px;border-radius:50%;z-index:3;' +
+                              'background:linear-gradient(135deg,#E65100,#FF8F00);' +
+                              'border:1.5px solid ' + T.bgSub + ';' +
+                              'font-size:8px;font-weight:800;color:#fff;' +
+                              'display:flex;align-items:center;justify-content:center;">MA</div>' +
+                  '<div style="width:22px;height:22px;border-radius:50%;z-index:2;margin-left:-7px;' +
+                              'background:linear-gradient(135deg,#1B5E20,#388E3C);' +
+                              'border:1.5px solid ' + T.bgSub + ';' +
+                              'font-size:8px;font-weight:800;color:#fff;' +
+                              'display:flex;align-items:center;justify-content:center;">KA</div>' +
+                  '<div style="width:22px;height:22px;border-radius:50%;z-index:1;margin-left:-7px;' +
+                              'background:' + T.bgSub + ';' +
+                              'border:1.5px solid ' + T.bgSub + ';' +
+                              'font-size:8px;font-weight:800;color:' + T.textS + ';' +
+                              'display:flex;align-items:center;justify-content:center;">+6</div>' +
+                '</div>' +
+                /* Pulse dot */
+                '<div style="width:7px;height:7px;border-radius:50%;' +
+                            'background:' + T.blue + ';flex-shrink:0;' +
+                            'box-shadow:0 0 0 2px ' + T.blueTint + ';"></div>' +
+              '</button>' +
+
               '<button onclick="taggingToggleSearch()"' +
-                ' style="width:42px;height:42px;border:none;background:none;cursor:pointer;' +
+                ' style="width:38px;height:38px;border:none;background:none;cursor:pointer;' +
                        'display:flex;align-items:center;justify-content:center;">' +
                 '<svg width="20" height="20" viewBox="0 0 24 24" fill="none"' +
                      ' stroke="' + T.text + '" stroke-width="2"' +
@@ -4065,15 +4186,15 @@
                   '<line x1="21" y1="21" x2="16.65" y2="16.65"/>' +
                 '</svg>' +
               '</button>' +
-              '<button onclick="taggingShowThreeDot()"' +
-                ' style="width:42px;height:42px;border:none;background:none;cursor:pointer;' +
+              '<button onclick="showGroupFilterSheet()"' +
+                ' style="width:38px;height:38px;border:none;background:none;cursor:pointer;' +
                        'display:flex;align-items:center;justify-content:center;">' +
-                '<svg width="20" height="20" viewBox="0 0 24 24" fill="none"' +
+                '<svg width="19" height="19" viewBox="0 0 24 24" fill="none"' +
                      ' stroke="' + T.text + '" stroke-width="2"' +
                      ' stroke-linecap="round" stroke-linejoin="round">' +
-                  '<circle cx="12" cy="5" r="1" fill="' + T.text + '" stroke="none"/>' +
-                  '<circle cx="12" cy="12" r="1" fill="' + T.text + '" stroke="none"/>' +
-                  '<circle cx="12" cy="19" r="1" fill="' + T.text + '" stroke="none"/>' +
+                  '<line x1="4" y1="6" x2="20" y2="6"/>' +
+                  '<line x1="8" y1="12" x2="16" y2="12"/>' +
+                  '<line x1="11" y1="18" x2="13" y2="18"/>' +
                 '</svg>' +
               '</button>' +
             '</div>' +
@@ -4093,6 +4214,42 @@
             catHTML +
           '</div>' +
 
+          /* ── invite nudge strip — creator only, slim pill ── */
+          (activeJourney === 'varun'
+            ? '<div style="padding:0 16px 8px;flex-shrink:0;background:#fff;">' +
+                '<div style="height:38px;background:' + T.blueTint + ';border-radius:20px;' +
+                            'padding:0 6px 0 12px;' +
+                            'display:flex;align-items:center;gap:8px;">' +
+                  '<svg width="14" height="14" viewBox="0 0 24 24" fill="none"' +
+                       ' stroke="' + T.blueDk + '" stroke-width="2.2" stroke-linecap="round"' +
+                       ' stroke-linejoin="round" style="flex-shrink:0;">' +
+                    '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>' +
+                    '<circle cx="9" cy="7" r="4"/>' +
+                    '<path d="M23 21v-2a4 4 0 0 0-3-3.87"/>' +
+                    '<path d="M16 3.13a4 4 0 0 1 0 7.75"/>' +
+                  '</svg>' +
+                  '<span style="flex:1;font-size:12px;font-weight:600;color:' + T.blueDk + ';' +
+                               'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
+                    '3 of 9 members haven\'t joined yet' +
+                  '</span>' +
+                  '<button onclick="cgCopyLink()"' +
+                    ' style="height:28px;padding:0 12px;border-radius:14px;border:none;' +
+                           'background:' + T.blue + ';color:#fff;' +
+                           'font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;">' +
+                    'Copy link' +
+                  '</button>' +
+                  '<button onclick="cgShareWhatsApp()"' +
+                    ' style="width:28px;height:28px;border-radius:50%;flex-shrink:0;' +
+                           'background:#25D366;border:none;' +
+                           'display:flex;align-items:center;justify-content:center;cursor:pointer;">' +
+                    '<svg width="14" height="14" viewBox="0 0 32 32" fill="none">' +
+                      '<path d="M22.5 19.1c-.3-.15-1.77-.87-2.04-.97-.28-.1-.48-.15-.68.15s-.78.97-.96 1.17c-.18.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.47-.89-.79-1.49-1.76-1.66-2.06-.18-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.68-1.63-.93-2.23-.24-.58-.49-.5-.68-.51h-.58c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.88 1.22 3.08c.15.2 2.1 3.2 5.08 4.49.71.31 1.27.49 1.7.63.72.23 1.37.2 1.88.12.57-.09 1.77-.72 2.02-1.42.25-.7.25-1.3.17-1.42-.07-.13-.27-.2-.57-.35z" fill="#fff"/>' +
+                    '</svg>' +
+                  '</button>' +
+                '</div>' +
+              '</div>'
+            : '') +
+
           /* ── segmented control: Group photos | My photos ── */
           '<div style="padding:6px 16px 8px;flex-shrink:0;background:#fff;">' +
             '<div style="background:#F0EFED;border-radius:12px;padding:3px;display:flex;gap:2px;">' +
@@ -4111,7 +4268,7 @@
                              (taggingTab === 'group'
                                ? 'color:' + T.blue + ';background:#EEF2FD;'
                                : 'color:#9B9590;background:#E8E6E1;') + '">' +
-                  groupDisplayCount +
+                  (hasSynced ? groupDisplayCount : '0') +
                 '</span>' +
               '</button>' +
               '<button id="seg-my-photos"' +
@@ -4180,9 +4337,27 @@
                       '</button>' +
                     '</div>'
                 )
-              : '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">' +
-                  gridHTML +
-                '</div>') +
+              : (taggingTab === 'group' && !hasSynced
+                  ? '<div style="display:flex;flex-direction:column;align-items:center;' +
+                                'justify-content:center;padding:60px 32px;text-align:center;">' +
+                      '<div style="font-size:44px;margin-bottom:16px;">🖼️</div>' +
+                      '<p style="font-size:16px;font-weight:700;color:' + T.text + ';margin-bottom:8px;">' +
+                        'No photos yet' +
+                      '</p>' +
+                      '<p style="font-size:13px;color:' + T.textS + ';line-height:1.6;margin-bottom:28px;">' +
+                        'Be the first — sync your photos so everyone can see them.' +
+                      '</p>' +
+                      '<button onclick="go(\'varun-sync\')"' +
+                        ' style="height:48px;padding:0 28px;border-radius:12px;border:none;' +
+                               'background:' + T.blue + ';color:#fff;' +
+                               'font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;' +
+                               'box-shadow:0 4px 16px rgba(27,79,216,.26);">' +
+                        'Sync my photos' +
+                      '</button>' +
+                    '</div>'
+                  : '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">' +
+                      gridHTML +
+                    '</div>')) +
           '</div>' +
 
           /* ── share bottom bar — floating selection CTA ── */
@@ -5492,6 +5667,10 @@
       albumFilterOwnership = '';
       albumFilterSort      = 'last-updated';
       profileCircleTab     = 'identified';
+      selectedPlan         = '';
+      notifTab             = 'all';
+      _otpFilling          = false;
+      groupCreated         = false;
       go(dest);
     }
 
@@ -5660,11 +5839,14 @@
       var cards = '';
       for (var i = 0; i < albums.length; i++) cards += alListCard(albums[i]);
       if (!cards) return '';
+      /* Map label to section key so See All knows which list to open */
+      var sectionKey = label === 'Memories' ? 'memories' : 'recent';
       return (
         '<div style="margin-bottom:8px;">' +
           '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">' +
             '<p style="font-size:13px;font-weight:700;color:' + T.text + ';">' + label + '</p>' +
-            '<button style="font-size:12px;font-weight:600;color:' + T.blue + ';background:none;border:none;cursor:pointer;padding:0;">See all</button>' +
+            '<button onclick="seeAllSection=\'' + sectionKey + '\';go(\'album-see-all\')"' +
+                    ' style="font-size:12px;font-weight:600;color:' + T.blue + ';background:none;border:none;cursor:pointer;padding:0;">See all</button>' +
           '</div>' +
           cards +
         '</div>'
@@ -5827,6 +6009,433 @@
     }
 
     /* ═════════════════════════════════════════════════════
+       ACTIVITY + NOTIFICATIONS — SHARED DATA MODELS
+       All data is config-driven. Renderers are shared.
+       deepLinkGo(cfg) is the single routing function for both.
+    ═════════════════════════════════════════════════════ */
+
+    /* ── Shared deep-link handler ──
+       cfg: { tab, category, faceFilter, screen }
+       Sets tagging state then navigates. Falls back to varun-tagging. */
+    function deepLinkGo(cfg) {
+      cfg = cfg || {};
+      taggingOpenTab    = cfg.tab       || 'group';
+      taggingCategory   = cfg.category  || '';
+      taggingFaceFilter = cfg.face      || '';
+      go(cfg.screen || 'varun-tagging');
+    }
+
+    /* ── Activity data — one array per trip key ── */
+    var ACTIVITY_DATA = {
+      karjat: [
+        { type:'upload',  personId:'MA', name:'Mayank',  text:'added 14 photos',          time:'2h ago',  deepLink:{ tab:'group', face:'MA' } },
+        { type:'upload',  personId:'KA', name:'Kavitha', text:'uploaded 3 videos',         time:'4h ago',  deepLink:{ tab:'group', face:'KA' } },
+        { type:'memory',  personId:null, name:null,      text:'6 new memories from bonfire night', time:'6h ago', deepLink:{ tab:'group', category:'bonfire' } },
+        { type:'face',    personId:null, name:null,      text:'2 unidentified faces found', time:'8h ago', deepLink:{ screen:'circle' } },
+        { type:'tag',     personId:'VR', name:'Varun',   text:'tagged you in 4 memories',  time:'1d ago',  deepLink:{ tab:'my-photos' } },
+        { type:'upload',  personId:'VI', name:'Vishal',  text:'added 9 photos',            time:'1d ago',  deepLink:{ tab:'group', face:'VI' } },
+        { type:'memory',  personId:null, name:null,      text:'3 new night memories found', time:'2d ago', deepLink:{ tab:'group', category:'night' } },
+        { type:'upload',  personId:'BE', name:'Beulah',  text:'added 7 photos',            time:'2d ago',  deepLink:{ tab:'group', face:'BE' } },
+      ]
+    };
+
+    /* ── Activity item renderer ── */
+    function activityItemHTML(item) {
+      /* Avatar or icon depending on type */
+      var avatarBg = {
+        MA:'linear-gradient(135deg,#E65100,#FF8F00)',
+        KA:'linear-gradient(135deg,#1B5E20,#388E3C)',
+        VR:'linear-gradient(135deg,#1B4FD8,#2D7DD2)',
+        VI:'linear-gradient(135deg,#4A148C,#7B1FA2)',
+        BE:'linear-gradient(135deg,#880E4F,#C2185B)',
+        AN:'linear-gradient(135deg,#006064,#00838F)',
+      };
+      var iconMap = {
+        upload: '<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>',
+        memory: '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>',
+        face:   '<circle cx="12" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v2"/>',
+        tag:    '<path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>',
+      };
+      var leftEl;
+      if (item.personId && avatarBg[item.personId]) {
+        leftEl = '<div style="width:38px;height:38px;border-radius:50%;flex-shrink:0;' +
+                             'background:' + avatarBg[item.personId] + ';' +
+                             'display:flex;align-items:center;justify-content:center;' +
+                             'font-size:13px;font-weight:700;color:#fff;">' +
+                   item.personId +
+                 '</div>';
+      } else {
+        var iconPath = iconMap[item.type] || iconMap.memory;
+        var iconBg   = item.type === 'face'   ? '#FFF0ED' :
+                       item.type === 'memory' ? T.blueTint : T.bgSub;
+        var iconClr  = item.type === 'face'   ? T.alert : T.blue;
+        leftEl = '<div style="width:38px;height:38px;border-radius:50%;flex-shrink:0;' +
+                             'background:' + iconBg + ';' +
+                             'display:flex;align-items:center;justify-content:center;">' +
+                   '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"' +
+                        ' stroke="' + iconClr + '" stroke-width="2" stroke-linecap="round">' +
+                     iconPath +
+                   '</svg>' +
+                 '</div>';
+      }
+
+      var bodyText = item.name
+        ? '<span style="font-weight:700;color:' + T.text + ';">' + item.name + '</span> ' + item.text
+        : item.text;
+
+      return (
+        '<div onclick="deepLinkGo(' + JSON.stringify(item.deepLink) + ')"' +
+             ' style="display:flex;align-items:center;gap:12px;' +
+                    'padding:14px 20px;cursor:pointer;' +
+                    'border-bottom:0.5px solid ' + T.bgSub + ';">' +
+          leftEl +
+          '<div style="flex:1;min-width:0;">' +
+            '<p style="font-size:14px;font-weight:400;color:' + T.text + ';' +
+                      'line-height:1.4;margin-bottom:2px;">' + bodyText + '</p>' +
+            '<p style="font-size:11px;color:' + T.textT + ';">' + item.time + '</p>' +
+          '</div>' +
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none"' +
+               ' stroke="' + T.textT + '" stroke-width="2.5" stroke-linecap="round">' +
+            '<polyline points="9 18 15 12 9 6"/>' +
+          '</svg>' +
+        '</div>'
+      );
+    }
+
+    /* ── screenActivity ── */
+    function screenActivity() {
+      var items  = ACTIVITY_DATA.karjat || [];
+      var listHTML = '';
+      for (var i = 0; i < items.length; i++) listHTML += activityItemHTML(items[i]);
+
+      return (
+        '<div class="screen"' +
+             ' style="position:absolute;inset:0;display:flex;flex-direction:column;' +
+                    'background:' + T.bgWarm + ';overflow:hidden;">' +
+
+          switchPill() +
+          sbar(T.bgWarm) +
+          screenHeader('Activity', 'varun-tagging') +
+
+          '<div style="flex:1;overflow-y:auto;">' +
+            '<div style="margin:8px 16px 24px;background:#fff;border-radius:20px;' +
+                        'overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06);">' +
+              (listHTML || '<div style="padding:40px 20px;text-align:center;color:' + T.textT + ';font-size:13px;">No activity yet.</div>') +
+            '</div>' +
+          '</div>' +
+
+        '</div>'
+      );
+    }
+
+    /* ── Notification data — cross-trip, user-scoped ── */
+    var NOTIF_DATA = [
+      { type:'upload',  read:false, personId:'MA', name:'Mayank',  text:'added 14 photos to Karjat',       time:'2h ago',  trip:'Karjat', deepLink:{ tab:'group', face:'MA' } },
+      { type:'upload',  read:false, personId:'KA', name:'Kavitha', text:'uploaded 3 videos',               time:'4h ago',  trip:'Karjat', deepLink:{ tab:'group', face:'KA' } },
+      { type:'memory',  read:false, personId:null, name:null,      text:'6 new memories from bonfire night', time:'6h ago', trip:'Karjat', deepLink:{ tab:'group', category:'bonfire' } },
+      { type:'face',    read:true,  personId:null, name:null,      text:'2 unidentified faces need names',  time:'8h ago',  trip:'Karjat', deepLink:{ screen:'circle' } },
+      { type:'mention', read:true,  personId:'VR', name:'Varun',   text:'tagged you in 4 memories',        time:'1d ago',  trip:'Karjat', deepLink:{ tab:'my-photos' } },
+      { type:'memory',  read:true,  personId:null, name:null,      text:'Your Goa reel is ready to watch', time:'2d ago',  trip:'Goa',    deepLink:{ tab:'group' } },
+      { type:'upload',  read:true,  personId:'VI', name:'Vishal',  text:'finally added his Karjat photos', time:'2d ago',  trip:'Karjat', deepLink:{ tab:'group', face:'VI' } },
+      { type:'mention', read:true,  personId:'BE', name:'Beulah',  text:'saved 3 of your photos',          time:'3d ago',  trip:'Karjat', deepLink:{ tab:'group', face:'BE' } },
+    ];
+
+    /* ── Notification item renderer ── */
+    function notifItemHTML(item) {
+      var avatarBg = {
+        MA:'linear-gradient(135deg,#E65100,#FF8F00)',
+        KA:'linear-gradient(135deg,#1B5E20,#388E3C)',
+        VR:'linear-gradient(135deg,#1B4FD8,#2D7DD2)',
+        VI:'linear-gradient(135deg,#4A148C,#7B1FA2)',
+        BE:'linear-gradient(135deg,#880E4F,#C2185B)',
+        AN:'linear-gradient(135deg,#006064,#00838F)',
+      };
+      var iconMap = {
+        upload:  '<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>',
+        memory:  '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>',
+        face:    '<circle cx="12" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v2"/>',
+        mention: '<path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>',
+      };
+
+      var leftEl;
+      if (item.personId && avatarBg[item.personId]) {
+        leftEl = '<div style="position:relative;flex-shrink:0;">' +
+                   '<div style="width:40px;height:40px;border-radius:50%;' +
+                               'background:' + avatarBg[item.personId] + ';' +
+                               'display:flex;align-items:center;justify-content:center;' +
+                               'font-size:13px;font-weight:700;color:#fff;">' +
+                     item.personId +
+                   '</div>' +
+                   /* Type badge on avatar */
+                   '<div style="position:absolute;bottom:-1px;right:-1px;' +
+                               'width:16px;height:16px;border-radius:50%;' +
+                               'background:' + (item.type === 'mention' ? T.blue : T.ok) + ';' +
+                               'border:1.5px solid #fff;' +
+                               'display:flex;align-items:center;justify-content:center;">' +
+                     '<svg width="8" height="8" viewBox="0 0 24 24" fill="none"' +
+                          ' stroke="#fff" stroke-width="2.5" stroke-linecap="round">' +
+                       (item.type === 'mention'
+                         ? '<path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>'
+                         : '<polyline points="20 6 9 17 4 12"/>') +
+                     '</svg>' +
+                   '</div>' +
+                 '</div>';
+      } else {
+        var iconPath = iconMap[item.type] || iconMap.memory;
+        var iconBg   = item.type === 'face'   ? '#FFF0ED' :
+                       item.type === 'memory' ? T.blueTint : T.bgSub;
+        var iconClr  = item.type === 'face'   ? T.alert :
+                       item.type === 'memory' ? T.blue  : T.ok;
+        leftEl = '<div style="width:40px;height:40px;border-radius:50%;flex-shrink:0;' +
+                             'background:' + iconBg + ';' +
+                             'display:flex;align-items:center;justify-content:center;">' +
+                   '<svg width="17" height="17" viewBox="0 0 24 24" fill="none"' +
+                        ' stroke="' + iconClr + '" stroke-width="2" stroke-linecap="round">' +
+                     iconPath +
+                   '</svg>' +
+                 '</div>';
+      }
+
+      var bodyText = item.name
+        ? '<span style="font-weight:700;">' + item.name + '</span> ' + item.text
+        : item.text;
+
+      var tripBadge = item.trip
+        ? '<span style="display:inline-block;height:16px;line-height:16px;padding:0 6px;' +
+                       'border-radius:8px;background:' + T.bgSub + ';' +
+                       'font-size:10px;font-weight:600;color:' + T.textS + ';margin-left:4px;">' +
+            item.trip +
+          '</span>'
+        : '';
+
+      return (
+        '<div onclick="deepLinkGo(' + JSON.stringify(item.deepLink) + ')"' +
+             ' style="display:flex;align-items:center;gap:12px;' +
+                    'padding:14px 20px;cursor:pointer;' +
+                    'background:' + (item.read ? '#fff' : T.blueTint) + ';' +
+                    'border-bottom:0.5px solid ' + T.bgSub + ';">' +
+          leftEl +
+          '<div style="flex:1;min-width:0;">' +
+            '<p style="font-size:14px;font-weight:' + (item.read ? '400' : '600') + ';' +
+                      'color:' + T.text + ';line-height:1.4;margin-bottom:3px;">' +
+              bodyText + tripBadge +
+            '</p>' +
+            '<p style="font-size:11px;color:' + T.textT + ';">' + item.time + '</p>' +
+          '</div>' +
+          (!item.read
+            ? '<div style="width:8px;height:8px;border-radius:50%;' +
+                          'background:' + T.blue + ';flex-shrink:0;"></div>'
+            : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none"' +
+                   ' stroke="' + T.textT + '" stroke-width="2.5" stroke-linecap="round">' +
+                '<polyline points="9 18 15 12 9 6"/>' +
+              '</svg>') +
+        '</div>'
+      );
+    }
+
+    /* ── screenNotifications ── */
+    function screenNotifications() {
+      var tabs      = ['all','uploads','mentions','memories'];
+      var tabLabels = { all:'All', uploads:'Uploads', mentions:'Mentions', memories:'Memories' };
+      var unread    = 0;
+      for (var u = 0; u < NOTIF_DATA.length; u++) { if (!NOTIF_DATA[u].read) unread++; }
+
+      /* Filter data by tab */
+      var typeMap = { uploads:'upload', mentions:'mention', memories:'memory' };
+      var filtered = [];
+      for (var n = 0; n < NOTIF_DATA.length; n++) {
+        var item = NOTIF_DATA[n];
+        if (notifTab === 'all' || item.type === typeMap[notifTab]) filtered.push(item);
+      }
+
+      var tabsHTML = '';
+      for (var t = 0; t < tabs.length; t++) {
+        var tab    = tabs[t];
+        var active = notifTab === tab;
+        tabsHTML += (
+          '<button onclick="notifTab=\'' + tab + '\';render()"' +
+                  ' style="height:32px;padding:0 14px;border-radius:20px;border:none;' +
+                         'font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;' +
+                         'white-space:nowrap;flex-shrink:0;' +
+                         'background:' + (active ? T.blue : 'transparent') + ';' +
+                         'color:' + (active ? '#fff' : T.textS) + ';">' +
+            tabLabels[tab] +
+          '</button>'
+        );
+      }
+
+      var listHTML = '';
+      for (var f = 0; f < filtered.length; f++) listHTML += notifItemHTML(filtered[f]);
+
+      /* Settings gear — right slot for screenHeader */
+      var gearBtn = (
+        '<button onclick="showNotificationsSheet()"' +
+                ' style="width:34px;height:34px;border-radius:10px;border:none;' +
+                       'background:' + T.bgSub + ';cursor:pointer;display:flex;' +
+                       'align-items:center;justify-content:center;">' +
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"' +
+               ' stroke="' + T.text + '" stroke-width="2" stroke-linecap="round">' +
+            '<circle cx="12" cy="12" r="3"/>' +
+            '<path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06' +
+                    'a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09' +
+                    'A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83' +
+                    'l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09' +
+                    'A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83' +
+                    'l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09' +
+                    'a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83' +
+                    'l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09' +
+                    'a1.65 1.65 0 0 0-1.51 1z"/>' +
+          '</svg>' +
+        '</button>'
+      );
+
+      return (
+        '<div class="screen"' +
+             ' style="position:absolute;inset:0;display:flex;flex-direction:column;' +
+                    'background:' + T.bgWarm + ';overflow:hidden;">' +
+
+          switchPill() +
+          sbar(T.bgWarm) +
+          screenHeader('Notifications', 'profile', gearBtn) +
+
+          /* Unread summary */
+          (unread > 0
+            ? '<div style="margin:0 16px 8px;padding:10px 14px;border-radius:12px;' +
+                          'background:' + T.blueTint + ';display:flex;align-items:center;gap:8px;">' +
+                '<div style="width:8px;height:8px;border-radius:50%;background:' + T.blue + ';flex-shrink:0;"></div>' +
+                '<p style="font-size:13px;font-weight:600;color:' + T.blue + ';margin:0;">' +
+                  unread + ' unread notification' + (unread > 1 ? 's' : '') +
+                '</p>' +
+              '</div>'
+            : '') +
+
+          /* Tab bar */
+          '<div style="padding:4px 16px 10px;flex-shrink:0;">' +
+            '<div style="display:flex;gap:4px;overflow-x:auto;background:#fff;' +
+                        'border-radius:20px;padding:3px;' +
+                        'box-shadow:0 1px 6px rgba(0,0,0,.06);">' +
+              tabsHTML +
+            '</div>' +
+          '</div>' +
+
+          /* List */
+          '<div style="flex:1;overflow-y:auto;">' +
+            '<div style="background:#fff;margin:0 16px 24px;border-radius:20px;' +
+                        'overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06);">' +
+              (listHTML || '<div style="padding:40px 20px;text-align:center;color:' + T.textT + ';font-size:13px;">You\'re all caught up.</div>') +
+            '</div>' +
+          '</div>' +
+
+          navBar('profile') +
+
+        '</div>'
+      );
+    }
+
+    /* ═════════════════════════════════════════════════════
+       SEE ALL SCREEN
+       Full list of albums in one section (Recent or Memories).
+       Shares alListCard + sort/filter from active listing state.
+    ═════════════════════════════════════════════════════ */
+    function screenSeeAll() {
+      var cfg        = getAlbumListingConfig();
+      var isMemories = seeAllSection === 'memories';
+      var albums     = isMemories ? cfg.memories : cfg.recent;
+      var label      = isMemories ? 'Memories' : 'Recent Trips';
+      var backDest   = activeJourney + '-home';
+
+      /* Sort toggle rows — same options as filter sheet */
+      var sortOpts = [
+        { v:'last-updated', l:'Last updated' },
+        { v:'date-asc',     l:'Oldest first' },
+        { v:'date-desc',    l:'Newest first' },
+        { v:'most-photos',  l:'Most photos'  },
+      ];
+      var sortHTML = '';
+      for (var s = 0; s < sortOpts.length; s++) {
+        var opt = sortOpts[s];
+        var active = albumFilterSort === opt.v;
+        sortHTML += (
+          '<button onclick="albumFilterSort=\'' + opt.v + '\';render()"' +
+                  ' style="height:32px;padding:0 14px;border-radius:20px;border:none;' +
+                         'font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;' +
+                         'background:' + (active ? T.blue : T.bgSub) + ';' +
+                         'color:' + (active ? '#fff' : T.textS) + ';' +
+                         'white-space:nowrap;flex-shrink:0;">' +
+            opt.l +
+          '</button>'
+        );
+      }
+
+      /* Cards — all albums (no pagination limit like listing) */
+      var cardsHTML = '';
+      if (albums && albums.length) {
+        for (var i = 0; i < albums.length; i++) cardsHTML += alListCard(albums[i]);
+      }
+
+      var emptyHTML = (
+        '<div style="display:flex;flex-direction:column;align-items:center;' +
+                    'justify-content:center;padding:56px 32px;text-align:center;">' +
+          '<div style="width:56px;height:56px;border-radius:50%;background:' + T.bgSub + ';' +
+                      'display:flex;align-items:center;justify-content:center;margin-bottom:16px;">' +
+            '<svg width="24" height="24" viewBox="0 0 24 24" fill="none"' +
+                 ' stroke="' + T.textT + '" stroke-width="2" stroke-linecap="round">' +
+              '<rect x="3" y="3" width="18" height="18" rx="2"/>' +
+              '<circle cx="8.5" cy="8.5" r="1.5"/>' +
+              '<polyline points="21 15 16 10 5 21"/>' +
+            '</svg>' +
+          '</div>' +
+          '<p style="font-size:15px;font-weight:700;color:' + T.text + ';margin-bottom:6px;">Nothing here yet</p>' +
+          '<p style="font-size:13px;color:' + T.textS + ';line-height:1.5;">' +
+            (isMemories ? 'Your Memories will appear here after your first trip.' : 'Go on a trip to create your first album.') +
+          '</p>' +
+        '</div>'
+      );
+
+      return (
+        '<div class="screen"' +
+             ' style="position:absolute;inset:0;display:flex;flex-direction:column;' +
+                    'background:' + T.bgWarm + ';overflow:hidden;">' +
+
+          /* Header */
+          '<div style="padding:16px 20px 12px;display:flex;align-items:center;gap:12px;flex-shrink:0;">' +
+            '<button onclick="go(\'' + backDest + '\')"' +
+                    ' style="width:34px;height:34px;border-radius:10px;border:none;' +
+                           'background:#fff;cursor:pointer;display:flex;' +
+                           'align-items:center;justify-content:center;' +
+                           'box-shadow:0 1px 6px rgba(0,0,0,.08);">' +
+              '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"' +
+                   ' stroke="' + T.text + '" stroke-width="2.5" stroke-linecap="round">' +
+                '<polyline points="15 18 9 12 15 6"/>' +
+              '</svg>' +
+            '</button>' +
+            '<div style="flex:1;">' +
+              '<div style="font-size:18px;font-weight:800;color:' + T.text + ';">' + label + '</div>' +
+              '<div style="font-size:12px;color:' + T.textS + ';margin-top:1px;">' +
+                (albums ? albums.length : 0) + ' album' + (albums && albums.length !== 1 ? 's' : '') +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+
+          /* Sort chips */
+          '<div style="padding:0 16px 12px;flex-shrink:0;">' +
+            '<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;">' +
+              sortHTML +
+            '</div>' +
+          '</div>' +
+
+          /* List */
+          '<div style="flex:1;overflow-y:auto;padding:0 16px 24px;">' +
+            (cardsHTML || emptyHTML) +
+          '</div>' +
+
+          navBar('home') +
+
+        '</div>'
+      );
+    }
+
+    /* ═════════════════════════════════════════════════════
        PROFILE SYSTEM
        Authenticated profile/account tab (post-onboarding).
        Separate from varun-profile which handles onboarding only.
@@ -5966,7 +6575,7 @@
           '<div style="padding:16px 20px 12px;flex-shrink:0;display:flex;' +
                       'align-items:center;justify-content:space-between;">' +
             '<span style="font-size:18px;font-weight:800;color:' + T.text + ';">Profile</span>' +
-            '<button onclick="showNotificationsSheet()"' +
+            '<button onclick="go(\'notifications\')"' +
                     ' style="width:36px;height:36px;border:none;background:none;cursor:pointer;' +
                            'display:flex;align-items:center;justify-content:center;position:relative;">' +
               '<svg width="20" height="20" viewBox="0 0 24 24" fill="none"' +
@@ -5974,7 +6583,7 @@
                 '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>' +
                 '<path d="M13.73 21a2 2 0 0 1-3.46 0"/>' +
               '</svg>' +
-              /* Notification dot */
+              /* Unread dot — derived from NOTIF_DATA */
               '<div style="position:absolute;top:7px;right:7px;width:7px;height:7px;' +
                           'border-radius:50%;background:' + T.alert + ';' +
                           'border:1.5px solid ' + T.bgWarm + ';"></div>' +
@@ -6374,27 +6983,33 @@
 
     /* ── screenSubscription ── */
     function screenSubscription() {
-      var cfg    = getProfileConfig();
-      var isPro  = cfg.plan === 'Pro';
+      var cfg         = getProfileConfig();
+      /* selectedPlan global overrides the journey's default once user taps a plan */
+      var activePlan  = selectedPlan || cfg.plan.toLowerCase();
 
       var plans = [
-        { id:'free',  name:'Free',  price:'₹0',    period:'forever',   storage:'2 GB',   features:['Up to 5 trips', '2 GB storage', 'Basic face tagging'] },
-        { id:'pro',   name:'Pro',   price:'₹199',  period:'per month', storage:'10 GB',  features:['Unlimited trips', '10 GB storage', 'Advanced face tagging', 'Smart Memories', 'Priority support'] },
-        { id:'ultra', name:'Ultra', price:'₹499',  period:'per month', storage:'100 GB', features:['Everything in Pro', '100 GB storage', 'Family sharing (5 members)', 'RAW photo support', 'Offline access'] },
+        { id:'free',  name:'Free',  price:'₹0',    period:'forever',   storage:'2 GB',
+          features:['Up to 5 trips', '2 GB storage', 'Basic face tagging'] },
+        { id:'pro',   name:'Pro',   price:'₹199',  period:'per month', storage:'10 GB',
+          features:['Unlimited trips', '10 GB storage', 'Advanced face tagging', 'Smart Memories', 'Priority support'] },
+        { id:'ultra', name:'Ultra', price:'₹499',  period:'per month', storage:'100 GB',
+          features:['Everything in Pro', '100 GB storage', 'Family sharing (5 members)', 'RAW photo support', 'Offline access'] },
       ];
 
       var plansHTML = '';
       for (var i = 0; i < plans.length; i++) {
-        var plan   = plans[i];
-        var isCurrent = (isPro && plan.id === 'pro') || (!isPro && plan.id === 'free');
+        var plan        = plans[i];
+        var isCurrent   = plan.id === activePlan;
         var isHighlight = plan.id === 'pro';
+        /* Selected but not yet "confirmed" = show with blue ring even for free/ultra */
+        var ringColor   = isCurrent ? T.blue : (isHighlight ? T.blueBdr : T.bgSub);
 
         var featuresHTML = '';
         for (var f = 0; f < plan.features.length; f++) {
           featuresHTML += (
             '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">' +
               '<svg width="14" height="14" viewBox="0 0 24 24" fill="none"' +
-                   ' stroke="' + (isHighlight ? T.blue : T.ok) + '" stroke-width="2.5" stroke-linecap="round">' +
+                   ' stroke="' + (isCurrent ? T.blue : (isHighlight ? T.blue : T.ok)) + '" stroke-width="2.5" stroke-linecap="round">' +
                 '<polyline points="20 6 9 17 4 12"/>' +
               '</svg>' +
               '<span style="font-size:13px;color:' + T.text + ';">' + plan.features[f] + '</span>' +
@@ -6403,32 +7018,36 @@
         }
 
         plansHTML += (
-          '<div style="border-radius:18px;overflow:hidden;margin-bottom:12px;' +
-                      'border:2px solid ' + (isCurrent ? T.blue : (isHighlight ? T.blueBdr : T.bgSub)) + ';' +
-                      'background:' + (isHighlight ? T.blueTint : '#fff') + ';">' +
+          '<div onclick="selectedPlan=\'' + plan.id + '\';render()"' +
+               ' style="border-radius:18px;overflow:hidden;margin-bottom:12px;cursor:pointer;' +
+                      'border:2px solid ' + ringColor + ';' +
+                      'background:' + (isCurrent ? T.blueTint : '#fff') + ';' +
+                      'transition:border-color .15s,background .15s;">' +
             '<div style="padding:18px 20px;">' +
               '<div style="display:flex;align-items:center;justify-content:space-between;' +
                           'margin-bottom:4px;">' +
                 '<div style="display:flex;align-items:center;gap:8px;">' +
                   '<span style="font-size:17px;font-weight:800;color:' + T.text + ';">' + plan.name + '</span>' +
-                  (isCurrent ? '<span style="height:20px;padding:0 8px;border-radius:10px;' +
-                               'background:' + T.blue + ';color:#fff;' +
-                               'font-size:10px;font-weight:700;' +
-                               'display:inline-flex;align-items:center;">Current</span>' : '') +
+                  (isCurrent
+                    ? '<span style="height:20px;padding:0 8px;border-radius:10px;' +
+                             'background:' + T.blue + ';color:#fff;' +
+                             'font-size:10px;font-weight:700;' +
+                             'display:inline-flex;align-items:center;">Selected</span>'
+                    : '') +
                 '</div>' +
                 '<div style="text-align:right;">' +
                   '<span style="font-size:20px;font-weight:800;color:' + T.text + ';">' + plan.price + '</span>' +
                   '<span style="font-size:11px;color:' + T.textS + ';"> / ' + plan.period + '</span>' +
                 '</div>' +
               '</div>' +
-              '<div style="margin-bottom:14px;">' + featuresHTML + '</div>' +
-              (!isCurrent
-                ? '<button onclick="showToast(\'' + plan.name + ' plan selected ✓\')"' +
+              '<div style="margin-bottom:' + (isCurrent ? '14px' : '4px') + ';">' + featuresHTML + '</div>' +
+              (isCurrent
+                ? '<button onclick="event.stopPropagation();showToast(\'' + plan.name + ' plan confirmed ✓\')"' +
                          ' style="display:block;width:100%;height:42px;border-radius:12px;border:none;' +
-                                'background:' + (isHighlight ? T.blue : T.bgSub) + ';' +
-                                'color:' + (isHighlight ? '#fff' : T.text) + ';' +
-                                'font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;">' +
-                    (plan.id === 'free' ? 'Downgrade to Free' : 'Upgrade to ' + plan.name) +
+                                'background:' + T.blue + ';color:#fff;' +
+                                'font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;' +
+                                'box-shadow:0 4px 14px rgba(27,79,216,.28);">' +
+                    (plan.id === 'free' ? 'Continue with Free' : 'Confirm ' + plan.name) +
                   '</button>'
                 : '') +
             '</div>' +
@@ -6468,11 +7087,23 @@
       );
     }
 
+    /* ── toggleNotif — flip state and update toggle DOM in-place (no sheet re-open) ── */
+    function toggleNotif(key) {
+      profileNotifs[key] = !profileNotifs[key];
+      var on     = profileNotifs[key];
+      var track  = document.getElementById('notif-track-' + key);
+      var knob   = document.getElementById('notif-knob-' + key);
+      if (!track || !knob) return;
+      track.style.background = on ? T.blue : T.bgSub;
+      knob.style.left  = on ? 'auto'  : '3px';
+      knob.style.right = on ? '3px'   : 'auto';
+    }
+
     /* ── showNotificationsSheet ── */
     function showNotificationsSheet() {
       var phone = document.getElementById('phone');
-      var old   = document.getElementById('notifs-overlay');
-      if (old) old.remove();
+      /* If sheet already open, don't re-create it — just bring it into view */
+      if (document.getElementById('notifs-overlay')) return;
 
       function togRow(key, icon, title, sub) {
         var on = profileNotifs[key];
@@ -6489,15 +7120,17 @@
               '<div style="font-size:14px;font-weight:500;color:' + T.text + ';">' + title + '</div>' +
               '<div style="font-size:12px;color:' + T.textS + ';margin-top:2px;">' + sub + '</div>' +
             '</div>' +
-            /* Toggle */
-            '<div onclick="profileNotifs[\'' + key + '\']=!profileNotifs[\'' + key + '\'];showNotificationsSheet()"' +
+            /* Toggle — tapping calls toggleNotif() which patches DOM in-place */
+            '<div id="notif-track-' + key + '"' +
+                 ' onclick="toggleNotif(\'' + key + '\')"' +
                  ' style="width:44px;height:26px;border-radius:13px;cursor:pointer;flex-shrink:0;' +
                         'background:' + (on ? T.blue : T.bgSub) + ';' +
                         'position:relative;transition:background .18s;">' +
-              '<div style="position:absolute;top:3px;' +
-                          (on ? 'right:3px;' : 'left:3px;') +
-                          'width:20px;height:20px;border-radius:50%;background:#fff;' +
-                          'box-shadow:0 1px 4px rgba(0,0,0,.18);transition:all .18s;"></div>' +
+              '<div id="notif-knob-' + key + '"' +
+                   ' style="position:absolute;top:3px;' +
+                           (on ? 'right:3px;left:auto;' : 'left:3px;right:auto;') +
+                           'width:20px;height:20px;border-radius:50%;background:#fff;' +
+                           'box-shadow:0 1px 4px rgba(0,0,0,.18);transition:left .18s,right .18s;"></div>' +
             '</div>' +
           '</div>'
         );
@@ -6628,7 +7261,7 @@
       'varun-reg':           screenVarunReg,
       'varun-otp':           screenVarunOtp,
       'varun-profile':       screenVarunProfile,
-      'varun-home':          screenAlbumListing,
+      'varun-home':          screenVarunHome,
       'varun-create-group':  screenVarunCreateGroup,
       'varun-sync':          screenVarunSync,
       'varun-tagging':       screenVarunTagging,
@@ -6643,6 +7276,9 @@
       'vishal-home':         screenAlbumListing,
       'anand-scene':         screenAnandScene,
       'anand-home':          screenAlbumListing,
+      'activity':            screenActivity,
+      'notifications':       screenNotifications,
+      'album-see-all':       screenSeeAll,
       'profile':             screenProfile,
       'edit-profile':        screenEditProfile,
       'circle':              screenCircle,
