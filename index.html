@@ -115,19 +115,23 @@
     #phone *::-webkit-scrollbar { display:none; }
     #phone * { -ms-overflow-style:none; scrollbar-width:none; }
 
-    /* Desktop: screen fills the 844px phone frame via height:100% of the
-       explicitly-sized .phone container. */
+    /* Desktop: screen fills the 844px phone frame exactly. */
     .screen { height: 100%; }
 
-    /* Mobile / PWA: height:100% on an absolutely-positioned child fails on
-       iOS Safari when the parent's height is set via JS (inline style on a
-       position:fixed element is not considered "explicit" for % resolution —
-       the percentage resolves to 0, bottom:0 from inset:0 is then ignored,
-       and the screen has zero height so everything stacks from the top).
-       Fix: use height:auto so the positioning algorithm uses top:0 + bottom:0
-       to compute the height directly — always equals the JS-set phone height. */
+    /* Mobile / PWA: neither height:100% nor height:auto work reliably on
+       iOS Safari when the parent is position:fixed with a JS-set height.
+       iOS does not propagate the containing-block height to children in that
+       scenario, so the flex column ends up with height:0 and everything
+       stacks from the top (nav/CTA appearing midscreen).
+       Fix: use viewport units directly on .screen — 100dvh = visual viewport
+       height, completely bypasses the parent chain.
+       100vh fallback for iOS < 15.4; in PWA standalone (no address bar)
+       100vh = 100dvh = actual window height anyway. */
     @media (max-width: 500px), (display-mode: standalone) {
-      .screen { height: auto; }
+      .screen {
+        height: 100vh;   /* fallback */
+        height: 100dvh;  /* preferred: tracks visual viewport (keyboard-aware) */
+      }
     }
   </style>
   <!-- Mobile layout engine.
@@ -1143,7 +1147,7 @@
                 'style="text-align:center;font-size:10px;font-weight:500;' +
                       'color:' + T.textT + ';margin-top:8px;letter-spacing:.04em;' +
                       'padding:8px 0;cursor:default;">' +
-              'v17' +
+              'v18' +
             '</p>' +
 
           '</div>' +
@@ -7800,6 +7804,7 @@
           'vv     : ' + (vv ? Math.round(vv.width) + ' × ' + Math.round(vv.height) : 'none'),
           'vv.off : ' + (vv ? vv.offsetTop.toFixed(1) : '-'),
           'phone  : ' + (phone ? phone.offsetWidth + ' × ' + phone.offsetHeight : '?'),
+          'screen : ' + (phone && phone.querySelector('.screen') ? phone.querySelector('.screen').offsetHeight : '?'),
           'isPWA  : ' + (typeof IS_PWA !== 'undefined' ? IS_PWA : '?'),
           'safeT  : ' + getComputedStyle(document.documentElement).getPropertyValue('--safe-top').trim(),
           'standalone: ' + (window.navigator.standalone === true),
