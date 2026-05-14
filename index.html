@@ -3084,7 +3084,33 @@
         '<span style="font-size:16px;font-weight:700;color:' + T.text + ';">' +
           'Mumbai — Karjat' +
         '</span>' +
-        '<div style="display:flex;gap:4px;">' +
+        '<div style="display:flex;gap:6px;align-items:center;">' +
+          /* Activity entry point — stacked avatars + pulse dot */
+          '<button onclick="go(\'activity\')"' +
+            ' style="height:36px;padding:0 10px;border-radius:20px;border:none;' +
+                   'background:' + T.bgSub + ';cursor:pointer;' +
+                   'display:flex;align-items:center;gap:6px;position:relative;">' +
+            '<div style="display:flex;align-items:center;">' +
+              '<div style="width:22px;height:22px;border-radius:50%;z-index:3;' +
+                          'background:linear-gradient(135deg,#E65100,#FF8F00);' +
+                          'border:1.5px solid ' + T.bgSub + ';' +
+                          'font-size:8px;font-weight:800;color:#fff;' +
+                          'display:flex;align-items:center;justify-content:center;">MA</div>' +
+              '<div style="width:22px;height:22px;border-radius:50%;z-index:2;margin-left:-7px;' +
+                          'background:linear-gradient(135deg,#1B5E20,#388E3C);' +
+                          'border:1.5px solid ' + T.bgSub + ';' +
+                          'font-size:8px;font-weight:800;color:#fff;' +
+                          'display:flex;align-items:center;justify-content:center;">KA</div>' +
+              '<div style="width:22px;height:22px;border-radius:50%;z-index:1;margin-left:-7px;' +
+                          'background:' + T.bgSub + ';' +
+                          'border:1.5px solid ' + T.bgSub + ';' +
+                          'font-size:8px;font-weight:800;color:' + T.textS + ';' +
+                          'display:flex;align-items:center;justify-content:center;">+6</div>' +
+            '</div>' +
+            '<div style="width:7px;height:7px;border-radius:50%;' +
+                        'background:' + T.blue + ';flex-shrink:0;' +
+                        'box-shadow:0 0 0 2px ' + T.blueTint + ';"></div>' +
+          '</button>' +
           '<button onclick="taggingToggleSearch()"' +
             ' style="width:32px;height:32px;border:none;background:none;cursor:pointer;' +
                    'display:flex;align-items:center;justify-content:center;">' +
