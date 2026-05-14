@@ -1,8 +1,8 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>PixSlay</title>
 
   <!-- PWA -->
@@ -66,6 +66,35 @@
     /* Fallback for browsers without svh support */
     @supports not (height: 100svh) {
       @media (max-width: 500px) {
+        .phone { height: 100vh; min-height: 100vh; max-height: 100vh; }
+      }
+    }
+
+    /* PWA standalone mode — real device, real status bar.
+       Removes mock phone frame, fills screen edge-to-edge,
+       adds safe-area padding so content sits below the real status bar. */
+    @media (display-mode: standalone) {
+      body {
+        padding: 0;
+        background: #F8F7F5;
+        align-items: flex-start;
+        overflow: hidden;
+      }
+      .phone {
+        width: 100vw;
+        height: 100svh;
+        min-height: 100svh;
+        max-height: 100svh;
+        border-radius: 0;
+        box-shadow: none;
+        /* Top safe area handled per-screen via sbar() spacer below */
+        padding-top: 0;
+        padding-bottom: env(safe-area-inset-bottom, 16px);
+      }
+    }
+    /* svh fallback for standalone mode */
+    @supports not (height: 100svh) {
+      @media (display-mode: standalone) {
         .phone { height: 100vh; min-height: 100vh; max-height: 100vh; }
       }
     }
@@ -247,10 +276,31 @@
 
     /* ─────────────────────────────────────────────────────
        UTILITY: STATUS BAR
-       44px. Time left, signal+wifi+battery right.
+       Desktop/browser demo  → renders fake 44px bar (time + icons)
+       PWA standalone mode   → renders a safe-area spacer only
+                               (real device status bar is already visible)
     ───────────────────────────────────────────────────── */
+    var IS_PWA = (
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true  /* iOS Safari PWA */
+    );
+
     function sbar(bg) {
       bg = bg || '#fff';
+
+      /* In PWA/standalone: return a spacer that exactly matches the real
+         status bar height via env(safe-area-inset-top). No fake content. */
+      if (IS_PWA) {
+        return (
+          '<div style="' +
+            'height:env(safe-area-inset-top,24px);' +
+            'background:' + bg + ';' +
+            'flex-shrink:0;">' +
+          '</div>'
+        );
+      }
+
+      /* Desktop demo: render the full mock status bar */
       return (
         '<div style="' +
           'height:44px;background:' + bg + ';' +
