@@ -948,6 +948,65 @@
        These will be replaced with real screens in later steps.
     ───────────────────────────────────────────────────── */
     function screenEntry() {
+      /* Journey definitions — ordered 1 to 6 */
+      var JOURNEYS = [
+        { num:1, name:'Varun',   initials:'VR', bg:'linear-gradient(135deg,#1B4FD8,#2D7DD2)',
+          tag:'Organiser', tagBg:'#EEF2FD', tagClr:T.blue,
+          action:'startJourney(\'varun\',\'varun-reg\',{otpDest:\'varun-profile\'})' },
+        { num:2, name:'Mayank',  initials:'MA', bg:'linear-gradient(135deg,#E65100,#FF8F00)',
+          tag:'Existing',  tagBg:'#E8F5E9', tagClr:'#2E7D32',
+          action:'startJourney(\'mayank\',\'mayank-scene\',{taggingOpenTab:\'group\'})' },
+        { num:3, name:'Anand',   initials:'AN', bg:'linear-gradient(135deg,#006064,#00838F)',
+          tag:'Existing',  tagBg:'#E8F5E9', tagClr:'#2E7D32',
+          action:'startJourney(\'anand\',\'anand-scene\',{taggingOpenTab:\'group\',inviteAccepted:true})' },
+        { num:4, name:'Vishal',  initials:'VI', bg:'linear-gradient(135deg,#4A148C,#7B1FA2)',
+          tag:'Existing',  tagBg:'#E8F5E9', tagClr:'#2E7D32',
+          action:'startJourney(\'vishal\',\'vishal-scene\',{otpDest:\'varun-profile\'})' },
+        { num:5, name:'Kavitha', initials:'KA', bg:'linear-gradient(135deg,#1B5E20,#388E3C)',
+          tag:'New user',  tagBg:'#FFF3E0', tagClr:'#E65100',
+          action:'startJourney(\'kavitha\',\'kavitha-scene\',{otpDest:\'varun-profile\'})' },
+        { num:6, name:'Beulah',  initials:'BE', bg:'linear-gradient(135deg,#880E4F,#C2185B)',
+          tag:'New user',  tagBg:'#FFF3E0', tagClr:'#E65100',
+          action:'startJourney(\'beulah\',\'beulah-scene\',{otpDest:\'varun-tagging\'})' },
+      ];
+
+      var cardsHTML = '';
+      for (var i = 0; i < JOURNEYS.length; i++) {
+        var j = JOURNEYS[i];
+        cardsHTML += (
+          '<div onclick="' + j.action + '"' +
+               ' style="background:#fff;border-radius:16px;' +
+                       'padding:14px 16px;cursor:pointer;' +
+                       'box-shadow:0 2px 12px rgba(0,0,0,.07);' +
+                       'margin-bottom:10px;' +
+                       'display:flex;align-items:center;gap:12px;">' +
+            /* Number */
+            '<span style="width:20px;flex-shrink:0;font-size:13px;font-weight:700;' +
+                         'color:' + T.textT + ';text-align:center;">' + j.num + '</span>' +
+            /* Avatar */
+            '<div style="width:40px;height:40px;border-radius:50%;flex-shrink:0;' +
+                         'background:' + j.bg + ';' +
+                         'display:flex;align-items:center;justify-content:center;">' +
+              '<span style="font-size:13px;font-weight:800;color:#fff;">' + j.initials + '</span>' +
+            '</div>' +
+            /* Name + tag */
+            '<div style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;">' +
+              '<span style="font-size:15px;font-weight:700;color:' + T.text + ';">' + j.name + '</span>' +
+              '<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;' +
+                           'background:' + j.tagBg + ';color:' + j.tagClr + ';white-space:nowrap;">' +
+                j.tag +
+              '</span>' +
+            '</div>' +
+            /* Chevron */
+            '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"' +
+                 ' stroke="' + T.textT + '" stroke-width="2"' +
+                 ' stroke-linecap="round" stroke-linejoin="round">' +
+              '<polyline points="9 18 15 12 9 6"/>' +
+            '</svg>' +
+          '</div>'
+        );
+      }
+
       return (
         '<div class="screen"' +
              ' style="position:absolute;inset:0;' +
@@ -957,195 +1016,22 @@
           switchPill() +
           sbar(T.bgWarm) +
 
-          '<div style="flex:1;overflow-y:auto;padding:24px 24px 32px;">' +
+          '<div style="flex:1;overflow-y:auto;padding:24px 20px 32px;">' +
 
-            /* Logo + headline */
-            '<div style="margin-bottom:28px;text-align:center;padding-top:8px;">' +
-              logo(36, 26) +
-              '<p style="margin-top:10px;font-size:13px;font-weight:400;' +
-                        'color:' + T.textS + ';line-height:1.5;">' +
-                'Choose a journey to explore' +
+            /* Logo centred, heading left-aligned */
+            '<div style="margin-bottom:24px;padding-top:8px;">' +
+              '<div style="text-align:center;margin-bottom:16px;">' + logo(36, 26) + '</div>' +
+              '<p style="font-size:20px;font-weight:800;color:' + T.text + ';margin-bottom:2px;">' +
+                'Choose a journey' +
               '</p>' +
+              '<p style="font-size:13px;font-weight:400;color:' + T.textS + ';">to explore</p>' +
             '</div>' +
 
-            /* Varun journey card */
-            '<div onclick="startJourney(\'varun\',\'varun-reg\',{otpDest:\'varun-profile\'})"' +
-                 ' style="background:#fff;border-radius:16px;' +
-                         'padding:20px;cursor:pointer;' +
-                         'box-shadow:0 2px 12px rgba(0,0,0,.07);' +
-                         'margin-bottom:12px;">' +
-
-              '<div style="display:flex;align-items:center;gap:14px;">' +
-
-                /* Avatar */
-                '<div style="width:44px;height:44px;border-radius:50%;flex-shrink:0;' +
-                             'background:linear-gradient(135deg,' + T.blue + ',#2D7DD2);' +
-                             'display:flex;align-items:center;justify-content:center;">' +
-                  '<span style="font-size:15px;font-weight:800;color:#fff;">VR</span>' +
-                '</div>' +
-
-                '<div style="flex:1;min-width:0;">' +
-                  '<p style="font-size:15px;font-weight:700;color:' + T.text + ';' +
-                            'margin-bottom:2px;">Varun\'s journey</p>' +
-                  '<p style="font-size:12px;font-weight:400;color:' + T.textS + ';' +
-                            'line-height:1.4;">' +
-                    'You planned the trip, created the group and synced your photos for everyone' +
-                  '</p>' +
-                '</div>' +
-
-                /* Chevron */
-                '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"' +
-                     ' stroke="' + T.textT + '" stroke-width="2"' +
-                     ' stroke-linecap="round" stroke-linejoin="round">' +
-                  '<polyline points="9 18 15 12 9 6"/>' +
-                '</svg>' +
-
-              '</div>' +
-            '</div>' +
-
-            /* Beulah journey card */
-            '<div onclick="startJourney(\'beulah\',\'beulah-scene\',{otpDest:\'varun-tagging\'})"' +
-                 ' style="background:#fff;border-radius:16px;' +
-                         'padding:20px;cursor:pointer;' +
-                         'box-shadow:0 2px 12px rgba(0,0,0,.07);' +
-                         'margin-bottom:12px;">' +
-              '<div style="display:flex;align-items:center;gap:14px;">' +
-                '<div style="width:44px;height:44px;border-radius:50%;flex-shrink:0;' +
-                             'background:linear-gradient(135deg,#880E4F,#C2185B);' +
-                             'display:flex;align-items:center;justify-content:center;">' +
-                  '<span style="font-size:15px;font-weight:800;color:#fff;">BE</span>' +
-                '</div>' +
-                '<div style="flex:1;min-width:0;">' +
-                  '<p style="font-size:15px;font-weight:700;color:' + T.text + ';' +
-                            'margin-bottom:2px;">Beulah\'s journey</p>' +
-                  '<p style="font-size:12px;font-weight:400;color:' + T.textS + ';' +
-                            'line-height:1.4;">' +
-                    'Varun captured 14 photos of you — see them without installing the app first' +
-                  '</p>' +
-                '</div>' +
-                '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"' +
-                     ' stroke="' + T.textT + '" stroke-width="2"' +
-                     ' stroke-linecap="round" stroke-linejoin="round">' +
-                  '<polyline points="9 18 15 12 9 6"/>' +
-                '</svg>' +
-              '</div>' +
-            '</div>' +
-
-            /* Mayank journey card */
-            '<div onclick="startJourney(\'mayank\',\'mayank-scene\',{taggingOpenTab:\'group\'})"' +
-                 ' style="background:#fff;border-radius:16px;' +
-                         'padding:20px;cursor:pointer;' +
-                         'box-shadow:0 2px 12px rgba(0,0,0,.07);' +
-                         'margin-bottom:12px;">' +
-              '<div style="display:flex;align-items:center;gap:14px;">' +
-                '<div style="width:44px;height:44px;border-radius:50%;flex-shrink:0;' +
-                             'background:linear-gradient(135deg,#E65100,#FF8F00);' +
-                             'display:flex;align-items:center;justify-content:center;">' +
-                  '<span style="font-size:15px;font-weight:800;color:#fff;">MA</span>' +
-                '</div>' +
-                '<div style="flex:1;min-width:0;">' +
-                  '<p style="font-size:15px;font-weight:700;color:' + T.text + ';' +
-                            'margin-bottom:2px;">Mayank\'s journey</p>' +
-                  '<p style="font-size:12px;font-weight:400;color:' + T.textS + ';' +
-                            'line-height:1.4;">' +
-                    'You were offline when added — open the app and your photos are already synced and waiting' +
-                  '</p>' +
-                '</div>' +
-                '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"' +
-                     ' stroke="' + T.textT + '" stroke-width="2"' +
-                     ' stroke-linecap="round" stroke-linejoin="round">' +
-                  '<polyline points="9 18 15 12 9 6"/>' +
-                '</svg>' +
-              '</div>' +
-            '</div>' +
-
-            /* Kavitha journey card */
-            '<div onclick="startJourney(\'kavitha\',\'kavitha-scene\',{otpDest:\'varun-profile\'})"' +
-                 ' style="background:#fff;border-radius:16px;' +
-                         'padding:20px;cursor:pointer;' +
-                         'box-shadow:0 2px 12px rgba(0,0,0,.07);' +
-                         'margin-bottom:12px;">' +
-              '<div style="display:flex;align-items:center;gap:14px;">' +
-                '<div style="width:44px;height:44px;border-radius:50%;flex-shrink:0;' +
-                             'background:linear-gradient(135deg,#1B5E20,#388E3C);' +
-                             'display:flex;align-items:center;justify-content:center;">' +
-                  '<span style="font-size:15px;font-weight:800;color:#fff;">KA</span>' +
-                '</div>' +
-                '<div style="flex:1;min-width:0;">' +
-                  '<p style="font-size:15px;font-weight:700;color:' + T.text + ';' +
-                            'margin-bottom:2px;">Kavitha\'s journey</p>' +
-                  '<p style="font-size:12px;font-weight:400;color:' + T.textS + ';' +
-                            'line-height:1.4;">' +
-                    'Varun shows you the app at the campsite — install, sync and see everyone\'s photos in under a minute' +
-                  '</p>' +
-                '</div>' +
-                '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"' +
-                     ' stroke="' + T.textT + '" stroke-width="2"' +
-                     ' stroke-linecap="round" stroke-linejoin="round">' +
-                  '<polyline points="9 18 15 12 9 6"/>' +
-                '</svg>' +
-              '</div>' +
-            '</div>' +
-
-            /* Vishal journey card */
-            '<div onclick="startJourney(\'vishal\',\'vishal-scene\',{otpDest:\'varun-profile\'})"' +
-                 ' style="background:#fff;border-radius:16px;' +
-                         'padding:20px;cursor:pointer;' +
-                         'box-shadow:0 2px 12px rgba(0,0,0,.07);' +
-                         'margin-bottom:12px;">' +
-              '<div style="display:flex;align-items:center;gap:14px;">' +
-                '<div style="width:44px;height:44px;border-radius:50%;flex-shrink:0;' +
-                             'background:linear-gradient(135deg,#4A148C,#7B1FA2);' +
-                             'display:flex;align-items:center;justify-content:center;">' +
-                  '<span style="font-size:15px;font-weight:800;color:#fff;">VI</span>' +
-                '</div>' +
-                '<div style="flex:1;min-width:0;">' +
-                  '<p style="font-size:15px;font-weight:700;color:' + T.text + ';' +
-                            'margin-bottom:2px;">Vishal\'s journey</p>' +
-                  '<p style="font-size:12px;font-weight:400;color:' + T.textS + ';' +
-                            'line-height:1.4;">' +
-                    'You got two nudges over two days before you finally installed on Sunday afternoon' +
-                  '</p>' +
-                '</div>' +
-                '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"' +
-                     ' stroke="' + T.textT + '" stroke-width="2"' +
-                     ' stroke-linecap="round" stroke-linejoin="round">' +
-                  '<polyline points="9 18 15 12 9 6"/>' +
-                '</svg>' +
-              '</div>' +
-            '</div>' +
-
-            /* Anand journey card */
-            '<div onclick="startJourney(\'anand\',\'anand-scene\',{taggingOpenTab:\'group\',inviteAccepted:true})"' +
-                 ' style="background:#fff;border-radius:16px;' +
-                         'padding:20px;cursor:pointer;' +
-                         'box-shadow:0 2px 12px rgba(0,0,0,.07);' +
-                         'margin-bottom:12px;">' +
-              '<div style="display:flex;align-items:center;gap:14px;">' +
-                '<div style="width:44px;height:44px;border-radius:50%;flex-shrink:0;' +
-                             'background:linear-gradient(135deg,#006064,#00838F);' +
-                             'display:flex;align-items:center;justify-content:center;">' +
-                  '<span style="font-size:15px;font-weight:800;color:#fff;">AN</span>' +
-                '</div>' +
-                '<div style="flex:1;min-width:0;">' +
-                  '<p style="font-size:15px;font-weight:700;color:' + T.text + ';' +
-                            'margin-bottom:2px;">Anand\'s journey</p>' +
-                  '<p style="font-size:12px;font-weight:400;color:' + T.textS + ';' +
-                            'line-height:1.4;">' +
-                    'You already accepted the Karjat invite — tap the notification and land straight inside the group screen, no steps needed' +
-                  '</p>' +
-                '</div>' +
-                '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"' +
-                     ' stroke="' + T.textT + '" stroke-width="2"' +
-                     ' stroke-linecap="round" stroke-linejoin="round">' +
-                  '<polyline points="9 18 15 12 9 6"/>' +
-                '</svg>' +
-              '</div>' +
-            '</div>' +
+            cardsHTML +
 
             '<p style="text-align:center;font-size:10px;font-weight:500;' +
                       'color:' + T.textT + ';margin-top:8px;letter-spacing:.04em;">' +
-              'v25' +
+              'v26' +
             '</p>' +
 
           '</div>' +
