@@ -83,6 +83,10 @@
     .pscroll { -ms-overflow-style:none; scrollbar-width:none;
                -webkit-overflow-scrolling:touch; }
     .pscroll::-webkit-scrollbar { display:none; }
+
+    /* Hide scrollbars everywhere inside the phone frame */
+    #phone *::-webkit-scrollbar { display:none; }
+    #phone * { -ms-overflow-style:none; scrollbar-width:none; }
   </style>
 </head>
 <body>
@@ -730,11 +734,10 @@
           switchPill() +
           sbar(T.bgWarm) +
 
-          '<div style="flex:1;display:flex;flex-direction:column;' +
-               'justify-content:center;padding:32px 24px;">' +
+          '<div style="flex:1;overflow-y:auto;padding:24px 24px 32px;">' +
 
             /* Logo + headline */
-            '<div style="margin-bottom:36px;text-align:center;">' +
+            '<div style="margin-bottom:28px;text-align:center;padding-top:8px;">' +
               logo(36, 26) +
               '<p style="margin-top:10px;font-size:13px;font-weight:400;' +
                         'color:' + T.textS + ';line-height:1.5;">' +
@@ -743,7 +746,7 @@
             '</div>' +
 
             /* Varun journey card */
-            '<div onclick="activeJourney=\'varun\';otpDest=\'varun-profile\';hasSynced=false;go(\'varun-reg\')"' +
+            '<div onclick="startJourney(\'varun\',\'varun-reg\',{otpDest:\'varun-profile\'})"' +
                  ' style="background:#fff;border-radius:16px;' +
                          'padding:20px;cursor:pointer;' +
                          'box-shadow:0 2px 12px rgba(0,0,0,.07);' +
@@ -763,7 +766,7 @@
                             'margin-bottom:2px;">Varun\'s journey</p>' +
                   '<p style="font-size:12px;font-weight:400;color:' + T.textS + ';' +
                             'line-height:1.4;">' +
-                    'You organised the trip &amp; shared everyone\'s photos' +
+                    'You planned the trip, created the group and synced your photos for everyone' +
                   '</p>' +
                 '</div>' +
 
@@ -778,7 +781,7 @@
             '</div>' +
 
             /* Beulah journey card */
-            '<div onclick="activeJourney=\'beulah\';otpDest=\'varun-tagging\';hasSynced=false;go(\'beulah-scene\')"' +
+            '<div onclick="startJourney(\'beulah\',\'beulah-scene\',{otpDest:\'varun-tagging\'})"' +
                  ' style="background:#fff;border-radius:16px;' +
                          'padding:20px;cursor:pointer;' +
                          'box-shadow:0 2px 12px rgba(0,0,0,.07);' +
@@ -794,7 +797,7 @@
                             'margin-bottom:2px;">Beulah\'s journey</p>' +
                   '<p style="font-size:12px;font-weight:400;color:' + T.textS + ';' +
                             'line-height:1.4;">' +
-                    'You received photos taken of you from the same trip' +
+                    'Varun captured 14 photos of you — see them without installing the app first' +
                   '</p>' +
                 '</div>' +
                 '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"' +
@@ -806,7 +809,7 @@
             '</div>' +
 
             /* Mayank journey card */
-            '<div onclick="activeJourney=\'mayank\';taggingOpenTab=\'group\';hasSynced=false;go(\'mayank-scene\')"' +
+            '<div onclick="startJourney(\'mayank\',\'mayank-scene\',{taggingOpenTab:\'group\'})"' +
                  ' style="background:#fff;border-radius:16px;' +
                          'padding:20px;cursor:pointer;' +
                          'box-shadow:0 2px 12px rgba(0,0,0,.07);' +
@@ -822,7 +825,7 @@
                             'margin-bottom:2px;">Mayank\'s journey</p>' +
                   '<p style="font-size:12px;font-weight:400;color:' + T.textS + ';' +
                             'line-height:1.4;">' +
-                    'You\'re an existing user — zero friction, straight to the album' +
+                    'You were offline when added — open the app and your photos are already synced and waiting' +
                   '</p>' +
                 '</div>' +
                 '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"' +
@@ -834,7 +837,7 @@
             '</div>' +
 
             /* Kavitha journey card */
-            '<div onclick="activeJourney=\'kavitha\';otpDest=\'varun-profile\';hasSynced=false;go(\'kavitha-scene\')"' +
+            '<div onclick="startJourney(\'kavitha\',\'kavitha-scene\',{otpDest:\'varun-profile\'})"' +
                  ' style="background:#fff;border-radius:16px;' +
                          'padding:20px;cursor:pointer;' +
                          'box-shadow:0 2px 12px rgba(0,0,0,.07);' +
@@ -850,7 +853,7 @@
                             'margin-bottom:2px;">Kavitha\'s journey</p>' +
                   '<p style="font-size:12px;font-weight:400;color:' + T.textS + ';' +
                             'line-height:1.4;">' +
-                    'You install mid-trip after Varun shows you the app at the campsite' +
+                    'Varun shows you the app at the campsite — install, sync and see everyone\'s photos in under a minute' +
                   '</p>' +
                 '</div>' +
                 '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"' +
@@ -862,7 +865,7 @@
             '</div>' +
 
             /* Vishal journey card */
-            '<div onclick="activeJourney=\'vishal\';otpDest=\'varun-profile\';hasSynced=false;go(\'vishal-scene\')"' +
+            '<div onclick="startJourney(\'vishal\',\'vishal-scene\',{otpDest:\'varun-profile\'})"' +
                  ' style="background:#fff;border-radius:16px;' +
                          'padding:20px;cursor:pointer;' +
                          'box-shadow:0 2px 12px rgba(0,0,0,.07);' +
@@ -878,7 +881,35 @@
                             'margin-bottom:2px;">Vishal\'s journey</p>' +
                   '<p style="font-size:12px;font-weight:400;color:' + T.textS + ';' +
                             'line-height:1.4;">' +
-                    'You finally install after being nudged all weekend' +
+                    'You got two nudges over two days before you finally installed on Sunday afternoon' +
+                  '</p>' +
+                '</div>' +
+                '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"' +
+                     ' stroke="' + T.textT + '" stroke-width="2"' +
+                     ' stroke-linecap="round" stroke-linejoin="round">' +
+                  '<polyline points="9 18 15 12 9 6"/>' +
+                '</svg>' +
+              '</div>' +
+            '</div>' +
+
+            /* Anand journey card */
+            '<div onclick="startJourney(\'anand\',\'anand-scene\',{taggingOpenTab:\'group\',inviteAccepted:true})"' +
+                 ' style="background:#fff;border-radius:16px;' +
+                         'padding:20px;cursor:pointer;' +
+                         'box-shadow:0 2px 12px rgba(0,0,0,.07);' +
+                         'margin-bottom:12px;">' +
+              '<div style="display:flex;align-items:center;gap:14px;">' +
+                '<div style="width:44px;height:44px;border-radius:50%;flex-shrink:0;' +
+                             'background:linear-gradient(135deg,#006064,#00838F);' +
+                             'display:flex;align-items:center;justify-content:center;">' +
+                  '<span style="font-size:15px;font-weight:800;color:#fff;">AN</span>' +
+                '</div>' +
+                '<div style="flex:1;min-width:0;">' +
+                  '<p style="font-size:15px;font-weight:700;color:' + T.text + ';' +
+                            'margin-bottom:2px;">Anand\'s journey</p>' +
+                  '<p style="font-size:12px;font-weight:400;color:' + T.textS + ';' +
+                            'line-height:1.4;">' +
+                    'You already accepted the Karjat invite — tap the notification and land straight inside the group screen, no steps needed' +
                   '</p>' +
                 '</div>' +
                 '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"' +
@@ -1109,8 +1140,9 @@
               (nameOk ? '' : ' disabled') +
               ' onclick="if(!this.disabled) go(\'' +
                 (activeJourney === 'beulah'  ? 'beulah-home'       :
-                 activeJourney === 'kavitha' ? 'varun-sync'         :
+                 activeJourney === 'kavitha' ? 'kavitha-home'       :
                  activeJourney === 'vishal'  ? 'vishal-home'        :
+                 activeJourney === 'anand'   ? 'anand-home'         :
                                                'varun-create-group') +
               '\')"' +
               ' style="display:block;width:100%;height:50px;' +
@@ -1193,7 +1225,7 @@
           '</div>' +
 
           /* Profile */
-          '<button onclick="go(\'varun-profile\')"' +
+          '<button onclick="go(\'profile\')"' +
             ' style="flex:1;height:100%;background:none;border:none;' +
                    'display:flex;flex-direction:column;' +
                    'align-items:center;justify-content:center;' +
@@ -1938,6 +1970,7 @@
       var old   = document.getElementById('group-del-overlay');
       if (old) old.remove();
       var homeDest = activeJourney === 'mayank'  ? 'mayank-home'
+                   : activeJourney === 'anand'   ? 'anand-home'
                    : activeJourney === 'beulah'  ? 'beulah-home'
                    : activeJourney === 'kavitha' ? 'kavitha-home'
                    : activeJourney === 'vishal'  ? 'vishal-home'
@@ -2015,7 +2048,7 @@
           /* ── Top bar ── */
           '<div style="height:52px;display:flex;align-items:center;' +
                'padding:0 4px;flex-shrink:0;position:relative;">' +
-            '<button onclick="go(\'' + (activeJourney === 'kavitha' ? 'varun-profile' : 'varun-home') + '\')"' +
+            '<button onclick="go(\'' + (activeJourney === 'kavitha' ? 'kavitha-home' : 'varun-home') + '\')"' +
               ' style="width:44px;height:44px;background:none;border:none;' +
                      'display:flex;align-items:center;justify-content:center;' +
                      'cursor:pointer;flex-shrink:0;">' +
@@ -2219,6 +2252,9 @@
     var otpDest                = 'varun-profile'; /* screen to navigate to after OTP */
     var activeJourney          = 'varun';         /* 'varun' | 'beulah' */
     var hasSynced              = false;           /* true only after sync completes */
+    var inviteAccepted         = false;           /* true once user taps Accept & view trip */
+    var profileCircleTab       = 'identified';    /* 'identified' | 'unknown' */
+    var profileNotifs          = { shared:true, identified:true, newMemories:true, unknownFaces:true };
     var taggingPreviewIndex    = -1;
     var taggingPreviewTimer    = null;
     var taggingPreviewTouchX   = null;
@@ -2734,6 +2770,7 @@
       var tb = document.getElementById('tagging-top-bar');
       if (!tb) return;
       var backDest = activeJourney === 'mayank'  ? 'mayank-home'
+                   : activeJourney === 'anand'   ? 'anand-home'
                    : activeJourney === 'beulah'  ? 'beulah-home'
                    : activeJourney === 'kavitha' ? 'kavitha-home'
                    : activeJourney === 'vishal'  ? 'vishal-home'
@@ -2894,8 +2931,8 @@
         poolHTML += '</div>';
         grid.innerHTML = poolHTML;
       } else if (tab === 'my-photos' && !hasSynced) {
-        if (activeJourney === 'mayank') {
-          /* Mayank — auto-sync in progress bar (no user action needed) */
+        if (activeJourney === 'mayank' || activeJourney === 'anand') {
+          /* Mayank / Anand — auto-sync in progress bar (no user action needed) */
           grid.innerHTML = (
             '<div style="padding:20px 0;">' +
               '<div style="background:' + T.blueTint + ';border-radius:12px;padding:14px 16px;">' +
@@ -3862,6 +3899,18 @@
           { avId: 'BE',  personId: 'BE', name: 'Beulah',  count:  9, identified: true,
             bg: 'linear-gradient(135deg,#880E4F,#C2185B)',           ring: '#E91E63', solid: true  },
         ];
+      } else if (activeJourney === 'anand') {
+        /* Anand is a power user — all faces known from 4 previous trips */
+        PEOPLE = [
+          { avId: 'AN',  personId: 'AN', name: 'You',     count: 19, identified: true,
+            bg: 'linear-gradient(135deg,#006064,#00838F)',            ring: '#00838F', solid: true  },
+          { avId: 'VR',  personId: 'VR', name: 'Varun',   count: 14, identified: true,
+            bg: 'linear-gradient(135deg,#1B4FD8,#5C8FFF)',            ring: T.blue,    solid: true  },
+          { avId: 'MA',  personId: 'MA', name: 'Mayank',  count: 22, identified: true,
+            bg: 'linear-gradient(135deg,#E65100,#FF8F00)',            ring: '#FF8F00', solid: true  },
+          { avId: 'KA',  personId: 'KA', name: 'Kavitha', count:  7, identified: true,
+            bg: 'linear-gradient(135deg,#1B5E20,#388E3C)',            ring: '#4CAF50', solid: true  },
+        ];
       } else {
         /* Varun / Beulah — all unidentified on first view */
         PEOPLE = [
@@ -3989,6 +4038,7 @@
                  'background:#fff;' +
                  'box-shadow:0 1px 0 rgba(15,23,42,.08);">' +
             '<button onclick="go(\'' + (activeJourney === 'mayank'  ? 'mayank-home'  :
+                                        activeJourney === 'anand'   ? 'anand-home'   :
                                         activeJourney === 'beulah'  ? 'beulah-home'  :
                                         activeJourney === 'kavitha' ? 'kavitha-home' :
                                         activeJourney === 'vishal'  ? 'vishal-home'  :
@@ -4089,8 +4139,8 @@
           '<div id="tagging-grid" class="pscroll"' +
                ' style="flex:1;overflow-y:auto;background:#fff;padding:16px 18px 20px;">' +
             (taggingTab === 'my-photos' && !hasSynced
-              ? (activeJourney === 'mayank'
-                  /* Mayank — auto-sync progress, fires from postRender */
+              ? (activeJourney === 'mayank' || activeJourney === 'anand'
+                  /* Mayank / Anand — auto-sync progress, fires from postRender */
                   ? '<div style="padding:20px 0;">' +
                       '<div style="background:' + T.blueTint + ';border-radius:12px;padding:14px 16px;">' +
                         '<div style="display:flex;align-items:center;justify-content:space-between;' +
@@ -4338,6 +4388,75 @@
       );
     }
 
+    /* ─────────────────────────────────────────────────────
+       SHARED HELPER: acceptTripButton
+       Renders Accept CTA or a "Joined" state once accepted.
+       extraOnclick : string — JS to run before go() on first tap
+       bg           : string — button background colour
+       shadow       : string — box-shadow rgba string
+       ───────────────────────────────────────────────────── */
+    function acceptTripButton(extraOnclick, bg, shadow) {
+      if (inviteAccepted) {
+        return (
+          '<button onclick="taggingOpenTab=\'group\';go(\'varun-tagging\')"' +
+            ' style="display:block;width:100%;height:46px;border-radius:12px;border:none;' +
+                   'background:' + (bg || T.blue) + ';color:#fff;' +
+                   'font-family:inherit;font-size:15px;font-weight:600;' +
+                   'cursor:pointer;' +
+                   'box-shadow:0 4px 14px ' + (shadow || 'rgba(27,79,216,.28)') + ';">' +
+            'View 34 photos' +
+          '</button>'
+        );
+      }
+      return (
+        '<button onclick="inviteAccepted=true;' + extraOnclick + '"' +
+          ' style="display:block;width:100%;height:46px;border-radius:12px;border:none;' +
+                 'background:' + (bg || T.blue) + ';color:#fff;' +
+                 'font-family:inherit;font-size:15px;font-weight:600;' +
+                 'cursor:pointer;' +
+                 'box-shadow:0 4px 14px ' + (shadow || 'rgba(27,79,216,.28)') + ';">' +
+          'Accept &amp; view trip' +
+        '</button>'
+      );
+    }
+
+    /* ─────────────────────────────────────────────────────
+       SHARED HELPER: pastAlbumCard
+       Renders a clickable past-album card.
+       title   : string  — "Goa Trip — March 2025"
+       sub     : string  — "28 photos · 6 people"
+       coverIdx: number  — index into PHOTO_FILES for cover
+       ───────────────────────────────────────────────────── */
+    function pastAlbumCard(title, sub, coverIdx) {
+      return (
+        '<div onclick="hasSynced=true;taggingOpenTab=\'group\';go(\'varun-tagging\')"' +
+             ' style="background:#fff;border-radius:16px;overflow:hidden;' +
+                     'margin-bottom:12px;box-shadow:0 2px 12px rgba(0,0,0,.06);cursor:pointer;">' +
+          '<div style="height:100px;position:relative;overflow:hidden;">' +
+            '<img src="' + PHOTO_FILES[coverIdx] + '"' +
+                 ' style="width:100%;height:100%;object-fit:cover;display:block;">' +
+            '<div style="position:absolute;inset:0;' +
+                         'background:linear-gradient(to bottom,rgba(0,0,0,.08),rgba(0,0,0,.62));' +
+                         'display:flex;align-items:flex-end;padding:10px 14px;">' +
+              '<span style="font-size:14px;font-weight:700;color:#fff;">' +
+                title +
+              '</span>' +
+            '</div>' +
+          '</div>' +
+          '<div style="padding:12px 14px;display:flex;' +
+                       'align-items:center;justify-content:space-between;">' +
+            '<p style="font-size:12px;font-weight:400;color:' + T.textS + ';">' +
+              sub +
+            '</p>' +
+            '<span style="font-size:11px;font-weight:600;color:' + T.textT + ';' +
+                         'background:' + T.bgSub + ';border-radius:8px;padding:3px 8px;">' +
+              'Past' +
+            '</span>' +
+          '</div>' +
+        '</div>'
+      );
+    }
+
     /* ═══════════════════════════════════════════════════════
        MAYANK JOURNEY
     ═══════════════════════════════════════════════════════ */
@@ -4580,69 +4699,13 @@
                 '</p>' +
 
                 /* Accept button */
-                '<button onclick="taggingOpenTab=\'group\';go(\'varun-tagging\')"' +
-                  ' style="display:block;width:100%;height:46px;border-radius:12px;border:none;' +
-                         'background:' + T.blue + ';color:#fff;' +
-                         'font-family:inherit;font-size:15px;font-weight:600;' +
-                         'cursor:pointer;' +
-                         'box-shadow:0 4px 14px rgba(27,79,216,.28);">' +
-                  'Accept &amp; view trip' +
-                '</button>' +
+                acceptTripButton('hasSynced=false;taggingOpenTab=\'group\';go(\'varun-tagging\')') +
               '</div>' +
 
             '</div>' +
 
-            /* Goa Trip — past event card */
-            '<div style="background:#fff;border-radius:16px;overflow:hidden;' +
-                        'margin-bottom:12px;box-shadow:0 2px 12px rgba(0,0,0,.06);">' +
-              '<div style="height:100px;position:relative;overflow:hidden;">' +
-                '<img src="' + PHOTO_FILES[4] + '"' +
-                     ' style="width:100%;height:100%;object-fit:cover;display:block;">' +
-                '<div style="position:absolute;inset:0;' +
-                             'background:linear-gradient(to bottom,rgba(0,0,0,.08),rgba(0,0,0,.62));' +
-                             'display:flex;align-items:flex-end;padding:10px 14px;">' +
-                  '<span style="font-size:14px;font-weight:700;color:#fff;">' +
-                    'Goa Trip — March 2025' +
-                  '</span>' +
-                '</div>' +
-              '</div>' +
-              '<div style="padding:12px 14px;display:flex;' +
-                           'align-items:center;justify-content:space-between;">' +
-                '<p style="font-size:12px;font-weight:400;color:' + T.textS + ';">' +
-                  '28 photos · 6 people' +
-                '</p>' +
-                '<span style="font-size:11px;font-weight:600;color:' + T.textT + ';' +
-                             'background:' + T.bgSub + ';border-radius:8px;padding:3px 8px;">' +
-                  'Past' +
-                '</span>' +
-              '</div>' +
-            '</div>' +
-
-            /* Office Lunch — past event card */
-            '<div style="background:#fff;border-radius:16px;overflow:hidden;' +
-                        'box-shadow:0 2px 12px rgba(0,0,0,.06);">' +
-              '<div style="height:100px;position:relative;overflow:hidden;">' +
-                '<img src="' + PHOTO_FILES[11] + '"' +
-                     ' style="width:100%;height:100%;object-fit:cover;display:block;">' +
-                '<div style="position:absolute;inset:0;' +
-                             'background:linear-gradient(to bottom,rgba(0,0,0,.08),rgba(0,0,0,.62));' +
-                             'display:flex;align-items:flex-end;padding:10px 14px;">' +
-                  '<span style="font-size:14px;font-weight:700;color:#fff;">' +
-                    'Office Lunch — April' +
-                  '</span>' +
-                '</div>' +
-              '</div>' +
-              '<div style="padding:12px 14px;display:flex;' +
-                           'align-items:center;justify-content:space-between;">' +
-                '<p style="font-size:12px;font-weight:400;color:' + T.textS + ';">' +
-                  '12 photos · 4 people' +
-                '</p>' +
-                '<span style="font-size:11px;font-weight:600;color:' + T.textT + ';' +
-                             'background:' + T.bgSub + ';border-radius:8px;padding:3px 8px;">' +
-                  'Past' +
-                '</span>' +
-              '</div>' +
-            '</div>' +
+            pastAlbumCard('Goa Trip — March 2025',   '28 photos · 6 people', 4) +
+            pastAlbumCard('Office Lunch — April',    '12 photos · 4 people', 11) +
 
           '</div>' +
 
@@ -4738,14 +4801,7 @@
                 '</p>' +
 
                 /* Accept button */
-                '<button onclick="taggingOpenTab=\'group\';go(\'varun-tagging\')"' +
-                  ' style="display:block;width:100%;height:46px;border-radius:12px;border:none;' +
-                         'background:' + T.blue + ';color:#fff;' +
-                         'font-family:inherit;font-size:15px;font-weight:600;' +
-                         'cursor:pointer;' +
-                         'box-shadow:0 4px 14px rgba(27,79,216,.28);">' +
-                  'Accept &amp; view trip' +
-                '</button>' +
+                acceptTripButton('taggingOpenTab=\'group\';go(\'varun-tagging\')') +
               '</div>' +
 
             '</div>' +
@@ -4898,7 +4954,7 @@
       );
     }
 
-    /* ── K2: Kavitha's home — one LIVE album ── */
+    /* ── K2: Kavitha's home — invite card (accept → sync → group) ── */
     function screenKavithaHome() {
       return (
         '<div class="screen"' +
@@ -4910,56 +4966,48 @@
 
           /* ── Top bar ── */
           '<div style="height:52px;background:' + T.bgWarm + ';' +
-               'display:flex;align-items:center;justify-content:space-between;' +
-               'padding:0 20px;flex-shrink:0;">' +
+               'display:flex;align-items:center;justify-content:center;' +
+               'padding:0 20px;flex-shrink:0;border-bottom:1px solid rgba(0,0,0,.04);">' +
             logo(20, 16) +
-            /* Bell — no badge, she's just joined */
-            '<div style="padding:6px;">' +
-              '<svg width="22" height="22" viewBox="0 0 24 24" fill="none"' +
-                   ' stroke="' + T.textT + '" stroke-width="1.8"' +
-                   ' stroke-linecap="round" stroke-linejoin="round">' +
-                '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>' +
-                '<path d="M13.73 21a2 2 0 0 1-3.46 0"/>' +
-              '</svg>' +
-            '</div>' +
           '</div>' +
 
           /* ── Scrollable content ── */
-          '<div style="flex:1;overflow-y:auto;padding:16px 16px 24px;">' +
+          '<div style="flex:1;overflow-y:auto;padding:16px 16px 32px;">' +
 
-            /* Welcome line */
-            '<p style="font-size:18px;font-weight:800;color:' + T.text + ';margin-bottom:2px;">' +
-              'Welcome to your trips 👋' +
+            /* Welcome heading */
+            '<p style="font-size:20px;font-weight:800;color:' + T.text + ';margin-bottom:4px;">' +
+              'You have been added 👋' +
             '</p>' +
             '<p style="font-size:13px;font-weight:400;color:' + T.textS + ';margin-bottom:16px;">' +
-              'Your Karjat photos are synced and ready.' +
+              'Varun added you to the trip — accept to see all the photos.' +
             '</p>' +
 
-            /* Karjat LIVE album card */
-            '<div onclick="taggingOpenTab=\'group\';go(\'varun-tagging\')"' +
-                 ' style="background:#fff;border-radius:18px;overflow:hidden;' +
-                         'cursor:pointer;box-shadow:0 2px 16px rgba(0,0,0,.08);">' +
+            /* Karjat invite card */
+            '<div style="background:#fff;border-radius:18px;overflow:hidden;' +
+                        'box-shadow:0 2px 16px rgba(0,0,0,.10);">' +
 
-              '<div style="height:168px;position:relative;overflow:hidden;">' +
-                '<img src="' + PHOTO_FILES[15] + '"' +
+              '<div style="height:180px;position:relative;overflow:hidden;">' +
+                '<img src="' + PHOTO_FILES[6] + '"' +
                      ' style="width:100%;height:100%;object-fit:cover;display:block;">' +
                 '<div style="position:absolute;inset:0;' +
-                             'background:linear-gradient(to bottom,rgba(0,0,0,.06),rgba(0,0,0,.52));"></div>' +
+                             'background:linear-gradient(to bottom,' +
+                               'rgba(0,0,0,.04) 0%,rgba(0,0,0,.65) 100%);"></div>' +
 
-                /* LIVE badge */
-                '<div style="position:absolute;top:12px;right:12px;' +
-                             'background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.35);' +
-                             'border-radius:20px;backdrop-filter:blur(8px);' +
-                             'padding:3px 10px;display:flex;align-items:center;gap:5px;">' +
-                  '<div style="width:6px;height:6px;border-radius:50%;background:#4ade80;' +
-                               'box-shadow:0 0 0 2px rgba(74,222,128,.35);"></div>' +
-                  '<span style="font-size:11px;font-weight:700;color:#fff;letter-spacing:.5px;">LIVE</span>' +
+                /* Invite chip */
+                '<div style="position:absolute;top:12px;left:12px;' +
+                             'background:rgba(245,166,35,.92);' +
+                             'border-radius:20px;padding:3px 10px;' +
+                             'backdrop-filter:blur(8px);">' +
+                  '<span style="font-size:11px;font-weight:700;color:#fff;' +
+                               'letter-spacing:.4px;">' +
+                    (inviteAccepted ? 'JOINED' : 'INVITE') +
+                  '</span>' +
                 '</div>' +
 
-                /* Mini thumb strip */
+                /* Mini photo strip */
                 '<div style="position:absolute;bottom:12px;left:14px;display:flex;gap:4px;">' +
                   (function () {
-                    var ti = [2, 7, 11, 16]; var out = '';
+                    var ti = [0, 5, 9, 13]; var out = '';
                     for (var si = 0; si < ti.length; si++) {
                       out += '<div style="width:32px;height:32px;border-radius:6px;overflow:hidden;' +
                                          'border:1.5px solid rgba(255,255,255,.5);">' +
@@ -4970,7 +5018,7 @@
                     return out;
                   }()) +
                   '<div style="width:32px;height:32px;border-radius:6px;' +
-                               'background:rgba(0,0,0,.38);backdrop-filter:blur(4px);' +
+                               'background:rgba(0,0,0,.4);backdrop-filter:blur(4px);' +
                                'border:1.5px solid rgba(255,255,255,.3);' +
                                'display:flex;align-items:center;justify-content:center;">' +
                     '<span style="font-size:10px;font-weight:700;color:#fff;">+30</span>' +
@@ -4986,9 +5034,12 @@
                 '<p style="font-size:12px;font-weight:400;color:' + T.textS + ';margin-bottom:4px;">' +
                   'Sat 24 May — Sun 25 May' +
                 '</p>' +
-                '<p style="font-size:12px;font-weight:500;color:' + T.textT + ';">' +
-                  '34 photos · 5 people · Your photos synced' +
+                '<p style="font-size:12px;font-weight:500;color:' + T.textT + ';margin-bottom:14px;">' +
+                  'Varun added you · 34 photos · 5 people' +
                 '</p>' +
+
+                acceptTripButton('go(\'varun-sync\')') +
+
               '</div>' +
 
             '</div>' +
@@ -5210,13 +5261,7 @@
                   'Varun invited you · 34 photos · 5 people · 8 photos of you' +
                 '</p>' +
 
-                '<button onclick="taggingOpenTab=\'group\';go(\'varun-tagging\')"' +
-                  ' style="display:block;width:100%;height:46px;border-radius:12px;border:none;' +
-                         'background:' + T.blue + ';color:#fff;' +
-                         'font-family:inherit;font-size:15px;font-weight:600;' +
-                         'cursor:pointer;box-shadow:0 4px 14px rgba(27,79,216,.28);">' +
-                  'Accept &amp; view trip' +
-                '</button>' +
+                acceptTripButton('taggingOpenTab=\'group\';go(\'varun-tagging\')') +
               '</div>' +
 
             '</div>' +
@@ -5227,6 +5272,1354 @@
       );
     }
 
+    /* ═══════════════════════════════════════════════════════
+       ANAND JOURNEY
+    ═══════════════════════════════════════════════════════ */
+
+    /* ── A1: Scene-setter — push notification, power user ── */
+    function screenAnandScene() {
+      return (
+        '<div class="screen"' +
+             ' style="position:absolute;inset:0;display:flex;flex-direction:column;' +
+                    'background:' + T.bgWarm + ';">' +
+
+          switchPill() +
+          sbar(T.bgWarm) +
+
+          '<div style="flex:1;display:flex;flex-direction:column;' +
+               'justify-content:center;padding:28px 24px 40px;">' +
+
+            /* Time label */
+            '<p style="font-size:12px;font-weight:600;color:' + T.textT + ';' +
+                      'letter-spacing:.07em;text-transform:uppercase;' +
+                      'text-align:center;margin-bottom:10px;">' +
+              'Saturday, 24 May · 7:48 AM' +
+            '</p>' +
+
+            /* Context */
+            '<p style="font-size:20px;font-weight:800;color:' + T.text + ';' +
+                      'line-height:1.35;text-align:center;margin-bottom:32px;' +
+                      'letter-spacing:-.3px;">' +
+              'You already accepted this trip. Tap the notification and you\'re straight inside — no invite screen, no steps.' +
+            '</p>' +
+
+            /* iOS-style dark notification banner */
+            '<div style="background:#1C1C1E;border-radius:16px;' +
+                        'padding:14px 16px;margin-bottom:36px;' +
+                        'box-shadow:0 8px 32px rgba(0,0,0,.3);">' +
+
+              '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">' +
+                '<div style="width:30px;height:30px;border-radius:7px;' +
+                             'background:#006064;flex-shrink:0;' +
+                             'display:flex;align-items:center;justify-content:center;">' +
+                  '<svg width="16" height="16" viewBox="0 0 20 20" fill="none"' +
+                       ' stroke="white" stroke-width="2"' +
+                       ' stroke-linecap="round" stroke-linejoin="round">' +
+                    '<rect x="1" y="3" width="18" height="14" rx="2"/>' +
+                    '<circle cx="10" cy="10" r="3"/>' +
+                    '<circle cx="10" cy="10" r="1" fill="white" stroke="none"/>' +
+                  '</svg>' +
+                '</div>' +
+                '<span style="font-size:11px;font-weight:700;' +
+                             'color:rgba(255,255,255,.55);letter-spacing:.05em;flex:1;">' +
+                  'PIXSLAY' +
+                '</span>' +
+                '<span style="font-size:11px;color:rgba(255,255,255,.35);">now</span>' +
+              '</div>' +
+
+              '<p style="font-size:14px;font-weight:700;color:#fff;margin-bottom:3px;">' +
+                'Mumbai — Karjat · 34 new photos' +
+              '</p>' +
+
+              '<p style="font-size:13px;font-weight:400;' +
+                        'color:rgba(255,255,255,.7);line-height:1.4;">' +
+                'New photos added since your last visit. Tap to jump back in.' +
+              '</p>' +
+
+            '</div>' +
+
+            /* CTA */
+            '<button onclick="taggingOpenTab=\'group\';go(\'varun-tagging\')"' +
+              ' style="display:block;width:100%;height:50px;' +
+                     'border-radius:12px;border:none;' +
+                     'background:#006064;color:#fff;' +
+                     'font-family:inherit;font-size:15px;font-weight:600;' +
+                     'cursor:pointer;' +
+                     'box-shadow:0 4px 14px rgba(0,96,100,.35);">' +
+              'Tap the notification' +
+            '</button>' +
+
+          '</div>' +
+
+        '</div>'
+      );
+    }
+
+    /* ── A2: Anand's home — 4 past albums + Karjat invite ── */
+    function screenAnandHome() {
+      return (
+        '<div class="screen"' +
+             ' style="position:absolute;inset:0;display:flex;flex-direction:column;' +
+                    'background:' + T.bgWarm + ';">' +
+
+          switchPill() +
+          sbar(T.bgWarm) +
+
+          /* ── Top bar ── */
+          '<div style="height:52px;background:' + T.bgWarm + ';' +
+               'display:flex;align-items:center;justify-content:center;' +
+               'padding:0 20px;flex-shrink:0;border-bottom:1px solid rgba(0,0,0,.04);">' +
+            logo(20, 16) +
+          '</div>' +
+
+          /* ── Scrollable content ── */
+          '<div style="flex:1;overflow-y:auto;padding:16px 16px 32px;">' +
+
+            /* Welcome heading */
+            '<p style="font-size:20px;font-weight:800;color:' + T.text + ';margin-bottom:4px;">' +
+              'Welcome back, Anand 👋' +
+            '</p>' +
+            '<p style="font-size:13px;font-weight:400;color:' + T.textS + ';margin-bottom:16px;">' +
+              'New trip added. Your 4 past albums are below.' +
+            '</p>' +
+
+            /* Karjat invite card */
+            '<div style="background:#fff;border-radius:18px;overflow:hidden;' +
+                        'margin-bottom:20px;box-shadow:0 2px 16px rgba(0,0,0,.10);">' +
+
+              '<div style="height:180px;position:relative;overflow:hidden;">' +
+                '<img src="' + PHOTO_FILES[15] + '"' +
+                     ' style="width:100%;height:100%;object-fit:cover;display:block;">' +
+                '<div style="position:absolute;inset:0;' +
+                             'background:linear-gradient(to bottom,' +
+                               'rgba(0,0,0,.04) 0%,rgba(0,0,0,.65) 100%);"></div>' +
+
+                /* Invite chip */
+                '<div style="position:absolute;top:12px;left:12px;' +
+                             'background:rgba(0,96,100,.9);' +
+                             'border-radius:20px;padding:3px 10px;' +
+                             'backdrop-filter:blur(8px);">' +
+                  '<span style="font-size:11px;font-weight:700;color:#fff;' +
+                               'letter-spacing:.4px;">INVITE</span>' +
+                '</div>' +
+
+                /* Mini photo strip */
+                '<div style="position:absolute;bottom:12px;left:14px;display:flex;gap:4px;">' +
+                  (function () {
+                    var ti = [2, 7, 11, 16];
+                    var out = '';
+                    for (var si = 0; si < ti.length; si++) {
+                      out += (
+                        '<div style="width:32px;height:32px;border-radius:6px;overflow:hidden;' +
+                                    'border:1.5px solid rgba(255,255,255,.5);">' +
+                          '<img src="' + PHOTO_FILES[ti[si]] + '"' +
+                               ' style="width:100%;height:100%;object-fit:cover;display:block;">' +
+                        '</div>'
+                      );
+                    }
+                    return out;
+                  }()) +
+                  '<div style="width:32px;height:32px;border-radius:6px;' +
+                               'background:rgba(0,0,0,.4);backdrop-filter:blur(4px);' +
+                               'border:1.5px solid rgba(255,255,255,.3);' +
+                               'display:flex;align-items:center;justify-content:center;">' +
+                    '<span style="font-size:10px;font-weight:700;color:#fff;">+30</span>' +
+                  '</div>' +
+                '</div>' +
+              '</div>' +
+
+              '<div style="padding:14px 16px 16px;">' +
+                '<p style="font-size:16px;font-weight:700;color:' + T.text + ';' +
+                          'margin-bottom:2px;">Mumbai — Karjat</p>' +
+                '<p style="font-size:12px;font-weight:400;color:' + T.textS + ';' +
+                          'margin-bottom:4px;">Sat 24 May — Sun 25 May</p>' +
+                '<p style="font-size:12px;font-weight:500;color:' + T.textT + ';' +
+                          'margin-bottom:14px;">' +
+                  'Varun added you · 34 photos · 5 people · 19 photos of you identified' +
+                '</p>' +
+
+                acceptTripButton('hasSynced=false;taggingOpenTab=\'group\';go(\'varun-tagging\')', '#006064', 'rgba(0,96,100,.3)') +
+              '</div>' +
+
+            '</div>' +
+
+            /* Past album section header */
+            '<p style="font-size:13px;font-weight:700;color:' + T.textT + ';' +
+                      'letter-spacing:.06em;text-transform:uppercase;' +
+                      'margin-bottom:10px;">Your past trips</p>' +
+
+            pastAlbumCard('Manali Trip — Feb 2025',    '142 photos · 8 people',  7)  +
+            pastAlbumCard('Goa New Year — Dec 2024',   '89 photos · 12 people',  2)  +
+            pastAlbumCard('Office Retreat — Nov 2024', '56 photos · 22 people',  13) +
+            pastAlbumCard('Coorg Weekend — Oct 2024',  '34 photos · 5 people',   9)  +
+
+          '</div>' +
+
+          navBar('home') +
+
+        '</div>'
+      );
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       ALBUM LISTING — CONFIG-DRIVEN SHARED SCREEN
+       All *-home SCREEN_MAP entries point to screenAlbumListing.
+       Journey data + CTA variants injected via getAlbumListingConfig().
+    ═══════════════════════════════════════════════════════ */
+
+    /* ── Listing state globals ── */
+    var albumSearchOpen      = false;
+    var albumSearchQuery     = '';
+    var albumPeopleExpanded  = false;
+    var albumSelectedPerson  = '';
+    var albumFilterDate      = '';
+    var albumFilterOwnership = '';
+    var albumFilterSort      = 'last-updated';
+
+    /* ── Journey init — single entry point, resets all listing state ── */
+    function startJourney(journey, dest, opts) {
+      opts = opts || {};
+      activeJourney        = journey;
+      otpDest              = opts.otpDest        !== undefined ? opts.otpDest        : 'varun-profile';
+      hasSynced            = opts.hasSynced       !== undefined ? opts.hasSynced       : false;
+      inviteAccepted       = opts.inviteAccepted  !== undefined ? opts.inviteAccepted  : false;
+      taggingOpenTab       = opts.taggingOpenTab  !== undefined ? opts.taggingOpenTab  : '';
+      albumSearchOpen      = false;
+      albumSearchQuery     = '';
+      albumPeopleExpanded  = false;
+      albumSelectedPerson  = '';
+      albumFilterDate      = '';
+      albumFilterOwnership = '';
+      albumFilterSort      = 'last-updated';
+      profileCircleTab     = 'identified';
+      go(dest);
+    }
+
+    /* ── People master list (shared across all journeys in mock) ── */
+    var AL_PEOPLE = [
+      { id:'VR', name:'Varun',   bg:'linear-gradient(135deg,#1B4FD8,#2D7DD2)' },
+      { id:'BE', name:'Beulah',  bg:'linear-gradient(135deg,#880E4F,#C2185B)' },
+      { id:'KA', name:'Kavitha', bg:'linear-gradient(135deg,#1B5E20,#388E3C)' },
+      { id:'MA', name:'Mayank',  bg:'linear-gradient(135deg,#E65100,#FF8F00)' },
+      { id:'VI', name:'Vishal',  bg:'linear-gradient(135deg,#4A148C,#7B1FA2)' },
+      { id:'AN', name:'Anand',   bg:'linear-gradient(135deg,#006064,#00838F)' },
+    ];
+
+    /* ── Journey album datasets ── */
+    var AL_ALBUMS = {
+      varun:   { recent:[], memories:[] },
+      beulah:  { recent:[], memories:[] },
+      kavitha: { recent:[], memories:[] },
+      vishal:  { recent:[], memories:[] },
+      mayank: {
+        recent: [
+          { title:'Goa Trip — March 2025', dates:'Mar 2025', coverIdx:4,  meta:'28 photos · 6 people', people:['MA','VR','KA','BE','VI','AN'] },
+          { title:'Office Lunch — April',  dates:'Apr 2025', coverIdx:11, meta:'12 photos · 4 people', people:['MA','VR','KA']               },
+        ],
+        memories: []
+      },
+      anand: {
+        recent: [
+          { title:'Manali Trip — Feb 2025',  dates:'Feb 2025', coverIdx:7, meta:'142 photos · 8 people',  people:['AN','VR','MA','KA','VI']      },
+          { title:'Goa New Year — Dec 2024', dates:'Dec 2024', coverIdx:2, meta:'89 photos · 12 people',  people:['AN','VR','BE','MA','KA','VI'] },
+        ],
+        memories: [
+          { title:'Office Retreat — Nov 2024', dates:'Nov 2024', coverIdx:13, meta:'56 photos · 22 people', people:['AN','VR','MA']      },
+          { title:'Coorg Weekend — Oct 2024',  dates:'Oct 2024', coverIdx:9,  meta:'34 photos · 5 people',  people:['AN','VR','KA']      },
+        ]
+      }
+    };
+
+    /* ── Config factory — called at render time so runtime state is captured ── */
+    function getAlbumListingConfig() {
+      var d = AL_ALBUMS[activeJourney] || { recent:[], memories:[] };
+      var isOwner  = (activeJourney === 'varun');
+      var canEnter = isOwner || inviteAccepted;
+
+      var badge      = isOwner ? 'LIVE' : inviteAccepted ? 'JOINED' : 'INVITE';
+      var badgeBg    = isOwner ? 'rgba(0,0,0,.28)' : inviteAccepted ? 'rgba(39,174,96,.85)' : 'rgba(245,166,35,.92)';
+      var badgeBorder = isOwner ? 'border:1px solid rgba(255,255,255,.35);' : '';
+
+      var acceptOnclick = activeJourney === 'kavitha'
+        ? 'go(\'varun-sync\')'
+        : activeJourney === 'mayank'
+        ? 'hasSynced=false;taggingOpenTab=\'group\';go(\'varun-tagging\')'
+        : 'taggingOpenTab=\'group\';go(\'varun-tagging\')';
+
+      return {
+        liveAlbum: {
+          title:      'Mumbai — Karjat',
+          dates:      'Sat 24 May — Sun 25 May',
+          coverIdx:   15,
+          thumbs:     [2, 7, 11, 16],
+          badge:      badge,
+          badgeBg:    badgeBg,
+          badgeBorder:badgeBorder,
+          meta:       isOwner ? '34 photos · 5 people' : 'Varun added you · 34 photos · 5 people',
+          onTap:      canEnter ? 'taggingOpenTab=\'group\';go(\'varun-tagging\')' : null,
+          cta:        canEnter ? null : acceptTripButton(acceptOnclick),
+        },
+        recent:    d.recent,
+        memories:  d.memories,
+        emptyState: {
+          icon: '🏕️',
+          title:'No trips yet',
+          sub:  'You\'ll see trips here once you create or join one.',
+        },
+      };
+    }
+
+    /* ── Helper: thumb strip ── */
+    function alThumbStrip(thumbs) {
+      var o = '<div style="position:absolute;bottom:12px;left:14px;display:flex;gap:4px;">';
+      for (var i = 0; i < thumbs.length; i++) {
+        o += '<div style="width:30px;height:30px;border-radius:6px;overflow:hidden;border:1.5px solid rgba(255,255,255,.5);">' +
+               '<img src="' + PHOTO_FILES[thumbs[i]] + '" style="width:100%;height:100%;object-fit:cover;display:block;">' +
+             '</div>';
+      }
+      return o + '<div style="width:30px;height:30px;border-radius:6px;background:rgba(0,0,0,.4);backdrop-filter:blur(4px);border:1.5px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;"><span style="font-size:9px;font-weight:700;color:#fff;">+30</span></div></div>';
+    }
+
+    /* ── Helper: face stack (up to 3 overlapping avatars + overflow) ── */
+    function alFaceStack(ids) {
+      var o = '<div style="display:flex;">';
+      var shown = Math.min(ids.length, 3);
+      for (var i = 0; i < shown; i++) {
+        var p = null;
+        for (var j = 0; j < AL_PEOPLE.length; j++) { if (AL_PEOPLE[j].id === ids[i]) { p = AL_PEOPLE[j]; break; } }
+        if (!p) continue;
+        o += '<div style="width:20px;height:20px;border-radius:50%;background:' + p.bg + ';border:1.5px solid #fff;margin-left:' + (i > 0 ? '-5px' : '0') + ';display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:800;color:#fff;">' + p.id[0] + '</div>';
+      }
+      if (ids.length > 3) {
+        o += '<div style="width:20px;height:20px;border-radius:50%;background:' + T.bgSub + ';border:1.5px solid #fff;margin-left:-5px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;color:' + T.textT + ';">+' + (ids.length - 3) + '</div>';
+      }
+      return o + '</div>';
+    }
+
+    /* ── Helper: live / invite card (large, always pinned top) ── */
+    function alLiveCard(a) {
+      var open = a.onTap ? ' onclick="' + a.onTap + '"' : '';
+      var cur  = a.onTap ? 'cursor:pointer;' : '';
+      return (
+        '<div' + open + ' style="background:#fff;border-radius:18px;overflow:hidden;margin-bottom:20px;box-shadow:0 2px 16px rgba(0,0,0,.10);' + cur + '">' +
+          '<div style="height:180px;position:relative;overflow:hidden;">' +
+            '<img src="' + PHOTO_FILES[a.coverIdx] + '" style="width:100%;height:100%;object-fit:cover;display:block;">' +
+            '<div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.04) 0%,rgba(0,0,0,.65) 100%);"></div>' +
+            '<div style="position:absolute;top:12px;left:12px;background:' + a.badgeBg + ';' + a.badgeBorder + 'border-radius:20px;padding:3px 10px;backdrop-filter:blur(8px);">' +
+              '<span style="font-size:11px;font-weight:700;color:#fff;letter-spacing:.4px;">' + a.badge + '</span>' +
+            '</div>' +
+            alThumbStrip(a.thumbs) +
+          '</div>' +
+          '<div style="padding:14px 16px 16px;">' +
+            '<p style="font-size:16px;font-weight:700;color:' + T.text + ';margin-bottom:2px;">' + a.title + '</p>' +
+            '<p style="font-size:12px;color:' + T.textS + ';margin-bottom:4px;">' + a.dates + '</p>' +
+            '<p style="font-size:12px;font-weight:500;color:' + T.textT + ';margin-bottom:' + (a.cta ? '14px' : '0') + ';">' + a.meta + '</p>' +
+            (a.cta || '') +
+          '</div>' +
+        '</div>'
+      );
+    }
+
+    /* ── Helper: past album list card (filterable) ── */
+    function alListCard(album) {
+      if (albumSelectedPerson) {
+        var has = false;
+        for (var i = 0; i < album.people.length; i++) { if (album.people[i] === albumSelectedPerson) { has = true; break; } }
+        if (!has) return '';
+      }
+      if (albumSearchQuery) {
+        var q = albumSearchQuery.toLowerCase();
+        var hit = album.title.toLowerCase().indexOf(q) >= 0;
+        if (!hit) {
+          outer: for (var k = 0; k < album.people.length; k++) {
+            for (var m = 0; m < AL_PEOPLE.length; m++) {
+              if (AL_PEOPLE[m].id === album.people[k] && AL_PEOPLE[m].name.toLowerCase().indexOf(q) >= 0) { hit = true; break outer; }
+            }
+          }
+        }
+        if (!hit) return '';
+      }
+      return (
+        '<div onclick="hasSynced=true;taggingOpenTab=\'group\';go(\'varun-tagging\')" style="display:flex;align-items:center;gap:12px;background:#fff;border-radius:14px;padding:10px;margin-bottom:10px;box-shadow:0 1px 6px rgba(0,0,0,.06);cursor:pointer;">' +
+          '<div style="width:64px;height:64px;border-radius:10px;overflow:hidden;flex-shrink:0;">' +
+            '<img src="' + PHOTO_FILES[album.coverIdx] + '" style="width:100%;height:100%;object-fit:cover;display:block;">' +
+          '</div>' +
+          '<div style="flex:1;min-width:0;">' +
+            '<p style="font-size:14px;font-weight:700;color:' + T.text + ';margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + album.title + '</p>' +
+            '<p style="font-size:11px;color:' + T.textS + ';margin-bottom:6px;">' + album.dates + ' · ' + album.meta + '</p>' +
+            alFaceStack(album.people) +
+          '</div>' +
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="' + T.textT + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>' +
+        '</div>'
+      );
+    }
+
+    /* ── Helper: labelled section (Recent Trips / Memories) ── */
+    function alSection(label, albums) {
+      if (!albums || !albums.length) return '';
+      var cards = '';
+      for (var i = 0; i < albums.length; i++) cards += alListCard(albums[i]);
+      if (!cards) return '';
+      return (
+        '<div style="margin-bottom:8px;">' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">' +
+            '<p style="font-size:13px;font-weight:700;color:' + T.text + ';">' + label + '</p>' +
+            '<button style="font-size:12px;font-weight:600;color:' + T.blue + ';background:none;border:none;cursor:pointer;padding:0;">See all</button>' +
+          '</div>' +
+          cards +
+        '</div>'
+      );
+    }
+
+    /* ── Helper: people chips (collapsed / expanded) ── */
+    function alPeopleChips() {
+      var show = albumPeopleExpanded ? AL_PEOPLE : AL_PEOPLE.slice(0, 4);
+      var o = '<div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;' + (albumPeopleExpanded ? 'flex-wrap:wrap;' : '') + '">';
+
+      var allOn = !albumSelectedPerson;
+      o += '<button onclick="albumSelectedPerson=\'\';render()" style="display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;flex-shrink:0;">' +
+             '<div style="width:44px;height:44px;border-radius:50%;background:' + (allOn ? T.blue : T.bgSub) + ';display:flex;align-items:center;justify-content:center;">' +
+               '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="' + (allOn ? '#fff' : T.textT) + '" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>' +
+             '</div>' +
+             '<span style="font-size:10px;font-weight:600;color:' + (allOn ? T.blue : T.textS) + ';">All</span>' +
+           '</button>';
+
+      for (var i = 0; i < show.length; i++) {
+        var p = show[i]; var on = (albumSelectedPerson === p.id);
+        o += '<button onclick="albumSelectedPerson=\'' + p.id + '\';render()" style="display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;flex-shrink:0;">' +
+               '<div style="width:44px;height:44px;border-radius:50%;background:' + p.bg + ';box-sizing:border-box;border:2.5px solid ' + (on ? T.blue : 'transparent') + ';display:flex;align-items:center;justify-content:center;">' +
+                 '<span style="font-size:13px;font-weight:800;color:#fff;">' + p.id + '</span>' +
+               '</div>' +
+               '<span style="font-size:10px;font-weight:600;color:' + (on ? T.blue : T.textS) + ';">' + p.name + '</span>' +
+             '</button>';
+      }
+
+      if (!albumPeopleExpanded) {
+        o += '<button onclick="albumPeopleExpanded=true;render()" style="display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;flex-shrink:0;">' +
+               '<div style="width:44px;height:44px;border-radius:50%;background:' + T.bgSub + ';display:flex;align-items:center;justify-content:center;">' +
+                 '<span style="font-size:12px;font-weight:700;color:' + T.textS + ';">+' + (AL_PEOPLE.length - 4) + '</span>' +
+               '</div>' +
+               '<span style="font-size:10px;font-weight:600;color:' + T.textS + ';">More</span>' +
+             '</button>';
+      } else {
+        o += '<button onclick="albumPeopleExpanded=false;render()" style="display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;flex-shrink:0;">' +
+               '<div style="width:44px;height:44px;border-radius:50%;background:' + T.bgSub + ';display:flex;align-items:center;justify-content:center;">' +
+                 '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="' + T.textT + '" stroke-width="2.5" stroke-linecap="round"><polyline points="18 15 12 9 6 15"/></svg>' +
+               '</div>' +
+               '<span style="font-size:10px;font-weight:600;color:' + T.textS + ';">Less</span>' +
+             '</button>';
+      }
+      return o + '</div>';
+    }
+
+    /* ── Filter helpers ── */
+    function setAlbumFilter(key, val) {
+      if      (key === 'date')      albumFilterDate      = (albumFilterDate      === val) ? '' : val;
+      else if (key === 'ownership') albumFilterOwnership = (albumFilterOwnership === val) ? '' : val;
+      else if (key === 'sort')      albumFilterSort      = val;
+      showAlbumFilterSheet();
+    }
+
+    function showAlbumFilterSheet() {
+      var old = document.getElementById('al-filter-ov');
+      if (old) old.remove();
+
+      function fChip(key, val, label) {
+        var on = (key === 'date' && albumFilterDate === val) ||
+                 (key === 'ownership' && albumFilterOwnership === val) ||
+                 (key === 'sort' && albumFilterSort === val);
+        return '<button onclick="setAlbumFilter(\'' + key + '\',\'' + val + '\')" style="height:34px;padding:0 14px;border-radius:8px;border:none;font-family:inherit;font-size:12px;font-weight:' + (on ? '600' : '400') + ';cursor:pointer;margin:0 6px 6px 0;background:' + (on ? T.blue : T.bgSub) + ';color:' + (on ? '#fff' : T.text) + ';">' + label + '</button>';
+      }
+      function fSection(title, chips) {
+        return '<p style="font-size:11px;font-weight:700;color:' + T.textT + ';letter-spacing:.06em;text-transform:uppercase;margin:16px 0 8px;">' + title + '</p><div style="display:flex;flex-wrap:wrap;">' + chips + '</div>';
+      }
+
+      var ov = document.createElement('div');
+      ov.id  = 'al-filter-ov';
+      ov.setAttribute('style', 'position:absolute;inset:0;background:rgba(0,0,0,.4);z-index:8000;display:flex;flex-direction:column;justify-content:flex-end;');
+      ov.onclick = function(e) { if (e.target === ov) ov.remove(); };
+      ov.innerHTML = (
+        '<div style="background:#fff;border-radius:24px 24px 0 0;padding:0 20px 32px;">' +
+          '<div style="display:flex;justify-content:center;padding:10px 0 16px;">' +
+            '<div style="width:36px;height:4px;border-radius:2px;background:' + T.bgSub + ';"></div>' +
+          '</div>' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">' +
+            '<p style="font-size:16px;font-weight:700;color:' + T.text + ';">Filters</p>' +
+            '<button onclick="albumFilterDate=\'\';albumFilterOwnership=\'\';albumFilterSort=\'last-updated\';showAlbumFilterSheet()" style="font-size:13px;font-weight:600;color:' + T.blue + ';background:none;border:none;cursor:pointer;">Reset</button>' +
+          '</div>' +
+          fSection('Date',
+            fChip('date','weekend','This Weekend') +
+            fChip('date','month','This Month') +
+            fChip('date','last-month','Last Month')
+          ) +
+          fSection('Ownership',
+            fChip('ownership','shared','Shared With Me') +
+            fChip('ownership','created','Created By Me')
+          ) +
+          fSection('Sort By',
+            fChip('sort','last-updated','Last Updated') +
+            fChip('sort','alphabetical','Alphabetical')
+          ) +
+          '<button onclick="var o=document.getElementById(\'al-filter-ov\');if(o)o.remove();render()" style="display:block;width:100%;height:46px;border-radius:12px;border:none;background:' + T.blue + ';color:#fff;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;margin-top:20px;">Apply Filters</button>' +
+        '</div>'
+      );
+      document.getElementById('phone').appendChild(ov);
+    }
+
+    /* ── Live album list refresh (search — avoids full re-render to preserve input focus) ── */
+    function alRefreshList() {
+      var area = document.getElementById('al-list');
+      if (!area) return;
+      var cfg = getAlbumListingConfig();
+      area.innerHTML = alSection('Recent Trips', cfg.recent) + alSection('Memories', cfg.memories);
+    }
+
+    /* ── screenAlbumListing — the one core screen all journeys share ── */
+    function screenAlbumListing() {
+      var cfg = getAlbumListingConfig();
+      var hasFilters = albumFilterDate || albumFilterOwnership;
+
+      return (
+        '<div class="screen" style="position:absolute;inset:0;display:flex;flex-direction:column;background:' + T.bgWarm + ';">' +
+
+          switchPill() +
+          sbar(T.bgWarm) +
+
+          /* Top bar: search icon | logo | filter icon */
+          '<div style="height:52px;background:' + T.bgWarm + ';display:flex;align-items:center;justify-content:space-between;padding:0 16px;flex-shrink:0;border-bottom:1px solid rgba(0,0,0,.04);">' +
+            '<button onclick="albumSearchOpen=!albumSearchOpen;render()" style="width:36px;height:36px;border:none;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;">' +
+              '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="' + (albumSearchOpen ? T.blue : T.text) + '" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
+            '</button>' +
+            logo(20, 16) +
+            '<button onclick="showAlbumFilterSheet()" style="width:36px;height:36px;border:none;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;">' +
+              '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="' + T.text + '" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>' +
+              (hasFilters ? '<div style="position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:' + T.blue + ';border:1.5px solid ' + T.bgWarm + ';"></div>' : '') +
+            '</button>' +
+          '</div>' +
+
+          /* Collapsible search bar */
+          (albumSearchOpen
+            ? '<div style="padding:8px 16px;background:' + T.bgWarm + ';flex-shrink:0;">' +
+                '<div style="display:flex;align-items:center;gap:10px;height:38px;background:#fff;border-radius:10px;padding:0 12px;box-shadow:0 1px 4px rgba(0,0,0,.06);">' +
+                  '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="' + T.textT + '" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
+                  '<input id="al-search" type="text" placeholder="Search albums, people, places…" value="' + albumSearchQuery + '" oninput="albumSearchQuery=this.value;alRefreshList()" style="flex:1;border:none;outline:none;background:none;font-family:inherit;font-size:13px;color:' + T.text + ';">' +
+                  (albumSearchQuery ? '<button onclick="albumSearchQuery=\'\';alRefreshList()" style="background:none;border:none;cursor:pointer;padding:0;display:flex;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="' + T.textT + '" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>' : '') +
+                '</div>' +
+              '</div>'
+            : '') +
+
+          /* People chips */
+          '<div style="padding:12px 16px 4px;flex-shrink:0;">' + alPeopleChips() + '</div>' +
+
+          /* Scrollable feed */
+          '<div style="flex:1;overflow-y:auto;padding:12px 16px 24px;">' +
+            alLiveCard(cfg.liveAlbum) +
+            '<div id="al-list">' +
+              alSection('Recent Trips', cfg.recent) +
+              alSection('Memories',     cfg.memories) +
+            '</div>' +
+          '</div>' +
+
+          navBar('home') +
+
+        '</div>'
+      );
+    }
+
+    /* ═════════════════════════════════════════════════════
+       PROFILE SYSTEM
+       Authenticated profile/account tab (post-onboarding).
+       Separate from varun-profile which handles onboarding only.
+    ═════════════════════════════════════════════════════ */
+
+    /* Journey-specific profile data */
+    var PROFILE_DATA = {
+      varun:   { name:'Varun Sharma',    initials:'VS', bg:'linear-gradient(135deg,#1B4FD8,#2D7DD2)', since:'March 2025',  email:'varun@email.com',   plan:'Pro', storage:'2.1 GB / 10 GB',
+                 stats:[{v:'34',l:'Photos'},{v:'6',l:'Members'},{v:'3',l:'Trips'}],
+                 circle:[ {id:'MA',name:'Mayank', bg:'linear-gradient(135deg,#E65100,#FF8F00)',  count:8},
+                           {id:'KA',name:'Kavitha',bg:'linear-gradient(135deg,#1B5E20,#388E3C)', count:5},
+                           {id:'BE',name:'Beulah', bg:'linear-gradient(135deg,#880E4F,#C2185B)', count:11},
+                           {id:'VI',name:'Vishal', bg:'linear-gradient(135deg,#4A148C,#7B1FA2)', count:3},
+                           {id:'AN',name:'Anand',  bg:'linear-gradient(135deg,#006064,#00838F)', count:7} ],
+                 unknown:2 },
+      beulah:  { name:'Beulah Rajan',   initials:'BR', bg:'linear-gradient(135deg,#880E4F,#C2185B)', since:'May 2025',    email:'beulah@email.com',  plan:'Free', storage:'0.4 GB / 2 GB',
+                 stats:[{v:'14',l:'Photos'},{v:'1',l:'Trip'},{v:'2',l:'Tagged'}],
+                 circle:[ {id:'VR',name:'Varun',  bg:'linear-gradient(135deg,#1B4FD8,#2D7DD2)', count:14} ],
+                 unknown:0 },
+      mayank:  { name:'Mayank Patel',   initials:'MP', bg:'linear-gradient(135deg,#E65100,#FF8F00)',  since:'April 2025',  email:'mayank@email.com',  plan:'Free', storage:'1.2 GB / 2 GB',
+                 stats:[{v:'28',l:'Photos'},{v:'2',l:'Trips'},{v:'5',l:'Members'}],
+                 circle:[ {id:'VR',name:'Varun',  bg:'linear-gradient(135deg,#1B4FD8,#2D7DD2)', count:9},
+                           {id:'KA',name:'Kavitha',bg:'linear-gradient(135deg,#1B5E20,#388E3C)', count:4} ],
+                 unknown:1 },
+      kavitha: { name:'Kavitha Nair',   initials:'KN', bg:'linear-gradient(135deg,#1B5E20,#388E3C)', since:'May 2025',    email:'kavitha@email.com', plan:'Free', storage:'0.6 GB / 2 GB',
+                 stats:[{v:'19',l:'Photos'},{v:'1',l:'Trip'},{v:'3',l:'Tagged'}],
+                 circle:[ {id:'VR',name:'Varun',  bg:'linear-gradient(135deg,#1B4FD8,#2D7DD2)', count:7},
+                           {id:'MA',name:'Mayank', bg:'linear-gradient(135deg,#E65100,#FF8F00)',  count:3} ],
+                 unknown:0 },
+      vishal:  { name:'Vishal Kumar',   initials:'VK', bg:'linear-gradient(135deg,#4A148C,#7B1FA2)', since:'May 2025',    email:'vishal@email.com',  plan:'Free', storage:'0.3 GB / 2 GB',
+                 stats:[{v:'22',l:'Photos'},{v:'1',l:'Trip'},{v:'4',l:'Tagged'}],
+                 circle:[ {id:'VR',name:'Varun',  bg:'linear-gradient(135deg,#1B4FD8,#2D7DD2)', count:6} ],
+                 unknown:1 },
+      anand:   { name:'Anand Krishnan', initials:'AK', bg:'linear-gradient(135deg,#006064,#00838F)', since:'January 2025', email:'anand@email.com',   plan:'Pro', storage:'4.7 GB / 10 GB',
+                 stats:[{v:'142',l:'Photos'},{v:'4',l:'Trips'},{v:'12',l:'Members'}],
+                 circle:[ {id:'VR',name:'Varun',  bg:'linear-gradient(135deg,#1B4FD8,#2D7DD2)', count:18},
+                           {id:'MA',name:'Mayank', bg:'linear-gradient(135deg,#E65100,#FF8F00)',  count:11},
+                           {id:'KA',name:'Kavitha',bg:'linear-gradient(135deg,#1B5E20,#388E3C)', count:7},
+                           {id:'VI',name:'Vishal', bg:'linear-gradient(135deg,#4A148C,#7B1FA2)', count:5} ],
+                 unknown:3 }
+    };
+
+    function getProfileConfig() {
+      return PROFILE_DATA[activeJourney] || PROFILE_DATA.varun;
+    }
+
+    /* ── Shared profile helpers ── */
+    function profileAvatar(size, cfg, fontSize) {
+      return (
+        '<div style="width:' + size + 'px;height:' + size + 'px;border-radius:50%;' +
+                    'background:' + cfg.bg + ';' +
+                    'display:flex;align-items:center;justify-content:center;' +
+                    'font-size:' + (fontSize || Math.round(size * 0.38)) + 'px;' +
+                    'font-weight:700;color:#fff;flex-shrink:0;' +
+                    'box-shadow:0 4px 18px rgba(0,0,0,.16);">' +
+          cfg.initials +
+        '</div>'
+      );
+    }
+
+    function profileStatBlock(value, label) {
+      return (
+        '<div style="flex:1;display:flex;flex-direction:column;' +
+                    'align-items:center;justify-content:center;gap:2px;">' +
+          '<span style="font-size:20px;font-weight:800;color:' + T.text + ';">' + value + '</span>' +
+          '<span style="font-size:11px;font-weight:400;color:' + T.textS + ';">' + label + '</span>' +
+        '</div>'
+      );
+    }
+
+    function profileSectionRow(iconPath, title, sub, action) {
+      return (
+        '<div onclick="' + action + '"' +
+             ' style="display:flex;align-items:center;gap:14px;' +
+                    'padding:15px 20px;cursor:pointer;' +
+                    'border-bottom:0.5px solid ' + T.bgSub + ';">' +
+          '<div style="width:36px;height:36px;border-radius:10px;' +
+                      'background:' + T.bgSub + ';flex-shrink:0;' +
+                      'display:flex;align-items:center;justify-content:center;">' +
+            '<svg width="17" height="17" viewBox="0 0 24 24" fill="none"' +
+                 ' stroke="' + T.text + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+              iconPath +
+            '</svg>' +
+          '</div>' +
+          '<div style="flex:1;min-width:0;">' +
+            '<div style="font-size:15px;font-weight:500;color:' + T.text + ';">' + title + '</div>' +
+            (sub ? '<div style="font-size:12px;color:' + T.textS + ';margin-top:1px;">' + sub + '</div>' : '') +
+          '</div>' +
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"' +
+               ' stroke="' + T.textT + '" stroke-width="2.5" stroke-linecap="round">' +
+            '<polyline points="9 18 15 12 9 6"/>' +
+          '</svg>' +
+        '</div>'
+      );
+    }
+
+    /* Small face chip used in Circle preview on profile screen */
+    function profileCircleChip(person) {
+      return (
+        '<div style="display:flex;flex-direction:column;align-items:center;gap:5px;">' +
+          '<div style="width:44px;height:44px;border-radius:50%;' +
+                      'background:' + person.bg + ';' +
+                      'display:flex;align-items:center;justify-content:center;' +
+                      'font-size:14px;font-weight:700;color:#fff;">' +
+            person.id +
+          '</div>' +
+          '<span style="font-size:10px;color:' + T.textS + ';font-weight:500;">' + person.name + '</span>' +
+        '</div>'
+      );
+    }
+
+    /* ── screenProfile ── */
+    function screenProfile() {
+      var cfg = getProfileConfig();
+      var isPro = cfg.plan === 'Pro';
+
+      /* Storage bar pct */
+      var storageParts = cfg.storage.split(' / ');
+      var usedNum  = parseFloat(storageParts[0]);
+      var totalNum = parseFloat(storageParts[1]);
+      var storagePct = Math.round((usedNum / totalNum) * 100);
+
+      /* Circle preview — show up to 4 faces */
+      var circlePreview = '';
+      var shown = Math.min(cfg.circle.length, 4);
+      for (var i = 0; i < shown; i++) {
+        circlePreview += profileCircleChip(cfg.circle[i]);
+      }
+      var circleMore = cfg.circle.length > 4 ? cfg.circle.length - 4 : 0;
+
+      return (
+        '<div class="screen"' +
+             ' style="position:absolute;inset:0;display:flex;flex-direction:column;' +
+                    'background:' + T.bgWarm + ';overflow:hidden;">' +
+
+          /* Top bar */
+          '<div style="padding:16px 20px 12px;flex-shrink:0;display:flex;' +
+                      'align-items:center;justify-content:space-between;">' +
+            '<span style="font-size:18px;font-weight:800;color:' + T.text + ';">Profile</span>' +
+            '<button onclick="showNotificationsSheet()"' +
+                    ' style="width:36px;height:36px;border:none;background:none;cursor:pointer;' +
+                           'display:flex;align-items:center;justify-content:center;position:relative;">' +
+              '<svg width="20" height="20" viewBox="0 0 24 24" fill="none"' +
+                   ' stroke="' + T.text + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>' +
+                '<path d="M13.73 21a2 2 0 0 1-3.46 0"/>' +
+              '</svg>' +
+              /* Notification dot */
+              '<div style="position:absolute;top:7px;right:7px;width:7px;height:7px;' +
+                          'border-radius:50%;background:' + T.alert + ';' +
+                          'border:1.5px solid ' + T.bgWarm + ';"></div>' +
+            '</button>' +
+          '</div>' +
+
+          /* Scrollable content */
+          '<div style="flex:1;overflow-y:auto;padding-bottom:16px;">' +
+
+            /* Identity card */
+            '<div style="margin:0 16px 16px;background:#fff;border-radius:20px;' +
+                        'padding:24px 20px 20px;' +
+                        'box-shadow:0 2px 12px rgba(0,0,0,.06);">' +
+              '<div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">' +
+                profileAvatar(64, cfg) +
+                '<div style="flex:1;min-width:0;">' +
+                  '<div style="font-size:19px;font-weight:800;color:' + T.text + ';' +
+                              'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + cfg.name + '</div>' +
+                  '<div style="font-size:13px;color:' + T.textS + ';margin-top:3px;">' + cfg.email + '</div>' +
+                  '<div style="margin-top:8px;">' +
+                    '<span style="display:inline-flex;align-items:center;gap:5px;' +
+                                 'height:22px;padding:0 10px;border-radius:12px;' +
+                                 'background:' + (isPro ? T.blue : T.bgSub) + ';' +
+                                 'font-size:11px;font-weight:700;' +
+                                 'color:' + (isPro ? '#fff' : T.textS) + ';">' +
+                      (isPro
+                        ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>'
+                        : '') +
+                      cfg.plan +
+                    '</span>' +
+                  '</div>' +
+                '</div>' +
+                '<button onclick="go(\'edit-profile\')"' +
+                        ' style="width:34px;height:34px;border-radius:10px;border:none;' +
+                               'background:' + T.bgSub + ';cursor:pointer;' +
+                               'display:flex;align-items:center;justify-content:center;' +
+                               'flex-shrink:0;align-self:flex-start;">' +
+                  '<svg width="15" height="15" viewBox="0 0 24 24" fill="none"' +
+                       ' stroke="' + T.text + '" stroke-width="2" stroke-linecap="round">' +
+                    '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>' +
+                    '<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>' +
+                  '</svg>' +
+                '</button>' +
+              '</div>' +
+
+              /* Stats row */
+              '<div style="display:flex;border-top:0.5px solid ' + T.bgSub + ';' +
+                          'padding-top:16px;">' +
+                profileStatBlock(cfg.stats[0].v, cfg.stats[0].l) +
+                '<div style="width:0.5px;background:' + T.bgSub + ';"></div>' +
+                profileStatBlock(cfg.stats[1].v, cfg.stats[1].l) +
+                '<div style="width:0.5px;background:' + T.bgSub + ';"></div>' +
+                profileStatBlock(cfg.stats[2].v, cfg.stats[2].l) +
+              '</div>' +
+            '</div>' +
+
+            /* My Circle card */
+            '<div style="margin:0 16px 16px;background:#fff;border-radius:20px;' +
+                        'padding:18px 20px;box-shadow:0 2px 12px rgba(0,0,0,.06);">' +
+              '<div style="display:flex;align-items:center;justify-content:space-between;' +
+                          'margin-bottom:16px;">' +
+                '<div>' +
+                  '<div style="font-size:15px;font-weight:700;color:' + T.text + ';">My Circle</div>' +
+                  '<div style="font-size:12px;color:' + T.textS + ';margin-top:2px;">' +
+                    cfg.circle.length + ' identified' +
+                    (cfg.unknown > 0 ? ' · ' + cfg.unknown + ' unknown' : '') +
+                  '</div>' +
+                '</div>' +
+                '<button onclick="go(\'circle\')"' +
+                        ' style="height:30px;padding:0 14px;border-radius:20px;border:none;' +
+                               'background:' + T.blueTint + ';color:' + T.blue + ';' +
+                               'font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;">' +
+                  'View all' +
+                '</button>' +
+              '</div>' +
+              /* Face row */
+              (cfg.circle.length > 0
+                ? '<div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:2px;">' +
+                    circlePreview +
+                    (circleMore > 0
+                      ? '<div onclick="go(\'circle\')" style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;">' +
+                          '<div style="width:44px;height:44px;border-radius:50%;background:' + T.bgSub + ';' +
+                                      'display:flex;align-items:center;justify-content:center;' +
+                                      'font-size:13px;font-weight:700;color:' + T.textS + ';">+' + circleMore + '</div>' +
+                          '<span style="font-size:10px;color:' + T.textS + ';font-weight:500;">more</span>' +
+                        '</div>'
+                      : '') +
+                    /* Unknown faces chip */
+                    (cfg.unknown > 0
+                      ? '<div onclick="profileCircleTab=\'unknown\';go(\'circle\')" style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;">' +
+                          '<div style="width:44px;height:44px;border-radius:50%;' +
+                                      'background:linear-gradient(135deg,' + T.bgSub + ',' + T.textD + ');' +
+                                      'display:flex;align-items:center;justify-content:center;' +
+                                      'font-size:20px;">?</div>' +
+                          '<span style="font-size:10px;color:' + T.alert + ';font-weight:600;">' + cfg.unknown + ' unknown</span>' +
+                        '</div>'
+                      : '') +
+                  '</div>'
+                : '<div style="text-align:center;padding:12px 0;color:' + T.textT + ';font-size:13px;">No faces identified yet</div>') +
+            '</div>' +
+
+            /* Settings rows */
+            '<div style="margin:0 16px 16px;background:#fff;border-radius:20px;' +
+                        'overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06);">' +
+              profileSectionRow(
+                '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+                'Edit Profile', cfg.email, 'go(\'edit-profile\')'
+              ) +
+              profileSectionRow(
+                '<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 12h8M12 8v8"/>',
+                'Subscription', cfg.plan + ' plan · ' + cfg.storage, 'go(\'subscription\')'
+              ) +
+              profileSectionRow(
+                '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
+                'Notifications', 'Manage what you hear about', 'showNotificationsSheet()'
+              ) +
+              '<div onclick="showPrivacySheet()"' +
+                   ' style="display:flex;align-items:center;gap:14px;' +
+                          'padding:15px 20px;cursor:pointer;">' +
+                '<div style="width:36px;height:36px;border-radius:10px;' +
+                            'background:' + T.bgSub + ';flex-shrink:0;' +
+                            'display:flex;align-items:center;justify-content:center;">' +
+                  '<svg width="17" height="17" viewBox="0 0 24 24" fill="none"' +
+                       ' stroke="' + T.text + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                    '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>' +
+                    '<path d="M7 11V7a5 5 0 0 1 10 0v4"/>' +
+                  '</svg>' +
+                '</div>' +
+                '<div style="flex:1;min-width:0;">' +
+                  '<div style="font-size:15px;font-weight:500;color:' + T.text + ';">Privacy</div>' +
+                  '<div style="font-size:12px;color:' + T.textS + ';margin-top:1px;">Face data &amp; photo permissions</div>' +
+                '</div>' +
+                '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"' +
+                     ' stroke="' + T.textT + '" stroke-width="2.5" stroke-linecap="round">' +
+                  '<polyline points="9 18 15 12 9 6"/>' +
+                '</svg>' +
+              '</div>' +
+            '</div>' +
+
+            /* Storage bar */
+            '<div style="margin:0 16px 8px;background:#fff;border-radius:20px;' +
+                        'padding:18px 20px;box-shadow:0 2px 12px rgba(0,0,0,.06);">' +
+              '<div style="display:flex;align-items:center;justify-content:space-between;' +
+                          'margin-bottom:10px;">' +
+                '<span style="font-size:14px;font-weight:600;color:' + T.text + ';">Storage</span>' +
+                '<span style="font-size:12px;color:' + T.textS + ';">' + cfg.storage + '</span>' +
+              '</div>' +
+              '<div style="height:6px;background:' + T.bgSub + ';border-radius:3px;overflow:hidden;">' +
+                '<div style="height:100%;width:' + storagePct + '%;' +
+                            'background:' + (storagePct > 80 ? T.alert : T.blue) + ';' +
+                            'border-radius:3px;transition:width .4s;"></div>' +
+              '</div>' +
+              (storagePct > 70
+                ? '<div style="margin-top:10px;">' +
+                    '<button onclick="go(\'subscription\')"' +
+                             ' style="height:32px;padding:0 16px;border-radius:10px;border:none;' +
+                                    'background:' + T.blue + ';color:#fff;' +
+                                    'font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;">' +
+                      'Upgrade storage →' +
+                    '</button>' +
+                  '</div>'
+                : '') +
+            '</div>' +
+
+            /* Sign out */
+            '<div style="margin:8px 16px 24px;text-align:center;">' +
+              '<button onclick="go(\'entry\')"' +
+                      ' style="background:none;border:none;cursor:pointer;' +
+                             'font-family:inherit;font-size:13px;color:' + T.textS + ';' +
+                             'padding:8px 16px;">' +
+                'Sign out' +
+              '</button>' +
+            '</div>' +
+
+          '</div>' +
+
+          navBar('profile') +
+
+        '</div>'
+      );
+    }
+
+    /* ── screenEditProfile ── */
+    function screenEditProfile() {
+      var cfg = getProfileConfig();
+      var nameParts = cfg.name.split(' ');
+      var firstName = nameParts[0];
+      var lastName  = nameParts.slice(1).join(' ');
+
+      return (
+        '<div class="screen"' +
+             ' style="position:absolute;inset:0;display:flex;flex-direction:column;' +
+                    'background:' + T.bgWarm + ';overflow:hidden;">' +
+
+          /* Header */
+          '<div style="padding:16px 20px;display:flex;align-items:center;gap:14px;' +
+                      'background:' + T.bgWarm + ';flex-shrink:0;">' +
+            '<button onclick="go(\'profile\')"' +
+                    ' style="width:34px;height:34px;border-radius:10px;border:none;' +
+                           'background:#fff;cursor:pointer;display:flex;' +
+                           'align-items:center;justify-content:center;' +
+                           'box-shadow:0 1px 6px rgba(0,0,0,.08);">' +
+              '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"' +
+                   ' stroke="' + T.text + '" stroke-width="2.5" stroke-linecap="round">' +
+                '<polyline points="15 18 9 12 15 6"/>' +
+              '</svg>' +
+            '</button>' +
+            '<span style="font-size:18px;font-weight:800;color:' + T.text + ';">Edit Profile</span>' +
+            '<div style="flex:1;"></div>' +
+            '<button onclick="showToast(\'Profile saved ✓\');go(\'profile\')"' +
+                    ' style="height:34px;padding:0 18px;border-radius:20px;border:none;' +
+                           'background:' + T.blue + ';color:#fff;' +
+                           'font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;">' +
+              'Save' +
+            '</button>' +
+          '</div>' +
+
+          /* Scrollable form */
+          '<div style="flex:1;overflow-y:auto;padding:8px 16px 32px;">' +
+
+            /* Avatar picker */
+            '<div style="display:flex;flex-direction:column;align-items:center;' +
+                        'padding:24px 0 28px;">' +
+              '<div style="position:relative;display:inline-block;">' +
+                profileAvatar(80, cfg) +
+                '<button onclick="showToast(\'Photo upload coming soon\')"' +
+                        ' style="position:absolute;bottom:0;right:0;' +
+                               'width:26px;height:26px;border-radius:50%;' +
+                               'border:2px solid ' + T.bgWarm + ';' +
+                               'background:' + T.blue + ';cursor:pointer;' +
+                               'display:flex;align-items:center;justify-content:center;">' +
+                  '<svg width="12" height="12" viewBox="0 0 24 24" fill="none"' +
+                       ' stroke="#fff" stroke-width="2.5" stroke-linecap="round">' +
+                    '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>' +
+                    '<circle cx="12" cy="13" r="4"/>' +
+                  '</svg>' +
+                '</button>' +
+              '</div>' +
+              '<span style="margin-top:12px;font-size:13px;color:' + T.blue + ';' +
+                           'font-weight:600;cursor:pointer;" onclick="showToast(\'Photo upload coming soon\')">Change photo</span>' +
+            '</div>' +
+
+            /* Form fields */
+            '<div style="background:#fff;border-radius:20px;overflow:hidden;' +
+                        'box-shadow:0 2px 12px rgba(0,0,0,.06);margin-bottom:16px;">' +
+              editField('First name', firstName, 'text') +
+              '<div style="height:0.5px;background:' + T.bgSub + ';margin:0 20px;"></div>' +
+              editField('Last name', lastName, 'text') +
+              '<div style="height:0.5px;background:' + T.bgSub + ';margin:0 20px;"></div>' +
+              editField('Email', cfg.email, 'email') +
+            '</div>' +
+
+            '<div style="background:#fff;border-radius:20px;overflow:hidden;' +
+                        'box-shadow:0 2px 12px rgba(0,0,0,.06);">' +
+              editField('Phone', '+91 98765 43210', 'tel') +
+            '</div>' +
+
+          '</div>' +
+
+        '</div>'
+      );
+    }
+
+    function editField(label, value, type) {
+      return (
+        '<div style="padding:14px 20px;">' +
+          '<div style="font-size:11px;font-weight:600;color:' + T.textS + ';' +
+                      'text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">' + label + '</div>' +
+          '<input type="' + type + '" value="' + value + '"' +
+                 ' style="width:100%;border:none;outline:none;background:none;' +
+                        'font-family:inherit;font-size:15px;color:' + T.text + ';' +
+                        'font-weight:500;">' +
+        '</div>'
+      );
+    }
+
+    /* ── screenCircle ── */
+    function screenCircle() {
+      var cfg = getProfileConfig();
+      var isIdentified = profileCircleTab === 'identified';
+
+      /* Identified people cards */
+      var identifiedHTML = '';
+      for (var i = 0; i < cfg.circle.length; i++) {
+        var p = cfg.circle[i];
+        identifiedHTML += (
+          '<div style="display:flex;align-items:center;gap:14px;' +
+                      'padding:14px 20px;background:#fff;' +
+                      'border-bottom:0.5px solid ' + T.bgSub + ';">' +
+            '<div style="width:48px;height:48px;border-radius:50%;' +
+                        'background:' + p.bg + ';flex-shrink:0;' +
+                        'display:flex;align-items:center;justify-content:center;' +
+                        'font-size:16px;font-weight:700;color:#fff;">' + p.id + '</div>' +
+            '<div style="flex:1;">' +
+              '<div style="font-size:15px;font-weight:600;color:' + T.text + ';">' + p.name + '</div>' +
+              '<div style="font-size:12px;color:' + T.textS + ';margin-top:2px;">' + p.count + ' photos together</div>' +
+            '</div>' +
+            '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"' +
+                 ' stroke="' + T.textT + '" stroke-width="2.5" stroke-linecap="round">' +
+              '<polyline points="9 18 15 12 9 6"/>' +
+            '</svg>' +
+          '</div>'
+        );
+      }
+
+      /* Unknown faces cards — reuses showIdentifySheet */
+      var unknownBgs = [
+        'linear-gradient(135deg,#78909C,#90A4AE)',
+        'linear-gradient(135deg,#A1887F,#BCAAA4)',
+        'linear-gradient(135deg,#81C784,#A5D6A7)',
+      ];
+      var unknownHTML = '';
+      for (var j = 0; j < cfg.unknown; j++) {
+        var faceNum  = j + 1;
+        var photoCnt = [7, 3, 5][j] || 4;
+        var ubg      = unknownBgs[j % unknownBgs.length];
+        unknownHTML += (
+          '<div onclick="showIdentifySheet(\'unknown-' + faceNum + '\',' + photoCnt + ',\'' + ubg + '\')"' +
+               ' style="display:flex;align-items:center;gap:14px;' +
+                      'padding:14px 20px;background:#fff;' +
+                      'border-bottom:0.5px solid ' + T.bgSub + ';cursor:pointer;">' +
+            '<div style="width:48px;height:48px;border-radius:50%;' +
+                        'background:' + ubg + ';flex-shrink:0;' +
+                        'display:flex;align-items:center;justify-content:center;' +
+                        'font-size:22px;">?</div>' +
+            '<div style="flex:1;">' +
+              '<div style="font-size:15px;font-weight:600;color:' + T.text + ';">Unknown face ' + faceNum + '</div>' +
+              '<div style="font-size:12px;color:' + T.textS + ';margin-top:2px;">' + photoCnt + ' photos · tap to identify</div>' +
+            '</div>' +
+            '<div style="height:28px;padding:0 12px;border-radius:14px;' +
+                        'background:' + T.blueTint + ';' +
+                        'display:flex;align-items:center;' +
+                        'font-size:12px;font-weight:600;color:' + T.blue + ';">Identify</div>' +
+          '</div>'
+        );
+      }
+
+      return (
+        '<div class="screen"' +
+             ' style="position:absolute;inset:0;display:flex;flex-direction:column;' +
+                    'background:' + T.bgWarm + ';overflow:hidden;">' +
+
+          /* Header */
+          '<div style="padding:16px 20px 12px;display:flex;align-items:center;gap:14px;' +
+                      'flex-shrink:0;">' +
+            '<button onclick="go(\'profile\')"' +
+                    ' style="width:34px;height:34px;border-radius:10px;border:none;' +
+                           'background:#fff;cursor:pointer;display:flex;' +
+                           'align-items:center;justify-content:center;' +
+                           'box-shadow:0 1px 6px rgba(0,0,0,.08);">' +
+              '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"' +
+                   ' stroke="' + T.text + '" stroke-width="2.5" stroke-linecap="round">' +
+                '<polyline points="15 18 9 12 15 6"/>' +
+              '</svg>' +
+            '</button>' +
+            '<div>' +
+              '<span style="font-size:18px;font-weight:800;color:' + T.text + ';">My Circle</span>' +
+            '</div>' +
+          '</div>' +
+
+          /* Tabs */
+          '<div style="padding:0 16px 12px;flex-shrink:0;">' +
+            '<div style="display:flex;gap:0;background:#fff;border-radius:12px;' +
+                        'padding:3px;box-shadow:0 1px 6px rgba(0,0,0,.06);">' +
+              '<button onclick="profileCircleTab=\'identified\';render()"' +
+                      ' style="flex:1;height:36px;border-radius:10px;border:none;' +
+                             'background:' + (isIdentified ? T.blue : 'transparent') + ';' +
+                             'color:' + (isIdentified ? '#fff' : T.textS) + ';' +
+                             'font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;' +
+                             'transition:background .15s,color .15s;">' +
+                'Identified (' + cfg.circle.length + ')' +
+              '</button>' +
+              '<button onclick="profileCircleTab=\'unknown\';render()"' +
+                      ' style="flex:1;height:36px;border-radius:10px;border:none;' +
+                             'background:' + (!isIdentified ? T.blue : 'transparent') + ';' +
+                             'color:' + (!isIdentified ? '#fff' : T.textS) + ';' +
+                             'font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;' +
+                             'transition:background .15s,color .15s;">' +
+                'Unknown (' + cfg.unknown + ')' +
+              '</button>' +
+            '</div>' +
+          '</div>' +
+
+          /* List */
+          '<div style="flex:1;overflow-y:auto;">' +
+            '<div style="background:#fff;border-radius:20px;margin:0 16px;' +
+                        'overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06);">' +
+              (isIdentified
+                ? (identifiedHTML || '<div style="padding:32px 20px;text-align:center;color:' + T.textT + ';font-size:13px;">No identified people yet</div>')
+                : (unknownHTML   || '<div style="padding:32px 20px;text-align:center;color:' + T.textT + ';font-size:13px;">No unknown faces — you\'re all caught up!</div>')) +
+            '</div>' +
+          '</div>' +
+
+        '</div>'
+      );
+    }
+
+    /* ── screenSubscription ── */
+    function screenSubscription() {
+      var cfg    = getProfileConfig();
+      var isPro  = cfg.plan === 'Pro';
+
+      var plans = [
+        { id:'free',  name:'Free',  price:'₹0',    period:'forever',   storage:'2 GB',   features:['Up to 5 trips', '2 GB storage', 'Basic face tagging'] },
+        { id:'pro',   name:'Pro',   price:'₹199',  period:'per month', storage:'10 GB',  features:['Unlimited trips', '10 GB storage', 'Advanced face tagging', 'Smart Memories', 'Priority support'] },
+        { id:'ultra', name:'Ultra', price:'₹499',  period:'per month', storage:'100 GB', features:['Everything in Pro', '100 GB storage', 'Family sharing (5 members)', 'RAW photo support', 'Offline access'] },
+      ];
+
+      var plansHTML = '';
+      for (var i = 0; i < plans.length; i++) {
+        var plan   = plans[i];
+        var isCurrent = (isPro && plan.id === 'pro') || (!isPro && plan.id === 'free');
+        var isHighlight = plan.id === 'pro';
+
+        var featuresHTML = '';
+        for (var f = 0; f < plan.features.length; f++) {
+          featuresHTML += (
+            '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">' +
+              '<svg width="14" height="14" viewBox="0 0 24 24" fill="none"' +
+                   ' stroke="' + (isHighlight ? T.blue : T.ok) + '" stroke-width="2.5" stroke-linecap="round">' +
+                '<polyline points="20 6 9 17 4 12"/>' +
+              '</svg>' +
+              '<span style="font-size:13px;color:' + T.text + ';">' + plan.features[f] + '</span>' +
+            '</div>'
+          );
+        }
+
+        plansHTML += (
+          '<div style="border-radius:18px;overflow:hidden;margin-bottom:12px;' +
+                      'border:2px solid ' + (isCurrent ? T.blue : (isHighlight ? T.blueBdr : T.bgSub)) + ';' +
+                      'background:' + (isHighlight ? T.blueTint : '#fff') + ';">' +
+            '<div style="padding:18px 20px;">' +
+              '<div style="display:flex;align-items:center;justify-content:space-between;' +
+                          'margin-bottom:4px;">' +
+                '<div style="display:flex;align-items:center;gap:8px;">' +
+                  '<span style="font-size:17px;font-weight:800;color:' + T.text + ';">' + plan.name + '</span>' +
+                  (isCurrent ? '<span style="height:20px;padding:0 8px;border-radius:10px;' +
+                               'background:' + T.blue + ';color:#fff;' +
+                               'font-size:10px;font-weight:700;' +
+                               'display:inline-flex;align-items:center;">Current</span>' : '') +
+                '</div>' +
+                '<div style="text-align:right;">' +
+                  '<span style="font-size:20px;font-weight:800;color:' + T.text + ';">' + plan.price + '</span>' +
+                  '<span style="font-size:11px;color:' + T.textS + ';"> / ' + plan.period + '</span>' +
+                '</div>' +
+              '</div>' +
+              '<div style="margin-bottom:14px;">' + featuresHTML + '</div>' +
+              (!isCurrent
+                ? '<button onclick="showToast(\'' + plan.name + ' plan selected ✓\')"' +
+                         ' style="display:block;width:100%;height:42px;border-radius:12px;border:none;' +
+                                'background:' + (isHighlight ? T.blue : T.bgSub) + ';' +
+                                'color:' + (isHighlight ? '#fff' : T.text) + ';' +
+                                'font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;">' +
+                    (plan.id === 'free' ? 'Downgrade to Free' : 'Upgrade to ' + plan.name) +
+                  '</button>'
+                : '') +
+            '</div>' +
+          '</div>'
+        );
+      }
+
+      return (
+        '<div class="screen"' +
+             ' style="position:absolute;inset:0;display:flex;flex-direction:column;' +
+                    'background:' + T.bgWarm + ';overflow:hidden;">' +
+
+          /* Header */
+          '<div style="padding:16px 20px;display:flex;align-items:center;gap:14px;flex-shrink:0;">' +
+            '<button onclick="go(\'profile\')"' +
+                    ' style="width:34px;height:34px;border-radius:10px;border:none;' +
+                           'background:#fff;cursor:pointer;display:flex;' +
+                           'align-items:center;justify-content:center;' +
+                           'box-shadow:0 1px 6px rgba(0,0,0,.08);">' +
+              '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"' +
+                   ' stroke="' + T.text + '" stroke-width="2.5" stroke-linecap="round">' +
+                '<polyline points="15 18 9 12 15 6"/>' +
+              '</svg>' +
+            '</button>' +
+            '<span style="font-size:18px;font-weight:800;color:' + T.text + ';">Subscription</span>' +
+          '</div>' +
+
+          /* Plans */
+          '<div style="flex:1;overflow-y:auto;padding:8px 16px 32px;">' +
+            plansHTML +
+            '<p style="text-align:center;font-size:11px;color:' + T.textT + ';margin-top:4px;">' +
+              'Billed monthly. Cancel anytime. Prices in INR.' +
+            '</p>' +
+          '</div>' +
+
+        '</div>'
+      );
+    }
+
+    /* ── showNotificationsSheet ── */
+    function showNotificationsSheet() {
+      var phone = document.getElementById('phone');
+      var old   = document.getElementById('notifs-overlay');
+      if (old) old.remove();
+
+      function togRow(key, icon, title, sub) {
+        var on = profileNotifs[key];
+        return (
+          '<div style="display:flex;align-items:center;gap:14px;padding:16px 0;' +
+                      'border-bottom:0.5px solid ' + T.bgSub + ';">' +
+            '<div style="width:36px;height:36px;border-radius:10px;' +
+                        'background:' + T.bgSub + ';flex-shrink:0;' +
+                        'display:flex;align-items:center;justify-content:center;">' +
+              '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"' +
+                   ' stroke="' + T.text + '" stroke-width="2" stroke-linecap="round">' + icon + '</svg>' +
+            '</div>' +
+            '<div style="flex:1;min-width:0;">' +
+              '<div style="font-size:14px;font-weight:500;color:' + T.text + ';">' + title + '</div>' +
+              '<div style="font-size:12px;color:' + T.textS + ';margin-top:2px;">' + sub + '</div>' +
+            '</div>' +
+            /* Toggle */
+            '<div onclick="profileNotifs[\'' + key + '\']=!profileNotifs[\'' + key + '\'];showNotificationsSheet()"' +
+                 ' style="width:44px;height:26px;border-radius:13px;cursor:pointer;flex-shrink:0;' +
+                        'background:' + (on ? T.blue : T.bgSub) + ';' +
+                        'position:relative;transition:background .18s;">' +
+              '<div style="position:absolute;top:3px;' +
+                          (on ? 'right:3px;' : 'left:3px;') +
+                          'width:20px;height:20px;border-radius:50%;background:#fff;' +
+                          'box-shadow:0 1px 4px rgba(0,0,0,.18);transition:all .18s;"></div>' +
+            '</div>' +
+          '</div>'
+        );
+      }
+
+      var overlay = document.createElement('div');
+      overlay.id  = 'notifs-overlay';
+      overlay.setAttribute('style',
+        'position:absolute;inset:0;background:rgba(0,0,0,.12);' +
+        'z-index:8000;display:flex;align-items:flex-end;'
+      );
+      overlay.onclick = function () {
+        var s = document.getElementById('notifs-sheet');
+        if (s) s.style.transform = 'translateY(100%)';
+        setTimeout(function () { if (overlay.parentNode) overlay.remove(); }, 260);
+      };
+      overlay.innerHTML = (
+        '<div id="notifs-sheet" onclick="event.stopPropagation()"' +
+             ' style="width:100%;background:#fff;border-radius:24px 24px 0 0;' +
+                    'padding:12px 24px 40px;' +
+                    'box-shadow:0 -4px 28px rgba(0,0,0,.09);' +
+                    'transform:translateY(100%);' +
+                    'transition:transform .25s cubic-bezier(0.4,0,0.2,1);">' +
+          '<div style="width:36px;height:4px;background:' + T.bgSub + ';' +
+                      'border-radius:2px;margin:0 auto 20px;"></div>' +
+          '<h3 style="font-size:17px;font-weight:800;color:' + T.text + ';margin-bottom:4px;">Notifications</h3>' +
+          '<p style="font-size:12px;color:' + T.textS + ';margin-bottom:8px;">Choose what you\'d like to be notified about</p>' +
+          togRow('shared',       '<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>',
+                                 'New photos shared', 'When a trip member uploads photos') +
+          togRow('identified',   '<circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>',
+                                 'Face identified', 'When someone in your circle is tagged') +
+          togRow('newMemories',  '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>',
+                                 'New Memories', 'Smart memory reels from your trips') +
+          togRow('unknownFaces', '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
+                                 'Unknown faces found', 'When PixSlay spots someone new') +
+        '</div>'
+      );
+      phone.appendChild(overlay);
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          var s = document.getElementById('notifs-sheet');
+          if (s) s.style.transform = 'translateY(0)';
+        });
+      });
+    }
+
+    /* ── showPrivacySheet ── */
+    function showPrivacySheet() {
+      var phone = document.getElementById('phone');
+      var old   = document.getElementById('privacy-overlay');
+      if (old) old.remove();
+
+      var items = [
+        { title:'Face data storage',   sub:'Your face embeddings are stored encrypted and never shared',   icon:'<circle cx="12" cy="12" r="10"/><path d="M12 8v4l2 2"/>' },
+        { title:'Photo access',        sub:'PixSlay only reads photos from trip sync — not your full library', icon:'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>' },
+        { title:'Data sharing',        sub:'We never sell or share your data with third parties',           icon:'<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>' },
+        { title:'Delete my data',      sub:'Permanently remove all your photos, face data and account',    icon:'<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/>' },
+      ];
+
+      var rowsHTML = '';
+      for (var i = 0; i < items.length; i++) {
+        var item = items[i];
+        var isDanger = item.title === 'Delete my data';
+        rowsHTML += (
+          '<div onclick="showToast(\'' + (isDanger ? 'Account deletion — coming soon' : 'Opens detail page') + '\')"' +
+               ' style="display:flex;align-items:flex-start;gap:14px;' +
+                      'padding:16px 0;' +
+                      'border-bottom:' + (i < items.length - 1 ? '0.5px solid ' + T.bgSub : 'none') + ';' +
+                      'cursor:pointer;">' +
+            '<div style="width:36px;height:36px;border-radius:10px;flex-shrink:0;' +
+                        'background:' + (isDanger ? '#FFF0ED' : T.bgSub) + ';' +
+                        'display:flex;align-items:center;justify-content:center;">' +
+              '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"' +
+                   ' stroke="' + (isDanger ? T.alert : T.text) + '" stroke-width="2" stroke-linecap="round">' + item.icon + '</svg>' +
+            '</div>' +
+            '<div style="flex:1;min-width:0;padding-top:2px;">' +
+              '<div style="font-size:14px;font-weight:500;' +
+                          'color:' + (isDanger ? T.alert : T.text) + ';">' + item.title + '</div>' +
+              '<div style="font-size:12px;color:' + T.textS + ';margin-top:3px;line-height:1.5;">' + item.sub + '</div>' +
+            '</div>' +
+            '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"' +
+                 ' stroke="' + T.textT + '" stroke-width="2.5" stroke-linecap="round" style="flex-shrink:0;margin-top:2px;">' +
+              '<polyline points="9 18 15 12 9 6"/>' +
+            '</svg>' +
+          '</div>'
+        );
+      }
+
+      var overlay = document.createElement('div');
+      overlay.id  = 'privacy-overlay';
+      overlay.setAttribute('style',
+        'position:absolute;inset:0;background:rgba(0,0,0,.12);' +
+        'z-index:8000;display:flex;align-items:flex-end;'
+      );
+      overlay.onclick = function () {
+        var s = document.getElementById('privacy-sheet');
+        if (s) s.style.transform = 'translateY(100%)';
+        setTimeout(function () { if (overlay.parentNode) overlay.remove(); }, 260);
+      };
+      overlay.innerHTML = (
+        '<div id="privacy-sheet" onclick="event.stopPropagation()"' +
+             ' style="width:100%;background:#fff;border-radius:24px 24px 0 0;' +
+                    'padding:12px 24px 40px;' +
+                    'box-shadow:0 -4px 28px rgba(0,0,0,.09);' +
+                    'transform:translateY(100%);' +
+                    'transition:transform .25s cubic-bezier(0.4,0,0.2,1);">' +
+          '<div style="width:36px;height:4px;background:' + T.bgSub + ';' +
+                      'border-radius:2px;margin:0 auto 20px;"></div>' +
+          '<h3 style="font-size:17px;font-weight:800;color:' + T.text + ';margin-bottom:4px;">Privacy</h3>' +
+          '<p style="font-size:12px;color:' + T.textS + ';margin-bottom:8px;">How PixSlay handles your data</p>' +
+          rowsHTML +
+        '</div>'
+      );
+      phone.appendChild(overlay);
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          var s = document.getElementById('privacy-sheet');
+          if (s) s.style.transform = 'translateY(0)';
+        });
+      });
+    }
+
     /* ─────────────────────────────────────────────────────
        SCREEN MAP
     ───────────────────────────────────────────────────── */
@@ -5235,19 +6628,25 @@
       'varun-reg':           screenVarunReg,
       'varun-otp':           screenVarunOtp,
       'varun-profile':       screenVarunProfile,
-      'varun-home':          screenVarunHome,
+      'varun-home':          screenAlbumListing,
       'varun-create-group':  screenVarunCreateGroup,
       'varun-sync':          screenVarunSync,
       'varun-tagging':       screenVarunTagging,
       'beulah-scene':        screenBeulahScene,
       'beulah-install':      screenBeulahInstall,
-      'beulah-home':         screenBeulahHome,
+      'beulah-home':         screenAlbumListing,
       'mayank-scene':        screenMayankScene,
-      'mayank-home':         screenMayankHome,
+      'mayank-home':         screenAlbumListing,
       'kavitha-scene':       screenKavithaScene,
-      'kavitha-home':        screenKavithaHome,
+      'kavitha-home':        screenAlbumListing,
       'vishal-scene':        screenVishalScene,
-      'vishal-home':         screenVishalHome,
+      'vishal-home':         screenAlbumListing,
+      'anand-scene':         screenAnandScene,
+      'anand-home':          screenAlbumListing,
+      'profile':             screenProfile,
+      'edit-profile':        screenEditProfile,
+      'circle':              screenCircle,
+      'subscription':        screenSubscription,
     };
 
     /* ─────────────────────────────────────────────────────
@@ -5276,6 +6675,17 @@
        Timers and focus calls that must run after DOM insert.
     ───────────────────────────────────────────────────── */
     function postRender() {
+      /* Album listing search — restore focus after render */
+      if (albumSearchOpen) {
+        setTimeout(function () {
+          var inp = document.getElementById('al-search');
+          if (!inp) return;
+          inp.focus();
+          var l = inp.value.length;
+          try { inp.setSelectionRange(l, l); } catch (e) {}
+        }, 80);
+      }
+
       if (state.screen === 'varun-reg') {
         /* Auto-focus phone input */
         setTimeout(function () {
@@ -5333,7 +6743,7 @@
 
       /* Mayank — start auto-sync animation if My Photos tab is initially shown */
       if (state.screen === 'varun-tagging' &&
-          activeJourney === 'mayank' &&
+          (activeJourney === 'mayank' || activeJourney === 'anand') &&
           taggingTab === 'my-photos' &&
           !hasSynced) {
         clearInterval(mayankSyncInt);
