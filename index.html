@@ -2896,29 +2896,20 @@
           '</span>' +
         '</div>' +
 
-        /* ── bottom action bar ── */
+        /* ── bottom bar — outside the photo, clean separation ── */
         '<div style="position:absolute;bottom:0;left:0;right:0;z-index:10;' +
-                    'background:linear-gradient(to top,rgba(0,0,0,.9) 0%,rgba(0,0,0,.5) 55%,transparent 100%);' +
-                    'padding:20px 18px 40px;">' +
+                    'background:linear-gradient(to top,rgba(0,0,0,.82) 0%,rgba(0,0,0,.4) 60%,transparent 100%);' +
+                    'padding:28px 20px 36px;">' +
 
-          /* Share to group — primary CTA pill */
-          '<button onclick="taggingShareFromPreview()"' +
-                  ' style="display:block;width:100%;height:46px;border:none;border-radius:14px;' +
-                         'background:#1B4FD8;color:#fff;font-family:inherit;' +
-                         'font-size:15px;font-weight:700;cursor:pointer;' +
-                         'box-shadow:0 4px 20px rgba(27,79,216,.55);' +
-                         'margin-bottom:20px;letter-spacing:-.1px;">' +
-            '↑  Share to group' +
-          '</button>' +
-
-          '<div style="display:flex;align-items:center;justify-content:space-around;">' +
+          /* Instagram-style icon row */
+          '<div style="display:flex;align-items:center;gap:0;margin-bottom:16px;">' +
 
             /* Like */
             '<button id="pv-like-btn" onclick="pvLikePhoto(' + photo.id + ')"' +
-                    ' style="display:flex;flex-direction:column;align-items:center;gap:4px;' +
-                           'background:none;border:none;cursor:pointer;' +
+                    ' style="display:flex;align-items:center;gap:6px;background:none;border:none;' +
+                           'cursor:pointer;padding:0 18px 0 0;' +
                            'transition:transform .15s cubic-bezier(.22,1,.36,1);">' +
-              '<svg width="24" height="24" viewBox="0 0 24 24"' +
+              '<svg width="26" height="26" viewBox="0 0 24 24"' +
                    ' fill="' + (isLiked ? '#F43F5E' : 'none') + '"' +
                    ' stroke="' + (isLiked ? '#F43F5E' : '#fff') + '"' +
                    ' stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
@@ -2926,54 +2917,55 @@
                         'a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78' +
                         '1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>' +
               '</svg>' +
-              '<span id="pv-like-count"' +
-                    ' style="font-size:11px;font-weight:600;color:rgba(255,255,255,.85);">' +
-                likes +
-              '</span>' +
+              '<span id="pv-like-count" style="font-size:13px;font-weight:600;color:#fff;">' + likes + '</span>' +
             '</button>' +
 
             /* Comment */
             '<button id="pv-cmt-btn" onclick="pvShowComments(' + photo.id + ')"' +
-                    ' style="display:flex;flex-direction:column;align-items:center;gap:4px;' +
-                           'background:none;border:none;cursor:pointer;">' +
+                    ' style="display:flex;align-items:center;gap:6px;background:none;border:none;' +
+                           'cursor:pointer;padding:0 18px 0 0;">' +
               '<svg width="24" height="24" viewBox="0 0 24 24" fill="none"' +
                    ' stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
                 '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>' +
               '</svg>' +
-              '<span style="font-size:11px;font-weight:600;color:rgba(255,255,255,.85);">' +
-                cmts.length +
-              '</span>' +
+              '<span style="font-size:13px;font-weight:600;color:#fff;">' + cmts.length + '</span>' +
             '</button>' +
 
-            /* Save */
-            '<button onclick="pvDownloadPhoto(' + photo.id + ')"' +
-                    ' style="display:flex;flex-direction:column;align-items:center;gap:4px;' +
-                           'background:none;border:none;cursor:pointer;">' +
+            /* Share externally */
+            '<button onclick="pvExternalShare(' + photo.id + ')"' +
+                    ' style="display:flex;align-items:center;gap:6px;background:none;border:none;' +
+                           'cursor:pointer;padding:0 18px 0 0;">' +
               '<svg width="24" height="24" viewBox="0 0 24 24" fill="none"' +
                    ' stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>' +
+                '<line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>' +
+                '<line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>' +
+              '</svg>' +
+            '</button>' +
+
+            /* Save — pushed to far right */
+            '<button onclick="pvDownloadPhoto(' + photo.id + ')"' +
+                    ' style="display:flex;align-items:center;gap:6px;background:none;border:none;' +
+                           'cursor:pointer;margin-left:auto;">' +
+              '<svg width="22" height="22" viewBox="0 0 24 24" fill="none"' +
+                   ' stroke="rgba(255,255,255,.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
                 '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>' +
                 '<polyline points="7 10 12 15 17 10"/>' +
                 '<line x1="12" y1="15" x2="12" y2="3"/>' +
               '</svg>' +
-              '<span style="font-size:11px;font-weight:600;color:rgba(255,255,255,.85);">Save</span>' +
-            '</button>' +
-
-            /* Delete */
-            '<button onclick="pvDeletePhoto(' + photo.id + ')"' +
-                    ' style="display:flex;flex-direction:column;align-items:center;gap:4px;' +
-                           'background:none;border:none;cursor:pointer;">' +
-              '<svg width="24" height="24" viewBox="0 0 24 24" fill="none"' +
-                   ' stroke="rgba(255,255,255,.5)" stroke-width="2"' +
-                   ' stroke-linecap="round" stroke-linejoin="round">' +
-                '<polyline points="3 6 5 6 21 6"/>' +
-                '<path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>' +
-                '<path d="M10 11v6"/><path d="M14 11v6"/>' +
-                '<path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>' +
-              '</svg>' +
-              '<span style="font-size:11px;font-weight:600;color:rgba(255,255,255,.5);">Delete</span>' +
             '</button>' +
 
           '</div>' +
+
+          /* Share to group — full-width pill, below icons, outside photo */
+          '<button onclick="taggingShareFromPreview()"' +
+                  ' style="display:block;width:100%;height:44px;border:none;border-radius:12px;' +
+                         'background:#1B4FD8;color:#fff;font-family:inherit;' +
+                         'font-size:15px;font-weight:700;cursor:pointer;letter-spacing:-.1px;' +
+                         'box-shadow:0 3px 16px rgba(27,79,216,.45);">' +
+            'Share to group  →' +
+          '</button>' +
+
         '</div>'
       );
 
@@ -3383,6 +3375,13 @@
     function taggingSaveSelectedPhotos() {
       if (!taggingSelected.length) return;
       showToast('Saved ' + taggingSelected.length + ' photo' + (taggingSelected.length !== 1 ? 's' : '') + ' to camera roll ✓', 'ok');
+    }
+
+    function pvExternalShare(photoId) {
+      /* Single-photo external share from viewer — reuse same sheet logic */
+      taggingSelected = [photoId];
+      taggingExternalShare();
+      taggingSelected = [];
     }
 
     function taggingExternalShare() {
