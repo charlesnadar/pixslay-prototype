@@ -4,6 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>PixSlay</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#1B4FD8">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="PixSlay">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -91,12 +100,7 @@
 </head>
 <body>
   <div class="phone" id="phone">
-    <!-- Debug label for UI version tracking -->
-    <div style="position:fixed;top:8px;right:8px;z-index:10000;pointer-events:none;
-                font-size:10px;font-weight:500;color:#666;background:rgba(255,255,255,0.8);
-                padding:4px 8px;border-radius:12px;backdrop-filter:blur(4px);">
-      UI VERSION 7
-    </div>
+
   </div>
 
   <script>
@@ -297,36 +301,39 @@
          Focus:  label floats to top, border → blue
          Filled: label stays at top, border → light blue
     ───────────────────────────────────────────────────── */
-    function floatInput(label, id, value, type, oninputCb, inputmode) {
+    function floatInput(label, id, value, type, oninputCb, inputmode, bgColor) {
       value     = (value  === undefined || value  === null) ? '' : String(value);
       type      = type    || 'text';
       oninputCb = oninputCb || '';
       inputmode = inputmode || (type === 'tel' ? 'numeric' : 'text');
+      bgColor   = bgColor   || '#fff';
 
       var filled = value.length > 0;
 
       /* Label position constants — embedded in inline style strings */
       var FLOATED = 'top:0;transform:translateY(-50%);font-size:11px;font-weight:600;padding:0 4px;';
       var RESTING = 'top:50%;transform:translateY(-50%);font-size:14px;font-weight:400;padding:0;';
-      var BASE    = 'position:absolute;left:14px;background:#fff;pointer-events:none;transition:all .15s;';
+      var BASE    = 'position:absolute;left:14px;background:' + bgColor + ';pointer-events:none;transition:all .15s;';
 
       var initLbl    = BASE + (filled
         ? FLOATED + 'color:' + T.textT + ';'
         : RESTING + 'color:' + T.textT + ';');
       var initBorder = filled ? '0.5px solid ' + T.blueBdr : '0.5px solid ' + T.bgSub;
 
+      /* BASE with correct bg baked into the event handler strings */
+      var BASE_BG = 'position:absolute;left:14px;background:' + bgColor + ';pointer-events:none;transition:all .15s;';
       var focusHandler = (
         'var l=document.getElementById(\'' + id + '-lbl\');' +
-        'if(l) l.style.cssText=\'' + BASE + FLOATED + 'color:' + T.blue + ';\';' +
+        'if(l) l.style.cssText=\'' + BASE_BG + FLOATED + 'color:' + T.blue + ';\';' +
         'this.style.border=\'1px solid ' + T.blue + '\';'
       );
       var blurHandler = (
         'var l=document.getElementById(\'' + id + '-lbl\');' +
         'if(this.value){' +
-          'if(l) l.style.cssText=\'' + BASE + FLOATED + 'color:' + T.textT + ';\';' +
+          'if(l) l.style.cssText=\'' + BASE_BG + FLOATED + 'color:' + T.textT + ';\';' +
           'this.style.border=\'0.5px solid ' + T.blueBdr + '\';' +
         '} else {' +
-          'if(l) l.style.cssText=\'' + BASE + RESTING + 'color:' + T.textT + ';\';' +
+          'if(l) l.style.cssText=\'' + BASE_BG + RESTING + 'color:' + T.textT + ';\';' +
           'this.style.border=\'0.5px solid ' + T.bgSub + '\';}' +
         'this.style.color=\'' + T.text + '\';'
       );
@@ -346,7 +353,7 @@
               'padding:' + (filled ? '14px 14px 3px' : '0 14px') + ';' +
               'font-family:inherit;font-size:14px;font-weight:400;' +
               'color:' + T.text + ';' +
-              'background:#fff;outline:none;' +
+              'background:' + bgColor + ';outline:none;' +
               'transition:border .15s,padding .15s;"' +
             ' onfocus="' + focusHandler + 'this.style.padding=\'14px 14px 3px\';"' +
             ' onblur="'  + blurHandler  + 'if(!this.value) this.style.padding=\'0 14px\';"' +
@@ -368,7 +375,7 @@
     function onPhoneInput(el) {
       var btn = document.getElementById('continue-btn');
       if (!btn) return;
-      var ok = el.value.replace(/\D/g, '').length >= 1;
+      var ok = el.value.replace(/\D/g, '').length === 10;
       btn.disabled         = !ok;
       btn.style.background = ok ? T.blue    : T.bgSub;
       btn.style.color      = ok ? '#fff'    : T.textT;
@@ -687,15 +694,18 @@
       else            { showAvatarSheet(); }
     }
 
+    var JOURNEY_INITIALS = { varun:'VR', beulah:'BE', kavitha:'KA', mayank:'MA', vishal:'VI', anand:'AN' };
+
     function setDummyAvatar() {
       avatarSet = true;
       var c = document.getElementById('avatar-circle');
       if (!c) return;
       c.style.background = 'linear-gradient(135deg,' + T.blueH + ',' + T.blue + ')';
       c.style.border     = 'none';
+      var initials = JOURNEY_INITIALS[activeJourney] || 'VR';
       c.innerHTML = (
         '<span style="font-size:22px;font-weight:800;color:#fff;' +
-                     'letter-spacing:-0.5px;pointer-events:none;">VR</span>' +
+                     'letter-spacing:-0.5px;pointer-events:none;">' + initials + '</span>' +
         '<div id="avatar-badge" onclick="event.stopPropagation();showAvatarSheet()"' +
              ' style="position:absolute;bottom:1px;right:1px;' +
                     'width:22px;height:22px;' +
@@ -1369,7 +1379,7 @@
                   '<div style="padding:14px 16px 16px;display:flex;align-items:center;justify-content:space-between;">' +
                     '<div>' +
                       '<p style="font-size:15px;font-weight:700;color:' + T.text + ';margin-bottom:2px;">Mumbai — Karjat</p>' +
-                      '<p style="font-size:12px;font-weight:400;color:' + T.textS + ';">34 photos · 5 people</p>' +
+                      '<p style="font-size:12px;font-weight:400;color:' + T.textS + ';">' + TRIP_PHOTOS.length + ' photos · ' + (CG_PEOPLE.length + 1) + ' people</p>' +
                     '</div>' +
                     '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="' + T.textT + '" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>' +
                   '</div>' +
@@ -1391,12 +1401,18 @@
     var cgCoverSet = false;
     var cgContacts = { MA: true, KA: true, BE: true, VI: true, AN: true };
     var CG_PEOPLE  = [
-      { id: 'MA', name: 'Mayank',  pixslay: true,  sms: false },
-      { id: 'KA', name: 'Kavitha', pixslay: false, sms: false },
-      { id: 'BE', name: 'Beulah',  pixslay: false, sms: true  },
-      { id: 'VI', name: 'Vishal',  pixslay: false, sms: true  },
-      { id: 'AN', name: 'Anand',   pixslay: false, sms: true  }
+      { id: 'MA', name: 'Mayank',  pixslay: true,  sms: false, joined: true  },
+      { id: 'KA', name: 'Kavitha', pixslay: false, sms: false, joined: false },
+      { id: 'BE', name: 'Beulah',  pixslay: false, sms: true,  joined: false },
+      { id: 'VI', name: 'Vishal',  pixslay: false, sms: true,  joined: false },
+      { id: 'AN', name: 'Anand',   pixslay: false, sms: true,  joined: false }
     ];
+
+    function cgPendingCount() {
+      var n = 0;
+      for (var i = 0; i < CG_PEOPLE.length; i++) { if (!CG_PEOPLE[i].joined) n++; }
+      return n;
+    }
 
     function cgCoverTap() {
       var c = document.getElementById('cg-cover');
@@ -1580,7 +1596,7 @@
             /* Who's coming label */
             '<p style="font-size:11px;font-weight:600;letter-spacing:0.06em;' +
                       'color:' + T.textT + ';margin-bottom:14px;">' +
-              'WHO\'S COMING' +
+              'Who\'s coming' +
             '</p>' +
 
             /* Contact chips */
@@ -1614,7 +1630,7 @@
                      'border-radius:12px;border:none;background:transparent;' +
                      'color:' + T.textS + ';font-family:inherit;' +
                      'font-size:13px;font-weight:500;cursor:pointer;">' +
-              'I\'ll do this later' +
+              'Skip for now — explore the app' +
             '</button>' +
           '</div>' +
 
@@ -1660,19 +1676,70 @@
 
           /* Handle */
           '<div style="width:36px;height:4px;background:' + T.bgSub + ';' +
-                      'border-radius:2px;margin:0 auto 24px;"></div>' +
+                      'border-radius:2px;margin:0 auto 20px;"></div>' +
 
-          /* Headline */
+          /* Lock icon */
+          '<div style="width:44px;height:44px;border-radius:12px;' +
+                      'background:' + T.blueTint + ';' +
+                      'display:flex;align-items:center;justify-content:center;' +
+                      'margin-bottom:14px;">' +
+            '<svg width="20" height="20" viewBox="0 0 24 24" fill="none"' +
+                 ' stroke="' + T.blue + '" stroke-width="2.2" stroke-linecap="round">' +
+              '<rect x="3" y="11" width="18" height="11" rx="2"/>' +
+              '<path d="M7 11V7a5 5 0 0 1 10 0v4"/>' +
+            '</svg>' +
+          '</div>' +
+
+          /* Headline — trust first */
           '<p style="font-size:20px;font-weight:800;color:' + T.text + ';' +
-                    'margin-bottom:8px;line-height:1.25;">' +
-            'When should we look for trip photos?' +
+                    'margin-bottom:6px;line-height:1.25;">' +
+            'We only see your trip photos' +
+          '</p>' +
+          '<p style="font-size:13px;font-weight:400;color:' + T.textS + ';' +
+                    'line-height:1.55;margin-bottom:16px;">' +
+            'Before we ask for photo access, here\'s exactly what happens:' +
           '</p>' +
 
-          /* Copy */
-          '<p style="font-size:13px;font-weight:400;color:' + T.textS + ';' +
-                    'line-height:1.55;margin-bottom:20px;">' +
-            'We\'ll only look within your trip window.' +
-          '</p>' +
+          /* Privacy bullets */
+          (function () {
+            var bullets = [
+              { icon:'<polyline points="20 6 9 17 4 12"/>',  text:'Only photos within your trip window are ever read' },
+              { icon:'<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>', text:'Your other photos are never opened or stored', negative:true },
+              { icon:'<polyline points="20 6 9 17 4 12"/>',  text:'Nothing leaves your device until you tap sync' },
+            ];
+            var html = '<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;">';
+            for (var b = 0; b < bullets.length; b++) {
+              var bullet = bullets[b];
+              var isNo   = !!bullet.negative;
+              html += (
+                '<div style="display:flex;align-items:flex-start;gap:12px;">' +
+                  '<div style="width:22px;height:22px;border-radius:50%;flex-shrink:0;margin-top:1px;' +
+                              'background:' + (isNo ? '#FFF1F1' : T.blueTint) + ';' +
+                              'display:flex;align-items:center;justify-content:center;">' +
+                    '<svg width="11" height="11" viewBox="0 0 24 24" fill="none"' +
+                         ' stroke="' + (isNo ? T.alert : T.blue) + '"' +
+                         ' stroke-width="3" stroke-linecap="round">' +
+                      bullet.icon +
+                    '</svg>' +
+                  '</div>' +
+                  '<p style="font-size:13px;font-weight:' + (isNo ? '600' : '500') + ';' +
+                            'color:' + T.text + ';line-height:1.45;margin:0;flex:1;">' +
+                    bullet.text +
+                  '</p>' +
+                '</div>'
+              );
+            }
+            html += '</div>';
+            return html;
+          }()) +
+
+          /* Divider + trip window label */
+          '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">' +
+            '<div style="flex:1;height:0.5px;background:' + T.bgSub + ';"></div>' +
+            '<span style="font-size:11px;font-weight:500;color:' + T.textT + ';' +
+                         'letter-spacing:0.04em;text-transform:uppercase;">Trip window</span>' +
+            '<div style="flex:1;height:0.5px;background:' + T.bgSub + ';"></div>' +
+          '</div>' +
 
           /* From row */
           '<div style="display:flex;gap:8px;">' +
@@ -1685,7 +1752,7 @@
           '</div>' +
 
           /* To row */
-          '<div style="display:flex;gap:8px;margin-bottom:6px;">' +
+          '<div style="display:flex;gap:8px;margin-bottom:20px;">' +
             '<div style="flex:1;min-width:0;">' +
               floatInput('To date', 'sr-to-date', t.toDate, 'text', '', 'text') +
             '</div>' +
@@ -1694,12 +1761,6 @@
             '</div>' +
           '</div>' +
 
-          /* Helper text */
-          '<p style="font-size:11px;font-weight:400;color:' + T.textT + ';' +
-                    'text-align:center;line-height:1.5;margin-bottom:20px;">' +
-            'We\'ll only use this to find photos from the trip.' +
-          '</p>' +
-
           /* Primary CTA */
           '<button onclick="closeSyncReassuranceSheet(true)"' +
             ' style="display:block;width:100%;height:50px;' +
@@ -1707,7 +1768,7 @@
                    'background:' + T.blue + ';color:#fff;' +
                    'font-family:inherit;font-size:15px;font-weight:600;' +
                    'cursor:pointer;margin-bottom:10px;">' +
-            'Allow access & continue' +
+            'Allow access &amp; start sync' +
           '</button>' +
 
           /* Ghost CTA */
@@ -1716,7 +1777,7 @@
                    'border-radius:12px;border:none;background:transparent;' +
                    'color:' + T.textS + ';font-family:inherit;' +
                    'font-size:13px;font-weight:500;cursor:pointer;">' +
-            'Cancel' +
+            'Not now' +
           '</button>' +
 
         '</div>'
@@ -1844,6 +1905,50 @@
       }, 37); /* 40 ticks × 37ms ≈ 1480ms */
     }
 
+    function showConfetti() {
+      var phone    = document.getElementById('phone');
+      if (!phone) return;
+      var colors   = ['#3B82F6','#F97316','#22C55E','#A855F7','#EF4444','#FACC15'];
+      var pieces   = 48;
+      var container = document.createElement('div');
+      container.id  = 'confetti-burst';
+      container.setAttribute('style',
+        'position:absolute;inset:0;pointer-events:none;z-index:9999;overflow:hidden;'
+      );
+      for (var i = 0; i < pieces; i++) {
+        var dot = document.createElement('div');
+        var color  = colors[i % colors.length];
+        var size   = (Math.random() * 7 + 5) + 'px';
+        var left   = (Math.random() * 100) + '%';
+        var delay  = (Math.random() * 0.4).toFixed(2) + 's';
+        var dur    = (Math.random() * 0.8 + 0.9).toFixed(2) + 's';
+        var rotate = (Math.random() * 360) + 'deg';
+        dot.setAttribute('style',
+          'position:absolute;top:-10px;left:' + left + ';' +
+          'width:' + size + ';height:' + size + ';border-radius:2px;' +
+          'background:' + color + ';' +
+          'animation:confettiFall ' + dur + ' ' + delay + ' ease-in forwards;' +
+          'transform:rotate(' + rotate + ');'
+        );
+        container.appendChild(dot);
+      }
+      /* Inject keyframes once */
+      if (!document.getElementById('confetti-style')) {
+        var sty = document.createElement('style');
+        sty.id  = 'confetti-style';
+        sty.textContent = (
+          '@keyframes confettiFall {' +
+            '0%   { transform:translateY(0) rotate(0deg);   opacity:1; }' +
+            '80%  { opacity:1; }' +
+            '100% { transform:translateY(700px) rotate(720deg); opacity:0; }' +
+          '}'
+        );
+        document.head.appendChild(sty);
+      }
+      phone.appendChild(container);
+      setTimeout(function () { if (container.parentNode) container.remove(); }, 2200);
+    }
+
     function syncComplete() {
       syncDone  = true;
       hasSynced = true;
@@ -1865,11 +1970,45 @@
               requestAnimationFrame(function () { results.style.opacity = '1'; });
             });
           }
+          showConfetti();
         }, 300);
       }
       syncSetStickyState('done');
       var laterBtn = document.getElementById('sync-later-btn');
       if (laterBtn) laterBtn.style.display = 'none';
+    }
+
+    /* ─── Shared: consistent empty state block ─── */
+    function emptyState(emoji, title, sub, ctaLabel, ctaOnclick) {
+      return (
+        '<div style="display:flex;flex-direction:column;align-items:center;' +
+                    'justify-content:center;padding:48px 28px;text-align:center;">' +
+          '<div style="width:64px;height:64px;border-radius:20px;' +
+                      'background:' + T.bgSub + ';' +
+                      'display:flex;align-items:center;justify-content:center;' +
+                      'margin-bottom:16px;font-size:28px;">' +
+            emoji +
+          '</div>' +
+          '<p style="font-size:16px;font-weight:700;color:' + T.text + ';' +
+                    'margin-bottom:6px;line-height:1.3;">' +
+            title +
+          '</p>' +
+          (sub
+            ? '<p style="font-size:13px;font-weight:400;color:' + T.textS + ';' +
+                        'line-height:1.6;margin-bottom:' + (ctaLabel ? '24' : '0') + 'px;max-width:220px;">' +
+                sub +
+              '</p>'
+            : '') +
+          (ctaLabel
+            ? '<button onclick="' + ctaOnclick + '"' +
+                     ' style="height:44px;padding:0 24px;border-radius:12px;border:none;' +
+                            'background:' + T.blue + ';color:#fff;' +
+                            'font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;">' +
+                ctaLabel +
+              '</button>'
+            : '') +
+        '</div>'
+      );
     }
 
     /* ─── Shared: invite link sheet ─── */
@@ -2086,37 +2225,41 @@
               /* Results — hidden until complete */
               '<div id="sync-results" style="display:none;opacity:0;">' +
 
-                /* Two stats only — photos + videos */
-                '<div style="display:flex;gap:0;margin-bottom:16px;padding-top:4px;">' +
-                  '<div style="flex:1;display:flex;flex-direction:column;' +
-                              'align-items:center;gap:3px;">' +
-                    '<span style="font-size:28px;font-weight:800;color:' + T.text + ';' +
-                                 'line-height:1;">34</span>' +
-                    '<span style="font-size:11px;font-weight:500;color:' + T.textS + ';' +
-                                 'letter-spacing:0.02em;">Trip photos</span>' +
-                  '</div>' +
-                  '<div style="width:0.5px;background:' + T.bgSub + ';margin:4px 0;"></div>' +
-                  '<div style="flex:1;display:flex;flex-direction:column;' +
-                              'align-items:center;gap:3px;">' +
-                    '<span style="font-size:28px;font-weight:800;color:' + T.text + ';' +
-                                 'line-height:1;">2</span>' +
-                    '<span style="font-size:11px;font-weight:500;color:' + T.textS + ';' +
-                                 'letter-spacing:0.02em;">Trip videos</span>' +
-                  '</div>' +
+                /* ── Celebration header ── */
+                '<div style="text-align:center;padding:8px 0 18px;">' +
+                  '<div style="font-size:36px;line-height:1;margin-bottom:8px;">🎉</div>' +
+                  '<p style="font-size:20px;font-weight:800;color:' + T.text + ';' +
+                            'letter-spacing:-0.4px;margin-bottom:4px;">' +
+                    '34 moments captured!' +
+                  '</p>' +
+                  '<p style="font-size:13px;font-weight:400;color:' + T.textS + ';line-height:1.5;">' +
+                    'Your Karjat memories are ready.' +
+                  '</p>' +
                 '</div>' +
 
-                /* Contextual trip window — metadata, not a metric */
-                '<p style="font-size:11px;font-weight:400;color:' + T.textT + ';' +
-                          'text-align:center;margin-bottom:16px;">' +
-                  'Looking from ' + state.syncTiming.fromDate + ', ' + state.syncTiming.fromTime +
-                  ' → ' + state.syncTiming.toDate + ', ' + state.syncTiming.toTime +
-                '</p>' +
+                /* ── Social proof strip ── */
+                '<div style="display:flex;align-items:center;gap:10px;' +
+                            'background:' + T.bgWarm + ';border-radius:12px;' +
+                            'padding:10px 14px;margin-bottom:16px;">' +
+                  /* Mayank avatar */
+                  '<div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;' +
+                              'background:linear-gradient(135deg,#F97316,#EA580C);' +
+                              'display:flex;align-items:center;justify-content:center;">' +
+                    '<span style="font-size:10px;font-weight:800;color:#fff;">MA</span>' +
+                  '</div>' +
+                  '<p style="font-size:12px;font-weight:400;color:' + T.textS + ';' +
+                            'line-height:1.45;margin:0;flex:1;">' +
+                    '<strong style="color:' + T.text + ';font-weight:600;">Mayank</strong> also synced ' +
+                    '<strong style="color:' + T.text + ';font-weight:600;">22 photos</strong> · ' +
+                    '5 people in the trip' +
+                  '</p>' +
+                '</div>' +
 
                 /* Photo preview strip — real photos */
-                '<div style="display:flex;gap:6px;margin-bottom:14px;overflow:hidden;">' +
+                '<div style="display:flex;gap:6px;margin-bottom:16px;overflow:hidden;">' +
 
                   (function () {
-                    var stripIdx = [1, 5, 8, 12]; /* k2, k5(wait k6 is heic so use k8 via PHOTO_FILES[5]), k9, k13 */
+                    var stripIdx = [1, 5, 8, 12];
                     var out = '';
                     for (var si = 0; si < stripIdx.length; si++) {
                       out += (
@@ -2138,6 +2281,21 @@
                   '</div>' +
 
                 '</div>' +
+
+                /* ── Primary CTA ── */
+                '<button onclick="go(\'varun-tagging\')"' +
+                         ' style="width:100%;height:50px;border-radius:14px;border:none;' +
+                                'background:' + T.blue + ';color:#fff;' +
+                                'font-family:inherit;font-size:15px;font-weight:700;' +
+                                'cursor:pointer;margin-bottom:14px;' +
+                                'display:flex;align-items:center;justify-content:center;gap:6px;">' +
+                  'See your Karjat story' +
+                  '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"' +
+                       ' stroke="#fff" stroke-width="2.5" stroke-linecap="round">' +
+                    '<line x1="5" y1="12" x2="19" y2="12"/>' +
+                    '<polyline points="12 5 19 12 12 19"/>' +
+                  '</svg>' +
+                '</button>' +
 
                 /* Privacy line */
                 '<div style="display:flex;align-items:flex-start;gap:8px;' +
@@ -2231,7 +2389,7 @@
                      'border-radius:12px;border:none;background:transparent;' +
                      'color:' + T.textS + ';font-family:inherit;' +
                      'font-size:13px;font-weight:500;cursor:pointer;">' +
-              'I\'ll do this later' +
+              'I\'ll add photos later' +
             '</button>' +
           '</div>' +
 
@@ -2318,6 +2476,7 @@
     var TRIP_PHOTOS = (function () {
       var savedIds      = [3, 7, 11, 14, 19, 24, 28];
       var downloadedIds = [5, 12, 19, 27, 31];
+      var videoIds      = [4, 9, 16, 22, 29];   /* ~15% videos — realistic ratio */
       var arr = [];
       for (var i = 1; i <= 34; i++) {
         arr.push({
@@ -2325,12 +2484,41 @@
           scene:      TRIP_SCENE_LIST[(i - 1) % 9],
           by:         TRIP_BY_LIST[(i - 1) % 10],
           day:        i <= 18 ? 1 : 2,
+          type:       videoIds.indexOf(i) !== -1 ? 'video' : 'photo',
           saved:      savedIds.indexOf(i)      !== -1,
           downloaded: downloadedIds.indexOf(i) !== -1
         });
       }
       return arr;
     }());
+
+    /* Returns TRIP_PHOTOS filtered + sorted by current groupFilter state */
+    function getFilteredGroupPhotos() {
+      var photos = TRIP_PHOTOS.slice();
+      /* Media filter */
+      if (groupFilterMedia === 'photos') {
+        photos = photos.filter(function (p) { return p.type !== 'video'; });
+      } else if (groupFilterMedia === 'videos') {
+        photos = photos.filter(function (p) { return p.type === 'video'; });
+      }
+      /* Sort */
+      if (groupFilterSort === 'oldest') photos.reverse();
+      return photos;
+    }
+
+    /* ── Photo source abstraction ─────────────────────────────────────
+       PHOTO_MODE = 'demo'   → uses static files from /photos/ (default)
+       PHOTO_MODE = 'native' → uses nativeUri from Capacitor gallery plugin
+       Switch to 'native' when Capacitor is wired up. Zero UI changes needed.
+    ─────────────────────────────────────────────────────────────────── */
+    var PHOTO_MODE = 'demo';
+
+    function resolvePhotoSrc(photo) {
+      if (PHOTO_MODE === 'native' && photo && photo.nativeUri) return photo.nativeUri;
+      if (photo && photo.demoSrc) return photo.demoSrc;
+      if (typeof photo === 'string') return photo; /* plain string path fallback */
+      return '';
+    }
 
     /* Real trip photos — k6/k7 are HEIC (limited browser support) so excluded */
     var PHOTO_FILES = [
@@ -2811,15 +2999,15 @@
               '<line x1="21" y1="21" x2="16.65" y2="16.65"/>' +
             '</svg>' +
           '</button>' +
-          '<button onclick="taggingShowThreeDot()"' +
+          '<button onclick="showGroupFilterSheet()"' +
             ' style="width:32px;height:32px;border:none;background:none;cursor:pointer;' +
                    'display:flex;align-items:center;justify-content:center;">' +
-            '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"' +
+            '<svg width="19" height="19" viewBox="0 0 24 24" fill="none"' +
                  ' stroke="' + T.text + '" stroke-width="2"' +
                  ' stroke-linecap="round" stroke-linejoin="round">' +
-              '<circle cx="12" cy="5" r="1" fill="' + T.text + '" stroke="none"/>' +
-              '<circle cx="12" cy="12" r="1" fill="' + T.text + '" stroke="none"/>' +
-              '<circle cx="12" cy="19" r="1" fill="' + T.text + '" stroke="none"/>' +
+              '<line x1="4" y1="6" x2="20" y2="6"/>' +
+              '<line x1="8" y1="12" x2="16" y2="12"/>' +
+              '<line x1="11" y1="18" x2="13" y2="18"/>' +
             '</svg>' +
           '</button>' +
         '</div>'
@@ -2849,70 +3037,32 @@
     }
 
     /* ─── filter bar ─── */
-    function taggingSetFilterCat(cat) {
-      taggingFilterCat = (taggingFilterCat === cat) ? '' : cat;
-      taggingFilterSub = '';
-      var cats = ['People','Scene','Format','Time'];
-      for (var i = 0; i < cats.length; i++) {
-        var pill = document.getElementById('fcat-' + cats[i]);
-        if (!pill) continue;
-        var on = (taggingFilterCat === cats[i]);
-        pill.style.background = on ? T.blue : T.bgSub;
-        pill.style.color      = on ? '#fff' : T.textS;
-      }
-      var sub = document.getElementById('tagging-sub-row');
-      if (!sub) return;
-      if (!taggingFilterCat) {
-        sub.style.maxHeight = '0';
-        sub.style.opacity   = '0';
-        setTimeout(function () { sub.style.display = 'none'; }, 200);
-        return;
-      }
-      var subMap = {
-        'People': ['VR · You','Mayank','Kavitha','Unknown'],
-        'Scene':  ['Bonfire','Forest','Lake','Night','Waterfall','Food','Selfie','Travel','Group'],
-        'Format': ['Selfie','Group shot','Landscape','Portrait','Video'],
-        'Time':   ['Morning','Afternoon','Evening','Night','Day 1','Day 2']
-      };
-      var chips = subMap[taggingFilterCat] || [];
-      var html  = '<div class="hscroll" style="display:flex;gap:8px;overflow-x:auto;padding:8px 16px;">';
-      for (var j = 0; j < chips.length; j++) {
-        var sid = 'fsub-' + chips[j].replace(/ /g,'_').replace(/·/g,'');
-        html += (
-          '<button id="' + sid + '"' +
-                  ' onclick="taggingSetFilterSub(\'' + chips[j].replace(/'/g,"\\'") + '\')"' +
-                  ' style="white-space:nowrap;height:30px;padding:0 12px;' +
-                         'border-radius:20px;border:none;' +
-                         'background:' + T.bgSub + ';color:' + T.textS + ';' +
-                         'font-family:inherit;font-size:12px;font-weight:500;cursor:pointer;">' +
-            chips[j] +
-          '</button>'
-        );
-      }
-      html += '</div>';
-      sub.innerHTML  = html;
-      sub.style.display    = 'block';
-      sub.style.transition = 'max-height .2s ease,opacity .2s ease';
-      sub.style.maxHeight  = '0';
-      sub.style.opacity    = '0';
-      requestAnimationFrame(function () {
-        requestAnimationFrame(function () {
-          sub.style.maxHeight = '52px';
-          sub.style.opacity   = '1';
-        });
-      });
-    }
+    /* taggingSetFilterCat / taggingSetFilterSub removed — replaced by showGroupFilterSheet() */
 
-    function taggingSetFilterSub(sub) {
-      taggingFilterSub = (taggingFilterSub === sub) ? '' : sub;
-      var row = document.getElementById('tagging-sub-row');
-      if (!row) return;
-      var btns = row.querySelectorAll('button');
-      for (var i = 0; i < btns.length; i++) {
-        var on = (btns[i].textContent.trim() === taggingFilterSub);
-        btns[i].style.background = on ? T.blueTint : T.bgSub;
-        btns[i].style.color      = on ? T.blue     : T.textS;
+    /* In-place notification tab switch — no full re-render, scroll position preserved */
+    function notifSetTab(tab) {
+      notifTab = tab;
+      var tabs      = ['all', 'uploads', 'mentions', 'memories'];
+      var tabLabels = { all:'All', uploads:'Uploads', mentions:'Mentions', memories:'Memories' };
+      var typeMap   = { uploads:'upload', mentions:'mention', memories:'memory' };
+      /* Re-style buttons */
+      for (var i = 0; i < tabs.length; i++) {
+        var btn = document.getElementById('ntab-' + tabs[i]);
+        if (!btn) continue;
+        var on = (tabs[i] === tab);
+        btn.style.background = on ? T.blue : 'transparent';
+        btn.style.color      = on ? '#fff' : T.textS;
       }
+      /* Rebuild list */
+      var filtered = [];
+      for (var n = 0; n < NOTIF_DATA.length; n++) {
+        var item = NOTIF_DATA[n];
+        if (tab === 'all' || item.type === typeMap[tab]) filtered.push(item);
+      }
+      var html = '';
+      for (var f = 0; f < filtered.length; f++) html += notifItemHTML(filtered[f]);
+      var list = document.getElementById('notif-list');
+      if (list) list.innerHTML = html || emptyState('✓', 'You\'re all caught up', 'No new notifications right now.', '', '');
     }
 
     /* ─── segmented control switch ─── */
@@ -2935,10 +3085,11 @@
       var grid = document.getElementById('tagging-grid');
       if (!grid) return;
       if (tab === 'group') {
+        var filtered = getFilteredGroupPhotos();
         var poolHTML = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;">';
-        var shown = Math.min(groupPoolCount, TRIP_PHOTOS.length);
+        var shown = Math.min(groupPoolCount, filtered.length);
         for (var j = 0; j < shown; j++) {
-          poolHTML += taggingPhotoCell(TRIP_PHOTOS[j], 0);
+          poolHTML += taggingPhotoCell(filtered[j], 0);
         }
         poolHTML += '</div>';
         grid.innerHTML = poolHTML;
@@ -3077,7 +3228,7 @@
             fChip('media', 'videos', 'Videos only')
           ) +
 
-          '<button onclick="document.getElementById(\'grp-filter-ov\').remove();showToast(\'Filters applied\')"' +
+          '<button onclick="document.getElementById(\'grp-filter-ov\').remove();taggingSetTab(\'group\')"' +
                   ' style="display:block;width:100%;height:48px;border-radius:12px;border:none;' +
                          'background:' + T.blue + ';color:#fff;font-family:inherit;' +
                          'font-size:15px;font-weight:700;cursor:pointer;margin-top:20px;">' +
@@ -3095,62 +3246,7 @@
       });
     }
 
-    function taggingShowThreeDot() {
-      var phone = document.getElementById('phone');
-      var old   = document.getElementById('tag3dot-overlay');
-      if (old) old.remove();
-
-      var overlay = document.createElement('div');
-      overlay.id  = 'tag3dot-overlay';
-      overlay.setAttribute('style',
-        'position:absolute;inset:0;background:rgba(0,0,0,.12);' +
-        'z-index:8000;display:flex;align-items:flex-end;'
-      );
-      overlay.onclick = function () {
-        var s = document.getElementById('tag3dot-sheet');
-        if (s) s.style.transform = 'translateY(100%)';
-        setTimeout(function () { if (overlay.parentNode) overlay.remove(); }, 260);
-      };
-
-      overlay.innerHTML = (
-        '<div id="tag3dot-sheet" onclick="event.stopPropagation()"' +
-             ' style="width:100%;background:#fff;border-radius:24px 24px 0 0;' +
-                    'padding:12px 0 40px;' +
-                    'box-shadow:0 -4px 28px rgba(0,0,0,.09);' +
-                    'transform:translateY(100%);' +
-                    'transition:transform .25s cubic-bezier(0.4,0,0.2,1);">' +
-
-          /* Handle */
-          '<div style="width:36px;height:4px;background:' + T.bgSub + ';' +
-                      'border-radius:2px;margin:0 auto 8px;"></div>' +
-
-          /* Delete group */
-          '<div onclick="document.getElementById(\'tag3dot-overlay\').remove();showGroupDeletePopup()"' +
-               ' style="height:54px;display:flex;align-items:center;' +
-                      'padding:0 20px;gap:14px;cursor:pointer;">' +
-            '<svg width="20" height="20" viewBox="0 0 24 24" fill="none"' +
-                 ' stroke="' + T.alert + '" stroke-width="1.8"' +
-                 ' stroke-linecap="round" stroke-linejoin="round">' +
-              '<polyline points="3 6 5 6 21 6"/>' +
-              '<path d="M19 6l-1 14H6L5 6"/>' +
-              '<path d="M10 11v6"/><path d="M14 11v6"/>' +
-              '<path d="M9 6V4h6v2"/>' +
-            '</svg>' +
-            '<span style="font-size:15px;font-weight:500;color:' + T.alert + ';">' +
-              'Delete group' +
-            '</span>' +
-          '</div>' +
-
-        '</div>'
-      );
-      phone.appendChild(overlay);
-      requestAnimationFrame(function () {
-        requestAnimationFrame(function () {
-          var s = document.getElementById('tag3dot-sheet');
-          if (s) s.style.transform = 'translateY(0)';
-        });
-      });
-    }
+    /* taggingShowThreeDot removed — replaced by showGroupFilterSheet() */
 
     /* ─────────────────────────────────────────────────────
        INLINE SEARCH EXPANSION
@@ -4093,11 +4189,12 @@
         gridHTML = '';
       } else if (taggingTab === 'group' && !hasSynced) {
         /* group is empty — no one has synced yet */
-        gridHTML = '';
+        gridHTML = emptyState('📸', 'No group photos yet', 'Sync your trip photos and invite others to build the shared album.', 'Sync my photos', 'go(\'varun-sync\')');
       } else if (taggingTab === 'group') {
-        var shown = Math.min(groupPoolCount, TRIP_PHOTOS.length);
+        var filt  = getFilteredGroupPhotos();
+        var shown = Math.min(groupPoolCount, filt.length);
         for (var gi = 0; gi < shown; gi++) {
-          gridHTML += taggingPhotoCell(TRIP_PHOTOS[gi], 0);
+          gridHTML += taggingPhotoCell(filt[gi], 0);
         }
       } else {
         for (var gi = 0; gi < TRIP_PHOTOS.length; gi++) {
@@ -4228,10 +4325,21 @@
                     '<path d="M23 21v-2a4 4 0 0 0-3-3.87"/>' +
                     '<path d="M16 3.13a4 4 0 0 1 0 7.75"/>' +
                   '</svg>' +
-                  '<span style="flex:1;font-size:12px;font-weight:600;color:' + T.blueDk + ';' +
-                               'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
-                    '3 of 9 members haven\'t joined yet' +
-                  '</span>' +
+                  (function () {
+                    var pending = cgPendingCount();
+                    var total   = CG_PEOPLE.length;
+                    var txt = pending === 0
+                      ? 'Everyone has joined — let\'s go!'
+                      : (pending === 1
+                          ? '1 of ' + total + ' hasn\'t joined yet'
+                          : pending + ' of ' + total + ' haven\'t joined yet');
+                    return (
+                      '<span style="flex:1;font-size:12px;font-weight:600;color:' + T.blueDk + ';' +
+                                   'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
+                        txt +
+                      '</span>'
+                    );
+                  }()) +
                   '<button onclick="cgCopyLink()"' +
                     ' style="height:28px;padding:0 12px;border-radius:14px;border:none;' +
                            'background:' + T.blue + ';color:#fff;' +
@@ -4294,7 +4402,7 @@
 
           /* ── photo grid — scrollable ── */
           '<div id="tagging-grid" class="pscroll"' +
-               ' style="flex:1;overflow-y:auto;background:#fff;padding:16px 18px 20px;">' +
+               ' style="flex:1;overflow-y:auto;background:#fff;padding:0 0 20px;">' +
             (taggingTab === 'my-photos' && !hasSynced
               ? (activeJourney === 'mayank' || activeJourney === 'anand'
                   /* Mayank / Anand — auto-sync progress, fires from postRender */
@@ -4319,43 +4427,11 @@
                       '</div>' +
                     '</div>'
                   /* Varun / Beulah — sync nudge */
-                  : '<div style="display:flex;flex-direction:column;align-items:center;' +
-                                'justify-content:center;padding:60px 32px;text-align:center;">' +
-                      '<div style="font-size:44px;margin-bottom:16px;">📷</div>' +
-                      '<p style="font-size:16px;font-weight:700;color:' + T.text + ';margin-bottom:8px;">' +
-                        'Your captures, with everyone' +
-                      '</p>' +
-                      '<p style="font-size:13px;color:' + T.textS + ';line-height:1.6;margin-bottom:28px;">' +
-                        'Sync your photo album to share your captures from the trip with your friends.' +
-                      '</p>' +
-                      '<button onclick="go(\'varun-sync\')"' +
-                        ' style="height:48px;padding:0 28px;border-radius:12px;border:none;' +
-                               'background:' + T.blue + ';color:#fff;' +
-                               'font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;' +
-                               'box-shadow:0 4px 16px rgba(27,79,216,.26);">' +
-                        'Sync my photos' +
-                      '</button>' +
-                    '</div>'
+                  : emptyState('📷', 'Your captures, with everyone', 'Sync your photo album to share your trip moments with the group.', 'Sync my photos', 'go(\'varun-sync\')')
                 )
               : (taggingTab === 'group' && !hasSynced
-                  ? '<div style="display:flex;flex-direction:column;align-items:center;' +
-                                'justify-content:center;padding:60px 32px;text-align:center;">' +
-                      '<div style="font-size:44px;margin-bottom:16px;">🖼️</div>' +
-                      '<p style="font-size:16px;font-weight:700;color:' + T.text + ';margin-bottom:8px;">' +
-                        'No photos yet' +
-                      '</p>' +
-                      '<p style="font-size:13px;color:' + T.textS + ';line-height:1.6;margin-bottom:28px;">' +
-                        'Be the first — sync your photos so everyone can see them.' +
-                      '</p>' +
-                      '<button onclick="go(\'varun-sync\')"' +
-                        ' style="height:48px;padding:0 28px;border-radius:12px;border:none;' +
-                               'background:' + T.blue + ';color:#fff;' +
-                               'font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;' +
-                               'box-shadow:0 4px 16px rgba(27,79,216,.26);">' +
-                        'Sync my photos' +
-                      '</button>' +
-                    '</div>'
-                  : '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">' +
+                  ? emptyState('📸', 'No group photos yet', 'Sync your photos first, then invite others to build the shared album.', 'Sync my photos', 'go(\'varun-sync\')')
+                  : '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;">' +
                       gridHTML +
                     '</div>')) +
           '</div>' +
@@ -4870,7 +4946,7 @@
                           'margin-bottom:4px;">Sat 24 May — Sun 25 May</p>' +
                 '<p style="font-size:12px;font-weight:500;color:' + T.textT + ';' +
                           'margin-bottom:14px;">' +
-                  'Varun added you while you were away · 34 photos · 5 people' +
+                  'Varun added you while you were away · ' + TRIP_PHOTOS.length + ' photos · ' + (CG_PEOPLE.length + 1) + ' people' +
                 '</p>' +
 
                 /* Accept button */
@@ -5859,7 +5935,7 @@
       var o = '<div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;' + (albumPeopleExpanded ? 'flex-wrap:wrap;' : '') + '">';
 
       var allOn = !albumSelectedPerson;
-      o += '<button onclick="albumSelectedPerson=\'\';render()" style="display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;flex-shrink:0;">' +
+      o += '<button onclick="alSetPersonFilter(\'\')" style="display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;flex-shrink:0;">' +
              '<div style="width:44px;height:44px;border-radius:50%;background:' + (allOn ? T.blue : T.bgSub) + ';display:flex;align-items:center;justify-content:center;">' +
                '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="' + (allOn ? '#fff' : T.textT) + '" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>' +
              '</div>' +
@@ -5868,7 +5944,7 @@
 
       for (var i = 0; i < show.length; i++) {
         var p = show[i]; var on = (albumSelectedPerson === p.id);
-        o += '<button onclick="albumSelectedPerson=\'' + p.id + '\';render()" style="display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;flex-shrink:0;">' +
+        o += '<button onclick="alSetPersonFilter(\'' + p.id + '\')" style="display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;flex-shrink:0;">' +
                '<div style="width:44px;height:44px;border-radius:50%;background:' + p.bg + ';box-sizing:border-box;border:2.5px solid ' + (on ? T.blue : 'transparent') + ';display:flex;align-items:center;justify-content:center;">' +
                  '<span style="font-size:13px;font-weight:800;color:#fff;">' + p.id + '</span>' +
                '</div>' +
@@ -5877,14 +5953,14 @@
       }
 
       if (!albumPeopleExpanded) {
-        o += '<button onclick="albumPeopleExpanded=true;render()" style="display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;flex-shrink:0;">' +
+        o += '<button onclick="alTogglePeopleExpanded()" style="display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;flex-shrink:0;">' +
                '<div style="width:44px;height:44px;border-radius:50%;background:' + T.bgSub + ';display:flex;align-items:center;justify-content:center;">' +
                  '<span style="font-size:12px;font-weight:700;color:' + T.textS + ';">+' + (AL_PEOPLE.length - 4) + '</span>' +
                '</div>' +
                '<span style="font-size:10px;font-weight:600;color:' + T.textS + ';">More</span>' +
              '</button>';
       } else {
-        o += '<button onclick="albumPeopleExpanded=false;render()" style="display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;flex-shrink:0;">' +
+        o += '<button onclick="alTogglePeopleExpanded()" style="display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;flex-shrink:0;">' +
                '<div style="width:44px;height:44px;border-radius:50%;background:' + T.bgSub + ';display:flex;align-items:center;justify-content:center;">' +
                  '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="' + T.textT + '" stroke-width="2.5" stroke-linecap="round"><polyline points="18 15 12 9 6 15"/></svg>' +
                '</div>' +
@@ -5892,6 +5968,51 @@
              '</button>';
       }
       return o + '</div>';
+    }
+
+    /* In-place patch: person filter chip tap */
+    function alSetPersonFilter(id) {
+      albumSelectedPerson = id;
+      var row = document.getElementById('al-people-row');
+      if (row) row.innerHTML = alPeopleChips();
+      alRefreshList();
+    }
+
+    /* In-place patch: expand/collapse people row */
+    function alTogglePeopleExpanded() {
+      albumPeopleExpanded = !albumPeopleExpanded;
+      var row = document.getElementById('al-people-row');
+      if (row) row.innerHTML = alPeopleChips();
+    }
+
+    /* In-place patch: search bar toggle */
+    function alToggleSearch() {
+      albumSearchOpen = !albumSearchOpen;
+      var bar = document.getElementById('al-search-bar');
+      if (!bar) return;
+      if (albumSearchOpen) {
+        bar.innerHTML = (
+          '<div style="padding:8px 16px;background:' + T.bgWarm + ';">' +
+            '<div style="display:flex;align-items:center;gap:10px;height:38px;background:#fff;' +
+                        'border-radius:10px;padding:0 12px;box-shadow:0 1px 4px rgba(0,0,0,.06);">' +
+              '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="' + T.textT + '" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
+              '<input id="al-search" type="text" placeholder="Search albums, people, places…"' +
+                     ' value="' + albumSearchQuery + '"' +
+                     ' oninput="albumSearchQuery=this.value;alRefreshList()"' +
+                     ' style="flex:1;border:none;outline:none;background:none;font-family:inherit;font-size:13px;color:' + T.text + ';">' +
+            '</div>' +
+          '</div>'
+        );
+        /* Focus the input */
+        setTimeout(function(){ var inp=document.getElementById('al-search'); if(inp) inp.focus(); }, 50);
+      } else {
+        albumSearchQuery = '';
+        bar.innerHTML = '';
+        alRefreshList();
+      }
+      /* Update search icon colour */
+      var icon = document.getElementById('al-search-icon');
+      if (icon) icon.setAttribute('stroke', albumSearchOpen ? T.blue : T.text);
     }
 
     /* ── Filter helpers ── */
@@ -5942,7 +6063,7 @@
             fChip('sort','last-updated','Last Updated') +
             fChip('sort','alphabetical','Alphabetical')
           ) +
-          '<button onclick="var o=document.getElementById(\'al-filter-ov\');if(o)o.remove();render()" style="display:block;width:100%;height:46px;border-radius:12px;border:none;background:' + T.blue + ';color:#fff;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;margin-top:20px;">Apply Filters</button>' +
+          '<button onclick="(function(){var o=document.getElementById(\'al-filter-ov\');if(o)o.remove();alRefreshList();})()" style="display:block;width:100%;height:46px;border-radius:12px;border:none;background:' + T.blue + ';color:#fff;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;margin-top:20px;">Apply Filters</button>' +
         '</div>'
       );
       document.getElementById('phone').appendChild(ov);
@@ -5969,8 +6090,8 @@
 
           /* Top bar: search icon | logo | filter icon */
           '<div style="height:52px;background:' + T.bgWarm + ';display:flex;align-items:center;justify-content:space-between;padding:0 16px;flex-shrink:0;border-bottom:1px solid rgba(0,0,0,.04);">' +
-            '<button onclick="albumSearchOpen=!albumSearchOpen;render()" style="width:36px;height:36px;border:none;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;">' +
-              '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="' + (albumSearchOpen ? T.blue : T.text) + '" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
+            '<button onclick="alToggleSearch()" style="width:36px;height:36px;border:none;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;">' +
+              '<svg id="al-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="' + (albumSearchOpen ? T.blue : T.text) + '" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
             '</button>' +
             logo(20, 16) +
             '<button onclick="showAlbumFilterSheet()" style="width:36px;height:36px;border:none;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;">' +
@@ -5979,19 +6100,20 @@
             '</button>' +
           '</div>' +
 
-          /* Collapsible search bar */
-          (albumSearchOpen
-            ? '<div style="padding:8px 16px;background:' + T.bgWarm + ';flex-shrink:0;">' +
-                '<div style="display:flex;align-items:center;gap:10px;height:38px;background:#fff;border-radius:10px;padding:0 12px;box-shadow:0 1px 4px rgba(0,0,0,.06);">' +
-                  '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="' + T.textT + '" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
-                  '<input id="al-search" type="text" placeholder="Search albums, people, places…" value="' + albumSearchQuery + '" oninput="albumSearchQuery=this.value;alRefreshList()" style="flex:1;border:none;outline:none;background:none;font-family:inherit;font-size:13px;color:' + T.text + ';">' +
-                  (albumSearchQuery ? '<button onclick="albumSearchQuery=\'\';alRefreshList()" style="background:none;border:none;cursor:pointer;padding:0;display:flex;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="' + T.textT + '" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>' : '') +
-                '</div>' +
-              '</div>'
-            : '') +
+          /* Collapsible search bar — patched in-place by alToggleSearch() */
+          '<div id="al-search-bar" style="flex-shrink:0;">' +
+            (albumSearchOpen
+              ? '<div style="padding:8px 16px;background:' + T.bgWarm + ';">' +
+                  '<div style="display:flex;align-items:center;gap:10px;height:38px;background:#fff;border-radius:10px;padding:0 12px;box-shadow:0 1px 4px rgba(0,0,0,.06);">' +
+                    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="' + T.textT + '" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
+                    '<input id="al-search" type="text" placeholder="Search albums, people, places…" value="' + albumSearchQuery + '" oninput="albumSearchQuery=this.value;alRefreshList()" style="flex:1;border:none;outline:none;background:none;font-family:inherit;font-size:13px;color:' + T.text + ';">' +
+                  '</div>' +
+                '</div>'
+              : '') +
+          '</div>' +
 
-          /* People chips */
-          '<div style="padding:12px 16px 4px;flex-shrink:0;">' + alPeopleChips() + '</div>' +
+          /* People chips — patched in-place by alSetPersonFilter / alTogglePeopleExpanded */
+          '<div id="al-people-row" style="padding:12px 16px 4px;flex-shrink:0;">' + alPeopleChips() + '</div>' +
 
           /* Scrollable feed */
           '<div style="flex:1;overflow-y:auto;padding:12px 16px 24px;">' +
@@ -6019,10 +6141,25 @@
        Sets tagging state then navigates. Falls back to varun-tagging. */
     function deepLinkGo(cfg) {
       cfg = cfg || {};
+      /* Mark matching notification as read */
+      var cfgStr = JSON.stringify(cfg);
+      for (var i = 0; i < NOTIF_DATA.length; i++) {
+        if (JSON.stringify(NOTIF_DATA[i].deepLink) === cfgStr) {
+          NOTIF_DATA[i].read = true;
+          break;
+        }
+      }
       taggingOpenTab    = cfg.tab       || 'group';
       taggingCategory   = cfg.category  || '';
       taggingFaceFilter = cfg.face      || '';
       go(cfg.screen || 'varun-tagging');
+    }
+
+    /* Live unread count — derived from NOTIF_DATA, used by profile bell */
+    function unreadNotifCount() {
+      var n = 0;
+      for (var i = 0; i < NOTIF_DATA.length; i++) { if (!NOTIF_DATA[i].read) n++; }
+      return n;
     }
 
     /* ── Activity data — one array per trip key ── */
@@ -6253,7 +6390,7 @@
         var tab    = tabs[t];
         var active = notifTab === tab;
         tabsHTML += (
-          '<button onclick="notifTab=\'' + tab + '\';render()"' +
+          '<button id="ntab-' + tab + '" onclick="notifSetTab(\'' + tab + '\')"' +
                   ' style="height:32px;padding:0 14px;border-radius:20px;border:none;' +
                          'font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;' +
                          'white-space:nowrap;flex-shrink:0;' +
@@ -6318,11 +6455,11 @@
             '</div>' +
           '</div>' +
 
-          /* List */
+          /* List — patched in-place by notifSetTab() */
           '<div style="flex:1;overflow-y:auto;">' +
-            '<div style="background:#fff;margin:0 16px 24px;border-radius:20px;' +
+            '<div id="notif-list" style="background:#fff;margin:0 16px 24px;border-radius:20px;' +
                         'overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06);">' +
-              (listHTML || '<div style="padding:40px 20px;text-align:center;color:' + T.textT + ';font-size:13px;">You\'re all caught up.</div>') +
+              (listHTML || emptyState('✓', 'You\'re all caught up', 'No new notifications right now.', '', '')) +
             '</div>' +
           '</div>' +
 
@@ -6583,10 +6720,12 @@
                 '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>' +
                 '<path d="M13.73 21a2 2 0 0 1-3.46 0"/>' +
               '</svg>' +
-              /* Unread dot — derived from NOTIF_DATA */
-              '<div style="position:absolute;top:7px;right:7px;width:7px;height:7px;' +
-                          'border-radius:50%;background:' + T.alert + ';' +
-                          'border:1.5px solid ' + T.bgWarm + ';"></div>' +
+              /* Unread dot — live from NOTIF_DATA */
+              (unreadNotifCount() > 0
+                ? '<div style="position:absolute;top:7px;right:7px;width:7px;height:7px;' +
+                              'border-radius:50%;background:' + T.alert + ';' +
+                              'border:1.5px solid ' + T.bgWarm + ';"></div>'
+                : '') +
             '</button>' +
           '</div>' +
 
@@ -6690,7 +6829,7 @@
                         'overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06);">' +
               profileSectionRow(
                 '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
-                'Edit Profile', cfg.email, 'go(\'edit-profile\')'
+                'Edit Profile', 'Name, photo & contact details', 'go(\'edit-profile\')'
               ) +
               profileSectionRow(
                 '<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 12h8M12 8v8"/>',
@@ -6972,8 +7111,8 @@
             '<div style="background:#fff;border-radius:20px;margin:0 16px;' +
                         'overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06);">' +
               (isIdentified
-                ? (identifiedHTML || '<div style="padding:32px 20px;text-align:center;color:' + T.textT + ';font-size:13px;">No identified people yet</div>')
-                : (unknownHTML   || '<div style="padding:32px 20px;text-align:center;color:' + T.textT + ';font-size:13px;">No unknown faces — you\'re all caught up!</div>')) +
+                ? (identifiedHTML || emptyState('👤', 'No one identified yet', 'Tag faces in your trip photos and they\'ll appear here.', '', ''))
+                : (unknownHTML   || emptyState('🎉', 'No unknown faces', 'Every face in your photos has been identified — great work!', '', ''))) +
             '</div>' +
           '</div>' +
 
@@ -6983,73 +7122,142 @@
 
     /* ── screenSubscription ── */
     function screenSubscription() {
-      var cfg         = getProfileConfig();
-      /* selectedPlan global overrides the journey's default once user taps a plan */
-      var activePlan  = selectedPlan || cfg.plan.toLowerCase();
+      var cfg        = getProfileConfig();
+      var activePlan = selectedPlan || cfg.plan.toLowerCase();
 
+      /* Plans ordered Pro first — anchors on best value */
       var plans = [
-        { id:'free',  name:'Free',  price:'₹0',    period:'forever',   storage:'2 GB',
-          features:['Up to 5 trips', '2 GB storage', 'Basic face tagging'] },
-        { id:'pro',   name:'Pro',   price:'₹199',  period:'per month', storage:'10 GB',
-          features:['Unlimited trips', '10 GB storage', 'Advanced face tagging', 'Smart Memories', 'Priority support'] },
-        { id:'ultra', name:'Ultra', price:'₹499',  period:'per month', storage:'100 GB',
-          features:['Everything in Pro', '100 GB storage', 'Family sharing (5 members)', 'RAW photo support', 'Offline access'] },
+        {
+          id:'pro', name:'Pro', price:'₹199', period:'/ month',
+          badge:'Most Popular',
+          tagline:'Perfect for trip enthusiasts',
+          features:[
+            { text:'Unlimited trips',            included:true  },
+            { text:'10 GB storage',               included:true  },
+            { text:'Advanced face tagging',       included:true  },
+            { text:'Smart Memories & reels',      included:true  },
+            { text:'Priority support',            included:true  },
+            { text:'Family sharing',              included:false },
+            { text:'RAW photo support',           included:false },
+          ],
+          cta:'Start 7-day free trial',
+        },
+        {
+          id:'ultra', name:'Ultra', price:'₹499', period:'/ month',
+          badge:null,
+          tagline:'For families & power users',
+          features:[
+            { text:'Everything in Pro',           included:true  },
+            { text:'100 GB storage',              included:true  },
+            { text:'Family sharing (5 members)',  included:true  },
+            { text:'RAW photo support',           included:true  },
+            { text:'Offline access',              included:true  },
+          ],
+          cta:'Get Ultra',
+        },
+        {
+          id:'free', name:'Free', price:'₹0', period:'forever',
+          badge:null,
+          tagline:'Just getting started',
+          features:[
+            { text:'Up to 5 trips',               included:true  },
+            { text:'2 GB storage',                included:true  },
+            { text:'Basic face tagging',          included:true  },
+            { text:'Smart Memories & reels',      included:false },
+            { text:'Priority support',            included:false },
+          ],
+          cta:'Continue with Free',
+        },
       ];
 
       var plansHTML = '';
       for (var i = 0; i < plans.length; i++) {
-        var plan        = plans[i];
-        var isCurrent   = plan.id === activePlan;
-        var isHighlight = plan.id === 'pro';
-        /* Selected but not yet "confirmed" = show with blue ring even for free/ultra */
-        var ringColor   = isCurrent ? T.blue : (isHighlight ? T.blueBdr : T.bgSub);
+        var plan      = plans[i];
+        var isActive  = plan.id === activePlan;
+        var isPro     = plan.id === 'pro';
 
-        var featuresHTML = '';
+        var borderColor = isActive ? T.blue : (isPro ? T.blueBdr : T.bgSub);
+        var cardBg      = isActive ? T.blueTint : (isPro ? '#FAFBFF' : '#fff');
+        var borderWidth = isPro ? '2px' : '1.5px';
+
+        var featHTML = '';
         for (var f = 0; f < plan.features.length; f++) {
-          featuresHTML += (
-            '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">' +
-              '<svg width="14" height="14" viewBox="0 0 24 24" fill="none"' +
-                   ' stroke="' + (isCurrent ? T.blue : (isHighlight ? T.blue : T.ok)) + '" stroke-width="2.5" stroke-linecap="round">' +
-                '<polyline points="20 6 9 17 4 12"/>' +
-              '</svg>' +
-              '<span style="font-size:13px;color:' + T.text + ';">' + plan.features[f] + '</span>' +
+          var feat = plan.features[f];
+          featHTML += (
+            '<div style="display:flex;align-items:center;gap:10px;margin-bottom:9px;">' +
+              '<div style="width:18px;height:18px;border-radius:50%;flex-shrink:0;' +
+                          'background:' + (feat.included ? (isActive ? T.blue : T.ok) : T.bgSub) + ';' +
+                          'display:flex;align-items:center;justify-content:center;">' +
+                '<svg width="10" height="10" viewBox="0 0 24 24" fill="none"' +
+                     ' stroke="' + (feat.included ? '#fff' : T.textT) + '"' +
+                     ' stroke-width="3" stroke-linecap="round">' +
+                  (feat.included
+                    ? '<polyline points="20 6 9 17 4 12"/>'
+                    : '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>') +
+                '</svg>' +
+              '</div>' +
+              '<span style="font-size:13px;font-weight:' + (feat.included ? '500' : '400') + ';' +
+                           'color:' + (feat.included ? T.text : T.textT) + ';">' +
+                feat.text +
+              '</span>' +
             '</div>'
           );
         }
 
         plansHTML += (
           '<div onclick="selectedPlan=\'' + plan.id + '\';render()"' +
-               ' style="border-radius:18px;overflow:hidden;margin-bottom:12px;cursor:pointer;' +
-                      'border:2px solid ' + ringColor + ';' +
-                      'background:' + (isCurrent ? T.blueTint : '#fff') + ';' +
-                      'transition:border-color .15s,background .15s;">' +
-            '<div style="padding:18px 20px;">' +
-              '<div style="display:flex;align-items:center;justify-content:space-between;' +
-                          'margin-bottom:4px;">' +
+               ' style="border-radius:20px;margin-bottom:12px;cursor:pointer;' +
+                      'border:' + borderWidth + ' solid ' + borderColor + ';' +
+                      'background:' + cardBg + ';' +
+                      'transition:border-color .15s,background .15s;' +
+                      'overflow:hidden;">' +
+
+            /* Top accent bar for Pro */
+            (isPro
+              ? '<div style="height:3px;background:linear-gradient(90deg,' + T.blue + ',#6B8EF5);"></div>'
+              : '') +
+
+            '<div style="padding:18px 20px 20px;">' +
+
+              /* Name row */
+              '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">' +
                 '<div style="display:flex;align-items:center;gap:8px;">' +
-                  '<span style="font-size:17px;font-weight:800;color:' + T.text + ';">' + plan.name + '</span>' +
-                  (isCurrent
-                    ? '<span style="height:20px;padding:0 8px;border-radius:10px;' +
+                  '<span style="font-size:18px;font-weight:800;color:' + T.text + ';">' + plan.name + '</span>' +
+                  (plan.badge
+                    ? '<span style="height:20px;padding:0 9px;border-radius:10px;' +
                              'background:' + T.blue + ';color:#fff;' +
+                             'font-size:10px;font-weight:700;letter-spacing:0.03em;' +
+                             'display:inline-flex;align-items:center;">' + plan.badge + '</span>'
+                    : '') +
+                  (isActive && !plan.badge
+                    ? '<span style="height:20px;padding:0 9px;border-radius:10px;' +
+                             'background:' + T.blueTint + ';color:' + T.blue + ';' +
                              'font-size:10px;font-weight:700;' +
-                             'display:inline-flex;align-items:center;">Selected</span>'
+                             'display:inline-flex;align-items:center;">Current</span>'
                     : '') +
                 '</div>' +
                 '<div style="text-align:right;">' +
-                  '<span style="font-size:20px;font-weight:800;color:' + T.text + ';">' + plan.price + '</span>' +
-                  '<span style="font-size:11px;color:' + T.textS + ';"> / ' + plan.period + '</span>' +
+                  '<span style="font-size:22px;font-weight:800;color:' + T.text + ';letter-spacing:-0.5px;">' + plan.price + '</span>' +
+                  '<span style="font-size:11px;color:' + T.textS + ';"> ' + plan.period + '</span>' +
                 '</div>' +
               '</div>' +
-              '<div style="margin-bottom:' + (isCurrent ? '14px' : '4px') + ';">' + featuresHTML + '</div>' +
-              (isCurrent
-                ? '<button onclick="event.stopPropagation();showToast(\'' + plan.name + ' plan confirmed ✓\')"' +
-                         ' style="display:block;width:100%;height:42px;border-radius:12px;border:none;' +
-                                'background:' + T.blue + ';color:#fff;' +
-                                'font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;' +
-                                'box-shadow:0 4px 14px rgba(27,79,216,.28);">' +
-                    (plan.id === 'free' ? 'Continue with Free' : 'Confirm ' + plan.name) +
-                  '</button>'
-                : '') +
+
+              /* Tagline */
+              '<p style="font-size:12px;color:' + T.textS + ';margin-bottom:16px;">' + plan.tagline + '</p>' +
+
+              /* Features */
+              '<div style="margin-bottom:18px;">' + featHTML + '</div>' +
+
+              /* CTA */
+              '<button onclick="event.stopPropagation();selectedPlan=\'' + plan.id + '\';showToast(\'' + plan.name + ' plan activated ✓\')"' +
+                      ' style="display:block;width:100%;height:44px;border-radius:12px;border:none;' +
+                             'font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;' +
+                             'background:' + (isActive ? T.blue : (isPro ? T.blue : T.bgSub)) + ';' +
+                             'color:' + (isActive || isPro ? '#fff' : T.textS) + ';' +
+                             (isActive || isPro ? 'box-shadow:0 4px 14px rgba(27,79,216,.22);' : '') + '">' +
+                plan.cta +
+              '</button>' +
+
             '</div>' +
           '</div>'
         );
@@ -7060,26 +7268,38 @@
              ' style="position:absolute;inset:0;display:flex;flex-direction:column;' +
                     'background:' + T.bgWarm + ';overflow:hidden;">' +
 
-          /* Header */
-          '<div style="padding:16px 20px;display:flex;align-items:center;gap:14px;flex-shrink:0;">' +
-            '<button onclick="go(\'profile\')"' +
-                    ' style="width:34px;height:34px;border-radius:10px;border:none;' +
-                           'background:#fff;cursor:pointer;display:flex;' +
-                           'align-items:center;justify-content:center;' +
-                           'box-shadow:0 1px 6px rgba(0,0,0,.08);">' +
-              '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"' +
-                   ' stroke="' + T.text + '" stroke-width="2.5" stroke-linecap="round">' +
-                '<polyline points="15 18 9 12 15 6"/>' +
-              '</svg>' +
-            '</button>' +
-            '<span style="font-size:18px;font-weight:800;color:' + T.text + ';">Subscription</span>' +
+          switchPill() +
+          sbar(T.bgWarm) +
+          screenHeader('Subscription', 'profile') +
+
+          /* Social proof strip */
+          '<div style="margin:0 16px 4px;padding:10px 14px;border-radius:12px;' +
+                      'background:#fff;display:flex;align-items:center;gap:10px;' +
+                      'box-shadow:0 1px 6px rgba(0,0,0,.05);flex-shrink:0;">' +
+            '<div style="display:flex;margin-right:2px;">' +
+              '<div style="width:24px;height:24px;border-radius:50%;border:1.5px solid #fff;' +
+                          'background:linear-gradient(135deg,#E65100,#FF8F00);' +
+                          'font-size:9px;font-weight:700;color:#fff;' +
+                          'display:flex;align-items:center;justify-content:center;">MA</div>' +
+              '<div style="width:24px;height:24px;border-radius:50%;border:1.5px solid #fff;margin-left:-8px;' +
+                          'background:linear-gradient(135deg,#1B5E20,#388E3C);' +
+                          'font-size:9px;font-weight:700;color:#fff;' +
+                          'display:flex;align-items:center;justify-content:center;">KA</div>' +
+              '<div style="width:24px;height:24px;border-radius:50%;border:1.5px solid #fff;margin-left:-8px;' +
+                          'background:linear-gradient(135deg,#4A148C,#7B1FA2);' +
+                          'font-size:9px;font-weight:700;color:#fff;' +
+                          'display:flex;align-items:center;justify-content:center;">VI</div>' +
+            '</div>' +
+            '<p style="font-size:12px;color:' + T.textS + ';line-height:1.4;margin:0;">' +
+              '<strong style="color:' + T.text + ';">2,400+ users</strong> preserve their memories with PixSlay Pro' +
+            '</p>' +
           '</div>' +
 
           /* Plans */
-          '<div style="flex:1;overflow-y:auto;padding:8px 16px 32px;">' +
+          '<div style="flex:1;overflow-y:auto;padding:12px 16px 32px;">' +
             plansHTML +
-            '<p style="text-align:center;font-size:11px;color:' + T.textT + ';margin-top:4px;">' +
-              'Billed monthly. Cancel anytime. Prices in INR.' +
+            '<p style="text-align:center;font-size:11px;color:' + T.textT + ';margin-top:4px;line-height:1.6;">' +
+              'Billed monthly · Cancel anytime · Prices in INR incl. taxes' +
             '</p>' +
           '</div>' +
 
@@ -7292,18 +7512,41 @@
     ───────────────────────────────────────────────────── */
     function render() {
       var phone = document.getElementById('phone');
-      var old   = phone.querySelector('.screen');
-      if (old) old.remove();
-
-      var fn = SCREEN_MAP[state.screen];
+      var fn    = SCREEN_MAP[state.screen];
       if (!fn) { state.screen = 'entry'; render(); return; }
 
+      /* Build new screen at opacity 0 before old one leaves */
       var tmp = document.createElement('div');
       tmp.innerHTML = fn();
-      var screen = tmp.firstElementChild;
-      phone.appendChild(screen);
+      var newScreen = tmp.firstElementChild;
+      newScreen.style.opacity    = '0';
+      newScreen.style.transition = 'opacity .15s ease';
 
-      postRender();
+      var old = phone.querySelector('.screen');
+      if (old) {
+        /* Fade old screen out */
+        old.style.transition = 'opacity .1s ease';
+        old.style.opacity    = '0';
+        setTimeout(function () {
+          if (old.parentNode) old.remove();
+          phone.appendChild(newScreen);
+          /* Fade new screen in */
+          requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+              newScreen.style.opacity = '1';
+            });
+          });
+          postRender();
+        }, 100);
+      } else {
+        phone.appendChild(newScreen);
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            newScreen.style.opacity = '1';
+          });
+        });
+        postRender();
+      }
     }
 
     /* ─────────────────────────────────────────────────────
@@ -7392,6 +7635,16 @@
        BOOT
     ───────────────────────────────────────────────────── */
     render();
+  </script>
+
+  <!-- PWA: service worker registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/service-worker.js')
+          .catch(function(err) { console.warn('SW registration failed:', err); });
+      });
+    }
   </script>
 </body>
 </html>
