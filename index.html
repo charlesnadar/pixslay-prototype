@@ -137,16 +137,23 @@
                window.navigator.standalone === true;
       }
 
-      /* ── Safe-top: status-bar height derived from screen vs viewport gap ── */
+      /* ── Safe-top: only needed as a fallback for Android builds where
+         env(safe-area-inset-top) is defined but returns 0 even when content
+         goes behind the status bar. screen.height is already in CSS pixels —
+         do NOT divide by dpr (that was a bug causing 844/3=281 on iPhone 13). ── */
       function measureSafeTop() {
         if (!isMobile()) return;
-        var h = window.innerHeight;
+        var h       = window.innerHeight;
         if (h < 100) return;
-        var dpr     = window.devicePixelRatio || 1;
-        var screenH = Math.round(window.screen.height / dpr);
+        var screenH = window.screen.height; /* CSS pixels, not physical */
         var gap     = screenH - h;
-        if (gap >= 20 && gap <= 80) {
-          document.documentElement.style.setProperty('--safe-top', gap + 'px');
+        /* Only set if the gap is tiny (≤5px) — meaning content IS behind the
+           status bar (full-bleed) and env() appears broken. On iOS the gap is
+           ~47px (status bar excluded from viewport) so we leave env() alone. */
+        if (gap >= 0 && gap <= 5) {
+          /* Full-bleed: content goes under status bar. If env() is 0, use
+             a safe Android fallback so content doesn't hide under the bar. */
+          document.documentElement.style.setProperty('--safe-top', '24px');
         }
       }
 
@@ -373,17 +380,14 @@
       bg = bg || '#fff';
 
       /* PWA / real mobile: safe-area spacer that clears the real status bar.
-         Priority: --safe-top (JS-measured gap) → env(safe-area-inset-top) → 44px fallback.
-         The 44px fallback is intentionally generous — better to have a little
-         extra breathing room than to have content hide behind the clock. */
+         Use env(safe-area-inset-top) directly — the browser knows best:
+         • If viewport starts BELOW the status bar → env() = 0 → no spacer (correct)
+         • If viewport goes UNDER the status bar → env() = 47px etc (correct)
+         Removing the old 52px hardcoded minimum which caused excess padding. */
       if (IS_PWA) {
-        /* max() ensures we ALWAYS get at least 52px even when
-           env(safe-area-inset-top) is defined but returns 0 (many Android/iOS
-           devices define the property yet give 0 for non-notch screens).
-           On notched iPhones env() returns 47-59px which max() preserves. */
         return (
           '<div style="' +
-            'height:max(var(--safe-top,0px),env(safe-area-inset-top,0px),52px);' +
+            'height:env(safe-area-inset-top,0px);' +
             'background:' + bg + ';' +
             'flex-shrink:0;">' +
           '</div>'
@@ -1137,7 +1141,7 @@
             '<p onclick="_vTap()" style="text-align:center;font-size:10px;font-weight:500;' +
                       'color:' + T.textT + ';margin-top:8px;letter-spacing:.04em;' +
                       'padding:8px 0;cursor:default;">' +
-              'v14' +
+              'v15' +
             '</p>' +
 
           '</div>' +
