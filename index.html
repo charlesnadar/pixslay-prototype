@@ -282,7 +282,8 @@
     ───────────────────────────────────────────────────── */
     var IS_PWA = (
       window.matchMedia('(display-mode: standalone)').matches ||
-      window.navigator.standalone === true  /* iOS Safari PWA */
+      window.navigator.standalone === true ||   /* iOS Safari PWA */
+      window.matchMedia('(max-width: 500px)').matches /* real phone — never show fake bar */
     );
 
     function sbar(bg) {
