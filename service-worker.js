@@ -2,7 +2,7 @@
    Bump CACHE_VERSION when you push significant updates.
    Installed users will get the fresh version on next open. */
 
-var CACHE_VERSION = 'pixslay-v23';
+var CACHE_VERSION = 'pixslay-v24';
 
 var APP_SHELL = [
   '/',
