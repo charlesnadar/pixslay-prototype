@@ -3325,9 +3325,64 @@
       if (navEl) navEl.style.display = 'none';
 
       var ctaWrap = document.getElementById('tagging-share-bottom');
-      var cta     = document.getElementById('tagging-share-cta');
-      if (ctaWrap && cta) {
-        cta.textContent = 'Share ' + taggingSelected.length + (taggingSelected.length !== 1 ? ' photos' : ' photo') + ' to group  →';
+      var inner   = document.getElementById('tagging-share-inner');
+      if (ctaWrap && inner) {
+        var n    = taggingSelected.length;
+        var nTxt = n + (n !== 1 ? ' photos' : ' photo');
+        /* SVG helpers */
+        var svgSave = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none"' +
+                          ' stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                        '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>' +
+                        '<polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>' +
+                      '</svg>';
+        var svgShare = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none"' +
+                           ' stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                         '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>' +
+                         '<line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>' +
+                         '<line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>' +
+                       '</svg>';
+        var secBtn = 'flex:1;height:40px;border-radius:10px;border:none;background:#F1F5F9;' +
+                     'color:#475569;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;' +
+                     'display:flex;align-items:center;justify-content:center;gap:6px;';
+
+        if (taggingTab === 'group') {
+          /* Group tab — photos already shared; primary = external share */
+          inner.innerHTML = (
+            '<button onclick="taggingExternalShare()"' +
+                    ' style="display:block;width:100%;height:46px;border-radius:12px;border:none;' +
+                           'background:#0F172A;color:#fff;font-family:inherit;' +
+                           'font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px;' +
+                           'display:flex;align-items:center;justify-content:center;gap:8px;">' +
+              svgShare.replace('stroke="currentColor"','stroke="#fff"') +
+              'Share externally' +
+            '</button>' +
+            '<button onclick="taggingSaveSelectedPhotos()"' +
+                    ' style="' + secBtn + 'width:100%;">' +
+              svgSave +
+              'Save to device' +
+            '</button>'
+          );
+        } else {
+          /* My photos tab — primary = share to group */
+          inner.innerHTML = (
+            '<button id="tagging-share-cta" onclick="taggingGoShareRecipients()"' +
+                    ' style="display:block;width:100%;height:46px;border-radius:12px;border:none;' +
+                           'background:#1B4FD8;color:#fff;font-family:inherit;' +
+                           'font-size:15px;font-weight:700;cursor:pointer;letter-spacing:-.2px;' +
+                           'box-shadow:0 3px 14px rgba(27,79,216,.32);margin-bottom:10px;">' +
+              'Share ' + nTxt + ' to group  →' +
+            '</button>' +
+            '<div style="display:flex;gap:8px;">' +
+              '<button onclick="taggingSaveSelectedPhotos()" style="' + secBtn + '">' +
+                svgSave + 'Save' +
+              '</button>' +
+              '<button onclick="taggingExternalShare()" style="' + secBtn + '">' +
+                svgShare + 'Share externally' +
+              '</button>' +
+            '</div>'
+          );
+        }
+
         ctaWrap.style.display = 'block';
         setTimeout(function () {
           ctaWrap.style.opacity = '1';
@@ -3695,6 +3750,8 @@
         myHTML += '</div>';
         grid.innerHTML = myHTML;
       }
+      /* If already in select mode, refresh the CTA bar for the new tab context */
+      if (taggingSelectMode && taggingSelected.length) taggingRefreshSelectionUI();
     }
 
     /* ─── three-dot menu (group screen only) ─── */
@@ -5129,47 +5186,15 @@
                     '</div>')) +
           '</div>' +
 
-          /* ── share bottom bar — floating selection CTA ── */
+          /* ── share bottom bar — populated by taggingRefreshSelectionUI ── */
           '<div id="tagging-share-bottom"' +
                ' style="position:absolute;left:0;right:0;bottom:0;' +
                       'display:none;z-index:220;pointer-events:auto;' +
                       'opacity:0;transform:translateY(16px);' +
                       'transition:transform .24s cubic-bezier(0.22,0.1,0.15,1),opacity .18s;">' +
-            '<div style="background:#fff;' +
-                        'border-top:0.5px solid rgba(0,0,0,.1);' +
+            '<div id="tagging-share-inner"' +
+                 ' style="background:#fff;border-top:0.5px solid rgba(0,0,0,.08);' +
                         'padding:12px 16px calc(env(safe-area-inset-bottom,16px) + 12px);">' +
-
-              /* Primary CTA — share to group */
-              '<button id="tagging-share-cta"' +
-                      ' onclick="taggingGoShareRecipients()"' +
-                      ' style="display:block;width:100%;height:46px;border-radius:12px;border:none;' +
-                             'background:' + T.blue + ';color:#fff;' +
-                             'font-family:inherit;font-size:15px;font-weight:700;' +
-                             'cursor:pointer;letter-spacing:-.2px;' +
-                             'box-shadow:0 3px 14px rgba(27,79,216,.32);' +
-                             'margin-bottom:10px;">' +
-                'Share 0 photos to group  →' +
-              '</button>' +
-
-              /* Secondary row — Save + Share externally */
-              '<div style="display:flex;gap:8px;">' +
-                '<button id="tagging-save-cta"' +
-                        ' onclick="taggingSaveSelectedPhotos()"' +
-                        ' style="flex:1;height:40px;border-radius:10px;border:none;' +
-                               'background:#F1F5F9;color:' + T.textS + ';' +
-                               'font-family:inherit;font-size:13px;font-weight:600;' +
-                               'cursor:pointer;">' +
-                  '⬇ Save' +
-                '</button>' +
-                '<button onclick="taggingExternalShare()"' +
-                        ' style="flex:1;height:40px;border-radius:10px;border:none;' +
-                               'background:#F1F5F9;color:' + T.textS + ';' +
-                               'font-family:inherit;font-size:13px;font-weight:600;' +
-                               'cursor:pointer;">' +
-                  '↗ Share externally' +
-                '</button>' +
-              '</div>' +
-
             '</div>' +
 
           '<div id="tagging-nav-bar">' + navBar('home') + '</div>' +
