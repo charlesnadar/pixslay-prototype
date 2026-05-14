@@ -1019,7 +1019,7 @@
           '<div style="flex:1;overflow-y:auto;padding:24px 20px 32px;">' +
 
             /* Logo centred, heading left-aligned */
-            '<div style="margin-bottom:24px;padding-top:8px;">' +
+            '<div style="margin-bottom:20px;padding-top:8px;">' +
               '<div style="text-align:center;margin-bottom:16px;">' + logo(36, 26) + '</div>' +
               '<p style="font-size:20px;font-weight:800;color:' + T.text + ';margin-bottom:2px;">' +
                 'Choose a journey' +
@@ -1027,11 +1027,48 @@
               '<p style="font-size:13px;font-weight:400;color:' + T.textS + ';">to explore</p>' +
             '</div>' +
 
+            /* Before you start — notes + refresh button */
+            '<div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:14px;' +
+                        'padding:14px 16px 16px;margin-bottom:20px;">' +
+
+              '<p style="font-size:11px;font-weight:700;color:#92400E;' +
+                        'letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;">' +
+                '📋 Before you start' +
+              '</p>' +
+
+              '<div style="display:flex;gap:8px;margin-bottom:8px;">' +
+                '<span style="font-size:14px;flex-shrink:0;">🔄</span>' +
+                '<p style="font-size:12px;font-weight:400;color:#78350F;line-height:1.5;margin:0;">' +
+                  '<strong style="font-weight:600;">Refresh button below</strong> — tap it until it turns green. ' +
+                  'Green means you\'re on the latest version.' +
+                '</p>' +
+              '</div>' +
+
+              '<div style="display:flex;gap:8px;margin-bottom:14px;">' +
+                '<span style="font-size:14px;flex-shrink:0;">🔀</span>' +
+                '<p style="font-size:12px;font-weight:400;color:#78350F;line-height:1.5;margin:0;">' +
+                  '<strong style="font-weight:600;">To switch between journeys</strong> — tap the PixSlay logo at any time, even mid-journey.' +
+                '</p>' +
+              '</div>' +
+
+              /* Refresh button */
+              '<button id="_refresh-btn" onclick="doRefresh()"' +
+                ' style="display:flex;align-items:center;justify-content:center;gap:8px;' +
+                        'width:100%;height:44px;border:none;border-radius:10px;cursor:pointer;' +
+                        'font-family:inherit;font-size:13px;font-weight:700;' +
+                        'background:' + (sessionStorage.getItem('_refreshed') === '1' ? T.ok : T.alert) + ';' +
+                        'color:#fff;transition:background .3s;">' +
+                '<span style="font-size:16px;">' + (sessionStorage.getItem('_refreshed') === '1' ? '✓' : '↻') + '</span>' +
+                (sessionStorage.getItem('_refreshed') === '1' ? 'You\'re on the latest version' : 'Tap to check for latest version') +
+              '</button>' +
+
+            '</div>' +
+
             cardsHTML +
 
             '<p style="text-align:center;font-size:10px;font-weight:500;' +
                       'color:' + T.textT + ';margin-top:8px;letter-spacing:.04em;">' +
-              'v26' +
+              'v27' +
             '</p>' +
 
           '</div>' +
@@ -7722,6 +7759,31 @@
         }
       });
     }());
+
+    /* ─────────────────────────────────────────────────────
+       REFRESH CHECK
+       Red button on entry screen → tapping forces SW update + reload.
+       After reload, sessionStorage flag makes button render green.
+    ───────────────────────────────────────────────────── */
+    function doRefresh() {
+      var btn = document.getElementById('_refresh-btn');
+      if (btn) {
+        btn.style.background = '#888';
+        btn.innerHTML = '<span style="font-size:16px;">↻</span> Checking…';
+      }
+      function afterCheck() {
+        sessionStorage.setItem('_refreshed', '1');
+        setTimeout(function() { location.reload(); }, 600);
+      }
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistration('/').then(function(reg) {
+          if (reg) { reg.update().then(afterCheck).catch(afterCheck); }
+          else { afterCheck(); }
+        }).catch(afterCheck);
+      } else {
+        afterCheck();
+      }
+    }
 
     /* ─────────────────────────────────────────────────────
        BOOT
