@@ -1098,7 +1098,7 @@
                         'background:' + (sessionStorage.getItem('_refreshed') === '1' ? T.ok : T.alert) + ';' +
                         'color:#fff;transition:background .3s;">' +
                 '<span style="font-size:16px;">' + (sessionStorage.getItem('_refreshed') === '1' ? '✓' : '↻') + '</span>' +
-                (sessionStorage.getItem('_refreshed') === '1' ? 'You\'re on the latest version · v71' : 'Update available · tap to get v71') +
+                (sessionStorage.getItem('_refreshed') === '1' ? 'You\'re on the latest version · v74' : 'Update available · tap to get v74') +
               '</button>' +
 
             '</div>' +
@@ -1115,7 +1115,7 @@
 
             '<p style="text-align:center;font-size:10px;font-weight:500;' +
                       'color:' + T.textT + ';margin-top:8px;letter-spacing:.04em;">' +
-              'v71' +
+              'v74' +
             '</p>' +
 
           '</div>' +
@@ -4153,67 +4153,95 @@
       );
     }
 
-    /* ─── inline filter strip injected every 9 photos in the grid ─── */
-    function inlineFilterStrip() {
-      /* Compact person chips */
+    /* ─── inline filter strip — contextual, based on the next batch of photos ─── */
+    /* contextPhotos: the 9 photos that follow this strip in the grid            */
+    function inlineFilterStrip(contextPhotos) {
+      /* ── Find top-2 contributors in this batch ── */
+      var byCounts = {};
+      for (var bi = 0; bi < contextPhotos.length; bi++) {
+        var byId = contextPhotos[bi].by;
+        byCounts[byId] = (byCounts[byId] || 0) + 1;
+      }
+      /* Sort by count desc, take top 2 */
+      var byKeys = Object.keys(byCounts).sort(function(a,b){ return byCounts[b]-byCounts[a]; });
+      var top2By = byKeys.slice(0, 2);
+
+      /* ── Find top-2 scenes in this batch → map to CAT_PILLS ── */
+      var sceneCounts = {};
+      for (var si2 = 0; si2 < contextPhotos.length; si2++) {
+        var sc = contextPhotos[si2].scene;
+        sceneCounts[sc] = (sceneCounts[sc] || 0) + 1;
+      }
+      var scKeys = Object.keys(sceneCounts).sort(function(a,b){ return sceneCounts[b]-sceneCounts[a]; });
+      var top2Scenes = scKeys.slice(0, 2);
+
+      /* Scene → CAT_PILLS lookup */
+      var CAT_SCENE_MAP2 = {
+        bonfire:'Bonfire', forest:'Forest', lake:'Lake', night:'Night',
+        waterfall:'Waterfall', food:'Food', selfie:'Selfies', travel:'Travel', group:'Group'
+      };
+      var catLookup = {};
+      for (var cli = 0; cli < CAT_PILLS.length; cli++) catLookup[CAT_PILLS[cli].cat] = CAT_PILLS[cli];
+
+      /* ── Build people chips (top 2 only) ── */
       var pChips = '';
-      for (var ip = 0; ip < AL_PEOPLE.length; ip++) {
-        var p = AL_PEOPLE[ip];
-        var on = (taggingFaceFilter === p.id);
+      /* People map for quick lookup */
+      var pMap = {};
+      for (var pm = 0; pm < AL_PEOPLE.length; pm++) pMap[AL_PEOPLE[pm].id] = AL_PEOPLE[pm];
+
+      for (var ti = 0; ti < top2By.length; ti++) {
+        var pid = top2By[ti];
+        var person = pMap[pid];
+        if (!person) continue;
+        var on = (taggingFaceFilter === pid);
         pChips += (
-          '<div onclick="taggingSetFace(\'' + p.id + '\')"' +
+          '<div onclick="taggingSetFace(\'' + pid + '\')"' +
                ' style="width:30px;height:30px;border-radius:50%;' +
-                       'background:' + p.bg + ';' +
+                       'background:' + person.bg + ';' +
                        'display:flex;align-items:center;justify-content:center;' +
                        'cursor:pointer;flex-shrink:0;' +
                        'font-size:10px;font-weight:800;color:#fff;' +
                        'box-shadow:' + (on ? '0 0 0 2.5px ' + T.blue + ',0 0 0 4px rgba(27,79,216,.2)' : 'none') + ';' +
-                       'opacity:' + (!taggingFaceFilter || on ? '1' : '0.4') + ';">' +
-            p.id +
+                       'opacity:' + (!taggingFaceFilter || on ? '1' : '0.45') + ';">' +
+            pid +
           '</div>'
         );
       }
-      /* Category pills */
+
+      /* ── Build category pills (top 2 scenes only) ── */
       var cPills = '';
-      for (var ic = 0; ic < CAT_PILLS.length; ic++) {
-        var cp = CAT_PILLS[ic];
-        if (!cp.count) continue;
-        var cOn = (taggingCategory === cp.cat);
+      for (var tci = 0; tci < top2Scenes.length; tci++) {
+        var catName = CAT_SCENE_MAP2[top2Scenes[tci]];
+        var cp2 = catLookup[catName];
+        if (!cp2) continue;
+        var cOn = (taggingCategory === cp2.cat);
         cPills += (
-          '<div onclick="taggingSetCategory(\'' + cp.cat + '\')"' +
+          '<div onclick="taggingSetCategory(\'' + cp2.cat + '\')"' +
                ' style="display:inline-flex;align-items:center;gap:3px;' +
                        'height:26px;padding:0 9px;' +
                        'border-radius:13px;flex-shrink:0;cursor:pointer;' +
-                       'background:' + (cOn ? cp.bg : 'rgba(0,0,0,.06)') + ';' +
-                       'border:1.5px solid ' + (cOn ? cp.clr : 'transparent') + ';">' +
-            '<span style="font-size:12px;line-height:1;">' + cp.emoji + '</span>' +
-            '<span style="font-size:11px;font-weight:600;color:' + (cOn ? cp.clr : T.textS) + ';">' + cp.cat + '</span>' +
+                       'background:' + (cOn ? cp2.bg : 'rgba(0,0,0,.06)') + ';' +
+                       'border:1.5px solid ' + (cOn ? cp2.clr : 'transparent') + ';">' +
+            '<span style="font-size:12px;line-height:1;">' + cp2.emoji + '</span>' +
+            '<span style="font-size:11px;font-weight:600;color:' + (cOn ? cp2.clr : T.textS) + ';">' + cp2.cat + '</span>' +
           '</div>'
         );
       }
+
       return (
-        '<div style="grid-column:1/-1;background:#F7F6F4;' +
-                    'padding:8px 12px;margin:2px 0;">' +
+        '<div style="grid-column:1/-1;background:#F7F6F4;padding:8px 12px;margin:2px 0;">' +
           '<div class="hscroll"' +
                ' style="display:flex;align-items:center;gap:8px;overflow-x:auto;">' +
-            /* ALL circle */
-            '<div onclick="taggingSetFace(\'\')"' +
-                 ' style="width:30px;height:30px;border-radius:50%;' +
-                         'background:' + (!taggingFaceFilter ? T.blue : T.bgSub) + ';' +
-                         'display:flex;align-items:center;justify-content:center;' +
-                         'cursor:pointer;flex-shrink:0;">' +
-              '<svg width="13" height="13" viewBox="0 0 24 24" fill="none"' +
-                   ' stroke="' + (!taggingFaceFilter ? '#fff' : T.textS) + '"' +
-                   ' stroke-width="2.2" stroke-linecap="round">' +
-                '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>' +
-                '<circle cx="9" cy="7" r="4"/>' +
-                '<path d="M23 21v-2a4 4 0 0 0-3-3.87"/>' +
-                '<path d="M16 3.13a4 4 0 0 1 0 7.75"/>' +
-              '</svg>' +
-            '</div>' +
+            /* Small "filter" label */
+            '<span style="font-size:10px;font-weight:600;color:' + T.textT + ';' +
+                         'letter-spacing:.04em;text-transform:uppercase;flex-shrink:0;">' +
+              'Filter' +
+            '</span>' +
+            '<div style="width:1px;height:16px;background:rgba(0,0,0,.1);flex-shrink:0;"></div>' +
             pChips +
-            /* Slim divider */
-            '<div style="width:1px;height:18px;background:rgba(0,0,0,.12);flex-shrink:0;"></div>' +
+            (pChips && cPills
+              ? '<div style="width:1px;height:16px;background:rgba(0,0,0,.1);flex-shrink:0;"></div>'
+              : '') +
             cPills +
           '</div>' +
         '</div>'
@@ -4407,7 +4435,7 @@
           var poolHTML = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;">';
           var shown = Math.min(groupPoolCount, filtered.length);
           for (var j = 0; j < shown; j++) {
-            if (j > 0 && j % 9 === 0) poolHTML += inlineFilterStrip();
+            if (j > 0 && j % 9 === 0) poolHTML += inlineFilterStrip(filtered.slice(j, j + 9));
             poolHTML += taggingPhotoCell(filtered[j], 0);
           }
           poolHTML += '</div>';
@@ -4438,7 +4466,7 @@
       } else {
         var myHTML = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;">';
         for (var k = 0; k < TRIP_PHOTOS.length; k++) {
-          if (k > 0 && k % 9 === 0) myHTML += inlineFilterStrip();
+          if (k > 0 && k % 9 === 0) myHTML += inlineFilterStrip(TRIP_PHOTOS.slice(k, k + 9));
           myHTML += taggingPhotoCell(TRIP_PHOTOS[k], 9);
         }
         myHTML += '</div>';
@@ -5726,12 +5754,12 @@
         var filt  = getFilteredGroupPhotos();
         var shown = Math.min(groupPoolCount, filt.length);
         for (var gi = 0; gi < shown; gi++) {
-          if (gi > 0 && gi % 9 === 0) gridHTML += inlineFilterStrip();
+          if (gi > 0 && gi % 9 === 0) gridHTML += inlineFilterStrip(filt.slice(gi, gi + 9));
           gridHTML += taggingPhotoCell(filt[gi], 0);
         }
       } else {
         for (var gi = 0; gi < TRIP_PHOTOS.length; gi++) {
-          if (gi > 0 && gi % 9 === 0) gridHTML += inlineFilterStrip();
+          if (gi > 0 && gi % 9 === 0) gridHTML += inlineFilterStrip(TRIP_PHOTOS.slice(gi, gi + 9));
           gridHTML += taggingPhotoCell(TRIP_PHOTOS[gi], 9);
         }
       }
