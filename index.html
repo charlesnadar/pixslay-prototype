@@ -1098,7 +1098,7 @@
                         'background:' + (sessionStorage.getItem('_refreshed') === '1' ? T.ok : T.alert) + ';' +
                         'color:#fff;transition:background .3s;">' +
                 '<span style="font-size:16px;">' + (sessionStorage.getItem('_refreshed') === '1' ? '✓' : '↻') + '</span>' +
-                (sessionStorage.getItem('_refreshed') === '1' ? 'You\'re on the latest version · v69' : 'Update available · tap to get v69') +
+                (sessionStorage.getItem('_refreshed') === '1' ? 'You\'re on the latest version · v70' : 'Update available · tap to get v70') +
               '</button>' +
 
             '</div>' +
@@ -1115,7 +1115,7 @@
 
             '<p style="text-align:center;font-size:10px;font-weight:500;' +
                       'color:' + T.textT + ';margin-top:8px;letter-spacing:.04em;">' +
-              'v69' +
+              'v70' +
             '</p>' +
 
           '</div>' +
@@ -1325,13 +1325,25 @@
        Bottom navigation — Home | FAB | Profile
        active: 'home' | 'profile'
     ───────────────────────────────────────────────────── */
+    function journeyAvatar() {
+      var map = {
+        varun:   { id:'VR', bg:'linear-gradient(135deg,#1B4FD8,#2D7DD2)' },
+        mayank:  { id:'MA', bg:'linear-gradient(135deg,#E65100,#FF8F00)' },
+        anand:   { id:'AN', bg:'linear-gradient(135deg,#006064,#00838F)' },
+        vishal:  { id:'VI', bg:'linear-gradient(135deg,#4A148C,#7B1FA2)' },
+        kavitha: { id:'KA', bg:'linear-gradient(135deg,#1B5E20,#388E3C)' },
+        beulah:  { id:'BE', bg:'linear-gradient(135deg,#880E4F,#C2185B)' }
+      };
+      return map[activeJourney] || { id:'?', bg:T.bgSub };
+    }
+
     function navBar(active) {
       var hColor  = (active === 'home')    ? T.blue  : T.textT;
       var hWeight = (active === 'home')    ? '600'   : '400';
       var hStroke = (active === 'home')    ? '2.2'   : '1.8';
       var pColor  = (active === 'profile') ? T.blue  : T.textT;
       var pWeight = (active === 'profile') ? '600'   : '400';
-      var pStroke = (active === 'profile') ? '2.2'   : '1.8';
+      var av      = journeyAvatar();
 
       return (
         '<div style="height:calc(64px + env(safe-area-inset-bottom,0));background:#fff;' +
@@ -1373,18 +1385,19 @@
             '</button>' +
           '</div>' +
 
-          /* Profile */
+          /* Profile — initials avatar */
           '<button onclick="go(\'profile\')"' +
             ' style="flex:1;height:100%;background:none;border:none;' +
                    'display:flex;flex-direction:column;' +
                    'align-items:center;justify-content:center;' +
                    'gap:3px;cursor:pointer;font-family:inherit;">' +
-            '<svg width="22" height="22" viewBox="0 0 24 24" fill="none"' +
-                 ' stroke="' + pColor + '" stroke-width="' + pStroke + '"' +
-                 ' stroke-linecap="round" stroke-linejoin="round">' +
-              '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>' +
-              '<circle cx="12" cy="7" r="4"/>' +
-            '</svg>' +
+            '<div style="width:26px;height:26px;border-radius:50%;' +
+                        'background:' + av.bg + ';' +
+                        'display:flex;align-items:center;justify-content:center;' +
+                        (active === 'profile' ? 'box-shadow:0 0 0 2px #fff,0 0 0 3.5px ' + T.blue + ';' : '') +
+                        '">' +
+              '<span style="font-size:9px;font-weight:800;color:#fff;letter-spacing:.02em;">' + av.id + '</span>' +
+            '</div>' +
             '<span style="font-size:10px;font-weight:' + pWeight + ';' +
                          'color:' + pColor + ';">Profile</span>' +
           '</button>' +
@@ -5413,12 +5426,9 @@
                 iStyle + '">' +
               initials +
             '</div>' +
-            '<span style="font-size:12px;font-weight:' + (p.identified ? '600' : '500') + ';' +
+            '<span style="font-size:11px;font-weight:' + (p.identified ? '600' : '500') + ';' +
                          'color:' + (p.identified ? T.text : T.textS) + ';">' +
-              p.name +
-            '</span>' +
-            '<span style="font-size:11px;font-weight:400;color:' + T.textT + ';">' +
-              p.count +
+              p.name + ' (' + p.count + ')' +
             '</span>' +
           '</div>'
         );
@@ -5427,19 +5437,20 @@
 
       /* ── category pills ── */
       var CAT_PILLS = [
-        { cat: 'Bonfire',   emoji: '🔥', bg: '#FFF3E0', clr: '#9D3500' },
-        { cat: 'Forest',    emoji: '🌲', bg: '#E8F5E9', clr: '#2E7D32' },
-        { cat: 'Lake',      emoji: '🏞', bg: '#E3F2FD', clr: '#1565C0' },
-        { cat: 'Night',     emoji: '✨', bg: '#EDE7F6', clr: '#4527A0' },
-        { cat: 'Waterfall', emoji: '💦', bg: '#E0F7FA', clr: '#006064' },
-        { cat: 'Food',      emoji: '🍛', bg: '#FBE9E7', clr: '#8D2000' },
-        { cat: 'Selfies',   emoji: '🤳', bg: '#FCE4EC', clr: '#880E4F' },
-        { cat: 'Travel',    emoji: '🚗', bg: '#FFF3E0', clr: '#E65100' },
-        { cat: 'Group',     emoji: '👥', bg: '#FFEBEE', clr: '#B71C1C' }
+        { cat: 'Bonfire',   emoji: '🔥', bg: '#FFF3E0', clr: '#9D3500', count: 6  },
+        { cat: 'Forest',    emoji: '🌲', bg: '#E8F5E9', clr: '#2E7D32', count: 8  },
+        { cat: 'Lake',      emoji: '🏞', bg: '#E3F2FD', clr: '#1565C0', count: 11 },
+        { cat: 'Night',     emoji: '✨', bg: '#EDE7F6', clr: '#4527A0', count: 9  },
+        { cat: 'Waterfall', emoji: '💦', bg: '#E0F7FA', clr: '#006064', count: 5  },
+        { cat: 'Food',      emoji: '🍛', bg: '#FBE9E7', clr: '#8D2000', count: 4  },
+        { cat: 'Selfies',   emoji: '🤳', bg: '#FCE4EC', clr: '#880E4F', count: 12 },
+        { cat: 'Travel',    emoji: '🚗', bg: '#FFF3E0', clr: '#E65100', count: 7  },
+        { cat: 'Group',     emoji: '👥', bg: '#FFEBEE', clr: '#B71C1C', count: 15 }
       ];
       var catHTML = '';
       for (var ci = 0; ci < CAT_PILLS.length; ci++) {
         var cp = CAT_PILLS[ci];
+        if (!cp.count) continue; /* hide empty categories */
         catHTML += (
           '<button id="fcat-' + cp.cat + '"' +
                   ' onclick="taggingSetCategory(\'' + cp.cat + '\')"' +
@@ -5453,7 +5464,7 @@
                     'cursor:pointer;white-space:nowrap;flex-shrink:0;' +
                     'transition:opacity .15s,transform .15s;">' +
             '<span style="font-size:16px;line-height:1;">' + cp.emoji + '</span>' +
-            '<span>' + cp.cat + '</span>' +
+            '<span>' + cp.cat + ' (' + cp.count + ')</span>' +
           '</button>'
         );
       }
@@ -7231,12 +7242,12 @@
 
     /* ── People master list (shared across all journeys in mock) ── */
     var AL_PEOPLE = [
-      { id:'VR', name:'Varun',   bg:'linear-gradient(135deg,#1B4FD8,#2D7DD2)' },
-      { id:'BE', name:'Beulah',  bg:'linear-gradient(135deg,#880E4F,#C2185B)' },
-      { id:'KA', name:'Kavitha', bg:'linear-gradient(135deg,#1B5E20,#388E3C)' },
-      { id:'MA', name:'Mayank',  bg:'linear-gradient(135deg,#E65100,#FF8F00)' },
-      { id:'VI', name:'Vishal',  bg:'linear-gradient(135deg,#4A148C,#7B1FA2)' },
-      { id:'AN', name:'Anand',   bg:'linear-gradient(135deg,#006064,#00838F)' },
+      { id:'VR', name:'Varun',   bg:'linear-gradient(135deg,#1B4FD8,#2D7DD2)', count:14 },
+      { id:'BE', name:'Beulah',  bg:'linear-gradient(135deg,#880E4F,#C2185B)', count:9  },
+      { id:'KA', name:'Kavitha', bg:'linear-gradient(135deg,#1B5E20,#388E3C)', count:7  },
+      { id:'MA', name:'Mayank',  bg:'linear-gradient(135deg,#E65100,#FF8F00)', count:22 },
+      { id:'VI', name:'Vishal',  bg:'linear-gradient(135deg,#4A148C,#7B1FA2)', count:11 },
+      { id:'AN', name:'Anand',   bg:'linear-gradient(135deg,#006064,#00838F)', count:19 },
     ];
 
     /* ── Journey album datasets ── */
@@ -7441,7 +7452,7 @@
                                'display:flex;align-items:center;justify-content:center;">' +
                      '<span style="font-size:13px;font-weight:800;color:#fff;">' + p.id + '</span>' +
                    '</div>' +
-                   '<span style="font-size:10px;font-weight:600;color:' + (on ? T.blue : T.textS) + ';">' + p.name + '</span>' +
+                   '<span style="font-size:10px;font-weight:600;color:' + (on ? T.blue : T.textS) + ';">' + p.name + ' (' + p.count + ')</span>' +
                  '</button>';
       }
 
