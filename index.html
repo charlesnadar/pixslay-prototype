@@ -1098,7 +1098,7 @@
                         'background:' + (sessionStorage.getItem('_refreshed') === '1' ? T.ok : T.alert) + ';' +
                         'color:#fff;transition:background .3s;">' +
                 '<span style="font-size:16px;">' + (sessionStorage.getItem('_refreshed') === '1' ? '✓' : '↻') + '</span>' +
-                (sessionStorage.getItem('_refreshed') === '1' ? 'You\'re on the latest version · v79' : 'Update available · tap to get v79') +
+                (sessionStorage.getItem('_refreshed') === '1' ? 'You\'re on the latest version · v80' : 'Update available · tap to get v80') +
               '</button>' +
 
             '</div>' +
@@ -1115,7 +1115,7 @@
 
             '<p style="text-align:center;font-size:10px;font-weight:500;' +
                       'color:' + T.textT + ';margin-top:8px;letter-spacing:.04em;">' +
-              'v79' +
+              'v80' +
             '</p>' +
 
           '</div>' +
@@ -1693,7 +1693,7 @@
                        'Iceland', 'text', '', 'text') +
 
             /* Trip window — compact single row instead of 4 separate fields */
-            '<div onclick="showSyncReassuranceSheet()"' +
+            '<div onclick="showFakeDatePicker()"' +
                  ' style="display:flex;align-items:center;gap:10px;' +
                         'height:46px;border:0.5px solid ' + T.bgSub + ';' +
                         'border-radius:10px;padding:0 14px;' +
@@ -1885,6 +1885,99 @@
     }
 
     /* ─── Sync Reassurance Sheet ─── */
+    /* ── Fake iOS-style date picker for trip date field ── */
+    function showFakeDatePicker() {
+      var phone = document.getElementById('phone');
+      var old = document.getElementById('fake-date-picker-overlay');
+      if (old) old.remove();
+
+      var months = ['January','February','March','April','May','June',
+                    'July','August','September','October','November','December'];
+      var days   = Array.from({length:31}, function(_,i) { return i + 1; });
+      var years  = ['2023','2024','2025','2026'];
+
+      var wheelCol = function(id, items, selIdx, flex) {
+        return (
+          '<div style="flex:' + (flex || '1') + ';overflow-y:scroll;' +
+                      'scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;' +
+                      'padding:90px 0;text-align:center;scrollbar-width:none;" id="' + id + '">' +
+            items.map(function(item, i) {
+              var sel = i === selIdx;
+              return '<div style="height:36px;line-height:36px;' +
+                'scroll-snap-align:center;font-size:17px;' +
+                'font-weight:' + (sel ? '600' : '400') + ';' +
+                'color:' + (sel ? '#000' : 'rgba(0,0,0,.35)') + ';">' + item + '</div>';
+            }).join('') +
+          '</div>'
+        );
+      };
+
+      var ov = document.createElement('div');
+      ov.id  = 'fake-date-picker-overlay';
+      ov.style.cssText = (
+        'position:absolute;inset:0;z-index:9500;' +
+        'display:flex;flex-direction:column;justify-content:flex-end;' +
+        'background:rgba(0,0,0,.4);'
+      );
+      ov.innerHTML = (
+        '<div style="background:#f2f2f7;border-radius:16px 16px 0 0;overflow:hidden;">' +
+          /* Toolbar */
+          '<div style="display:flex;justify-content:space-between;align-items:center;' +
+                      'padding:14px 20px;border-bottom:0.5px solid rgba(0,0,0,.12);">' +
+            '<button onclick="closeFakeDatePicker()" style="' +
+              'background:none;border:none;font-family:inherit;font-size:17px;' +
+              'color:#007AFF;cursor:pointer;padding:0;">Cancel</button>' +
+            '<span style="font-size:16px;font-weight:600;color:#000;">Trip Dates</span>' +
+            '<button onclick="confirmFakeDatePicker()" style="' +
+              'background:none;border:none;font-family:inherit;font-size:17px;' +
+              'font-weight:700;color:#007AFF;cursor:pointer;padding:0;">Done</button>' +
+          '</div>' +
+          /* Wheel container */
+          '<div style="display:flex;height:216px;position:relative;background:#f2f2f7;">' +
+            /* Selection highlight band */
+            '<div style="position:absolute;top:50%;left:0;right:0;height:36px;' +
+                        'transform:translateY(-50%);' +
+                        'background:rgba(0,0,0,.07);pointer-events:none;z-index:1;' +
+                        'border-top:0.5px solid rgba(0,0,0,.1);border-bottom:0.5px solid rgba(0,0,0,.1);"></div>' +
+            /* Top + bottom fade gradients */
+            '<div style="position:absolute;top:0;left:0;right:0;height:80px;' +
+                        'background:linear-gradient(to bottom,#f2f2f7,rgba(242,242,247,0));' +
+                        'pointer-events:none;z-index:2;"></div>' +
+            '<div style="position:absolute;bottom:0;left:0;right:0;height:80px;' +
+                        'background:linear-gradient(to top,#f2f2f7,rgba(242,242,247,0));' +
+                        'pointer-events:none;z-index:2;"></div>' +
+            wheelCol('fdp-month', months, 7, '1.8') +
+            wheelCol('fdp-day',   days.map(String), 14, '0.9') +
+            wheelCol('fdp-year',  years, 1, '1.1') +
+          '</div>' +
+          '<div style="height:max(env(safe-area-inset-bottom),8px);background:#f2f2f7;"></div>' +
+        '</div>'
+      );
+
+      /* Scroll each column to selected item */
+      ov.onclick = function(e) { if (e.target === ov) closeFakeDatePicker(); };
+      phone.appendChild(ov);
+
+      /* Scroll wheels to preselected rows */
+      requestAnimationFrame(function() {
+        ['fdp-month','fdp-day','fdp-year'].forEach(function(id, ci) {
+          var el = document.getElementById(id);
+          var selIdxes = [7, 14, 1]; /* Aug, 15, 2024 */
+          if (el) el.scrollTop = selIdxes[ci] * 36;
+        });
+      });
+    }
+
+    function closeFakeDatePicker() {
+      var ov = document.getElementById('fake-date-picker-overlay');
+      if (ov) ov.remove();
+    }
+
+    function confirmFakeDatePicker() {
+      closeFakeDatePicker();
+      showToast('Trip dates updated ✓', 'ok');
+    }
+
     function showSyncReassuranceSheet() {
       var phone = document.getElementById('phone');
       var old   = document.getElementById('sync-reassure-overlay');
@@ -2076,19 +2169,9 @@
       var primary = document.getElementById('sync-primary-btn');
       if (!primary) return;
       if (s === 'syncing') {
-        primary.textContent          = 'View my photos';
-        primary.disabled             = true;
-        primary.style.background     = T.bgSub;
-        primary.style.color          = T.textT;
-        primary.style.cursor         = 'default';
-        primary.onclick              = null;
+        primary.style.display = 'none';
       } else if (s === 'done') {
-        primary.textContent          = 'View my photos';
-        primary.disabled             = false;
-        primary.style.background     = T.blue;
-        primary.style.color          = '#fff';
-        primary.style.cursor         = 'pointer';
-        primary.onclick              = function () { go('varun-tagging'); };
+        primary.style.display = 'none';
       }
     }
 
@@ -3181,11 +3264,11 @@
             var comments = pvGetComments(photo.id).length;
             var isShared = sharedPhotoIds.indexOf(photo.id) !== -1;
             return (
-              '<div style="' +
+              '<div id="ov-' + photo.id + '" style="' +
                 'position:absolute;bottom:0;left:0;right:0;' +
                 'background:linear-gradient(to top,rgba(0,0,0,.38) 0%,transparent 100%);' +
                 'padding:14px 7px 5px;' +
-                'display:flex;align-items:flex-end;gap:5px;">' +
+                'display:' + (taggingSelectMode ? 'none' : 'flex') + ';align-items:flex-end;gap:5px;">' +
                 /* Shared badge — left */
                 (isShared
                   ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="none"' +
@@ -3242,7 +3325,16 @@
 
     /* ─── photo tap ─── */
     function taggingTapPhoto(id) {
-      if (!taggingSelectMode) { taggingOpenPreview(id); return; }
+      if (!taggingSelectMode) {
+        /* Filter is active — tap adds to selection instead of opening fullscreen */
+        if (taggingFaceFilter || taggingCategory) {
+          taggingSelectMode = true;
+          taggingSelected = [id];
+          taggingRefreshSelectionUI();
+          return;
+        }
+        taggingOpenPreview(id); return;
+      }
       var idx = taggingSelected.indexOf(id);
       if (idx === -1) { taggingSelected.push(id); }
       else            { taggingSelected.splice(idx, 1); }
@@ -3665,6 +3757,8 @@
           cell.style.border     = '2px solid ' + (isSel ? T.blue : 'transparent');
           cell.style.transform  = isSel ? 'scale(0.98)' : 'scale(1)';
           cell.style.boxShadow  = isSel ? '0 16px 32px rgba(27,79,216,.12)' : 'none';
+          var ov = document.getElementById('ov-' + id);
+          if (ov) ov.style.display = taggingSelectMode ? 'none' : 'flex';
         }
         if (chk) {
           chk.style.display    = taggingSelectMode ? 'flex' : 'none';
@@ -3832,37 +3926,44 @@
       }
       if (!count) { bar.style.opacity = '0'; bar.style.display = 'none'; return; }
 
-      /* Update label */
-      var filterName = taggingFaceFilter || taggingCategory;
-      var isGroup    = (taggingTab === 'group');
-      var lbl = document.getElementById('tagging-filter-action-label');
-      if (lbl) lbl.textContent = count + ' · ' + filterName + ' photos';
-
-      /* Build chips */
+      /* Build unified white chip — one pill with Save · Send · Share icons + count */
       var chips = document.getElementById('tagging-filter-action-chips');
+      var isGroup = (taggingTab === 'group');
       if (chips) {
-        var chipStyle = 'height:40px;padding:0 18px;border-radius:20px;border:none;' +
-          'font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;' +
-          'display:inline-flex;align-items:center;gap:6px;' +
-          'box-shadow:0 4px 14px rgba(0,0,0,.18);';
-        var saveIco = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
-        var sendIco = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>';
-        var shareIco = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/><line x1="20" y1="8" x2="20" y2="14"/></svg>';
+        var mkIco = function(path, color) {
+          return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"' +
+                 ' stroke="' + (color || '#0F172A') + '" stroke-width="2"' +
+                 ' stroke-linecap="round" stroke-linejoin="round">' + path + '</svg>';
+        };
+        var saveIco  = mkIco('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>');
+        var sendIco  = mkIco('<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>');
+        var shareIco = mkIco('<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>', '#1B4FD8');
 
-        if (isGroup) {
-          /* Group tab: Send (blue primary) · Save */
-          chips.innerHTML = (
-            '<button onclick="taggingGoShareRecipients()" style="' + chipStyle + 'background:' + T.blue + ';color:#fff;">' + sendIco + 'Send</button>' +
-            '<button onclick="taggingFilterSelectAll()" style="' + chipStyle + 'background:#fff;color:' + T.text + ';">' + saveIco + 'Save</button>'
-          );
-        } else {
-          /* My Photos tab: Save · Send · Share (blue primary) */
-          chips.innerHTML = (
-            '<button onclick="taggingSaveSelectedPhotos()" style="' + chipStyle + 'background:#fff;color:' + T.text + ';">' + saveIco + 'Save</button>' +
-            '<button onclick="taggingGoShareRecipients()" style="' + chipStyle + 'background:#fff;color:' + T.text + ';">' + sendIco + 'Send</button>' +
-            '<button onclick="taggingFilterSelectAll()" style="' + chipStyle + 'background:' + T.blue + ';color:#fff;">' + shareIco + 'Share</button>'
-          );
+        var iBtn = function(fn, icon) {
+          return '<button onclick="' + fn + '" style="' +
+            'background:none;border:none;cursor:pointer;padding:0;' +
+            'width:52px;height:52px;display:flex;align-items:center;justify-content:center;' +
+            'flex-shrink:0;-webkit-tap-highlight-color:transparent;"></button>'
+            .replace('</button>', icon + '</button>');
+        };
+        var div = '<div style="width:1px;height:22px;background:rgba(0,0,0,.1);flex-shrink:0;margin:0 2px;"></div>';
+        var cntLbl = '<span style="padding:0 20px 0 8px;font-size:13px;font-weight:700;' +
+          'color:#0F172A;white-space:nowrap;letter-spacing:-.1px;">' + count + ' photos</span>';
+
+        var btns = iBtn('taggingSaveFilteredPhotos()', saveIco) + div +
+                   iBtn('taggingFilterSendPhotos()', sendIco);
+        if (!isGroup) {
+          btns += div + iBtn('taggingFilterShareToGroup()', shareIco);
         }
+
+        chips.innerHTML = (
+          '<div style="' +
+            'display:inline-flex;align-items:center;' +
+            'background:#fff;border-radius:30px;' +
+            'box-shadow:0 6px 24px rgba(0,0,0,.18),0 1px 4px rgba(0,0,0,.06);">' +
+            btns + cntLbl +
+          '</div>'
+        );
       }
 
       bar.style.display = 'block';
@@ -3876,6 +3977,27 @@
     function taggingFilterSelectAll() {
       taggingSelectAllMatching();
       taggingUpdateFilterActionBar(); /* hides filter bar once select mode is on */
+    }
+
+    /* ── Direct actions from unified filter chip ── */
+    function taggingSaveFilteredPhotos() {
+      var srcPhotos = (taggingTab === 'group')
+        ? getFilteredGroupPhotos().slice(0, groupPoolCount) : TRIP_PHOTOS;
+      var n = 0;
+      for (var i = 0; i < srcPhotos.length; i++) {
+        if (taggingPhotoMatchesFilter(srcPhotos[i])) n++;
+      }
+      showToast('Saved ' + n + ' photo' + (n !== 1 ? 's' : '') + ' ✓', 'ok');
+    }
+    function taggingFilterSendPhotos() {
+      taggingSelectAllMatching();
+      taggingUpdateFilterActionBar();
+      setTimeout(function () { taggingExternalShare(); }, 80);
+    }
+    function taggingFilterShareToGroup() {
+      taggingSelectAllMatching();
+      taggingUpdateFilterActionBar();
+      setTimeout(function () { taggingGoShareRecipients(); }, 80);
     }
 
     function taggingSelectAllMatching() {
@@ -6614,14 +6736,8 @@
                       'opacity:0;transform:translateY(8px);' +
                       'transition:opacity .22s ease,transform .22s cubic-bezier(.22,.1,.15,1);' +
                       'padding:0 16px 8px;">' +
-            '<div style="text-align:center;margin-bottom:6px;">' +
-              '<span id="tagging-filter-action-label"' +
-                    ' style="font-size:11px;font-weight:600;color:#fff;' +
-                           'background:rgba(0,0,0,.5);padding:3px 10px;border-radius:10px;' +
-                           'letter-spacing:.01em;">0 photos</span>' +
-            '</div>' +
             '<div id="tagging-filter-action-chips"' +
-                 ' style="display:flex;justify-content:center;gap:8px;">' +
+                 ' style="display:flex;justify-content:center;">' +
             '</div>' +
           '</div>' +
 
