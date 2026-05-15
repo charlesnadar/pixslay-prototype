@@ -2768,6 +2768,7 @@
     ───────────────────────────────────────────────────── */
     var photoPermJustGranted = false; /* true when OS permission just granted — auto-opens sync sheet */
     var _taggingScrollY      = 0;    /* last scroll position for collapse/expand logic */
+    var _stickyMode          = 'people'; /* 'people' | 'category' — which row sticky bar shows */
     var taggingTab           = 'all';
     var taggingFilterCat     = '';
     var taggingFilterSub     = '';
@@ -2778,7 +2779,7 @@
     var momentBFired         = false;
     var momentAFace          = -1;
     var taggingLongTimer     = null;
-    var groupPoolCount       = 12;
+    var groupPoolCount       = 34;
     var groupPhotosUnlocked  = false; /* false = empty group tab (Varun pre-share); true = photos visible */
     var groupDisplayCount  = 258;   /* total group pool count (all members) */
     var taggingSearchActive    = false;
@@ -4128,17 +4129,27 @@
       if (!full || !sticky) return;
       /* Collapse: scrolled down past 72px */
       if (y > 72 && prev <= 72) {
-        full.style.maxHeight = '0';
+        full.style.height    = '0';
         full.style.opacity   = '0';
-        sticky.style.maxHeight = '48px';
-        sticky.style.opacity   = '1';
+        sticky.style.height  = '46px';
+        sticky.style.opacity = '1';
       }
       /* Expand: scrolled back up near top */
       if (y < 36 && prev >= 36) {
-        full.style.maxHeight = '220px';
+        full.style.height    = (window._taggingFiltersH || 160) + 'px';
         full.style.opacity   = '1';
-        sticky.style.maxHeight = '0';
-        sticky.style.opacity   = '0';
+        sticky.style.height  = '0';
+        sticky.style.opacity = '0';
+        /* Reset sticky to people mode for next appearance */
+        if (_stickyMode !== 'people') {
+          _stickyMode = 'people';
+          var pp2 = document.getElementById('sticky-people-panel');
+          var cp2 = document.getElementById('sticky-cat-panel');
+          var tb2 = document.getElementById('sticky-cat-toggle');
+          if (pp2) pp2.style.display = 'flex';
+          if (cp2) cp2.style.display = 'none';
+          if (tb2) { tb2.style.background = T.bgSub; tb2.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="' + T.text + '" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>'; }
+        }
       }
     }
 
@@ -4172,6 +4183,26 @@
         );
       } else {
         catChip.style.display = 'none';
+      }
+    }
+
+    /* ─── sticky bar mode toggle: people ↔ category ─── */
+    function stickyToggleMode() {
+      _stickyMode = (_stickyMode === 'people') ? 'category' : 'people';
+      var pp = document.getElementById('sticky-people-panel');
+      var cp = document.getElementById('sticky-cat-panel');
+      var tb = document.getElementById('sticky-cat-toggle');
+      if (!pp || !cp || !tb) return;
+      if (_stickyMode === 'category') {
+        pp.style.display = 'none';
+        cp.style.display = 'block';
+        tb.style.background = T.blue;
+        tb.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+      } else {
+        pp.style.display = 'flex';
+        cp.style.display = 'none';
+        tb.style.background = T.bgSub;
+        tb.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="' + T.text + '" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>';
       }
     }
 
@@ -5419,7 +5450,7 @@
       momentAFired        = false;
       momentBFired        = false;
       momentAFace         = -1;
-      groupPoolCount      = 12;
+      groupPoolCount      = 34;
       groupDisplayCount   = 258;
 
       /* ── people row — journey-aware ── */
@@ -5542,6 +5573,25 @@
             '<span style="font-size:16px;line-height:1;">' + cp.emoji + '</span>' +
             '<span>' + cp.cat + ' (' + cp.count + ')</span>' +
           '</button>'
+        );
+      }
+
+      /* ── compact category pills for sticky bar ── */
+      var stickyCATPillsHTML = '';
+      for (var sci = 0; sci < CAT_PILLS.length; sci++) {
+        var scp = CAT_PILLS[sci];
+        if (!scp.count) continue;
+        var scActive = (taggingCategory === scp.cat);
+        stickyCATPillsHTML += (
+          '<div onclick="taggingSetCategory(\'' + scp.cat + '\');if(_stickyMode===\'category\')stickyToggleMode();"' +
+               ' style="display:inline-flex;align-items:center;gap:4px;' +
+                       'height:28px;padding:0 10px;' +
+                       'border-radius:14px;flex-shrink:0;cursor:pointer;' +
+                       'background:' + (scActive ? scp.bg : T.bgSub) + ';' +
+                       'border:1.5px solid ' + (scActive ? scp.clr : 'transparent') + ';">' +
+            '<span style="font-size:13px;line-height:1;">' + scp.emoji + '</span>' +
+            '<span style="font-size:12px;font-weight:600;color:' + (scActive ? scp.clr : T.text) + ';">' + scp.cat + '</span>' +
+          '</div>'
         );
       }
 
@@ -5668,9 +5718,9 @@
           /* ══ collapsible filter block ══ */
           '<div id="tagging-filters-full"' +
                ' style="overflow:hidden;' +
-                       'max-height:220px;' +
+                       'height:auto;' +
                        'opacity:1;' +
-                       'transition:max-height .32s cubic-bezier(.4,0,.2,1),opacity .22s ease;' +
+                       'transition:height .28s cubic-bezier(.4,0,.2,1),opacity .22s ease;' +
                        'flex-shrink:0;">' +
 
             /* ── people row ── */
@@ -5696,49 +5746,68 @@
 
           /* ══ sticky compact bar — slides in when filters collapse ══ */
           '<div id="tagging-sticky-bar"' +
-               ' style="max-height:0;overflow:hidden;opacity:0;flex-shrink:0;' +
+               ' style="height:0;overflow:hidden;opacity:0;flex-shrink:0;' +
                        'background:#fff;' +
                        'border-bottom:0.5px solid rgba(0,0,0,.07);' +
-                       'transition:max-height .32s cubic-bezier(.4,0,.2,1),opacity .22s ease;">' +
-            '<div style="display:flex;align-items:center;gap:8px;padding:7px 14px;">' +
+                       'transition:height .28s cubic-bezier(.4,0,.2,1),opacity .22s ease;">' +
+            '<div style="display:flex;align-items:center;padding:7px 14px;gap:6px;">' +
 
-              /* All button */
-              '<div id="sticky-chip-ALL"' +
-                   ' onclick="taggingSetFace(\'\')"' +
-                   ' style="width:32px;height:32px;border-radius:50%;' +
-                           'background:' + T.blue + ';' +
-                           'display:flex;align-items:center;justify-content:center;' +
-                           'cursor:pointer;flex-shrink:0;">' +
-                '<svg width="14" height="14" viewBox="0 0 24 24" fill="none"' +
-                     ' stroke="#fff" stroke-width="2.2" stroke-linecap="round">' +
-                  '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>' +
-                  '<circle cx="9" cy="7" r="4"/>' +
-                  '<path d="M23 21v-2a4 4 0 0 0-3-3.87"/>' +
-                  '<path d="M16 3.13a4 4 0 0 1 0 7.75"/>' +
-                '</svg>' +
+              /* ── People panel (default mode) ── */
+              '<div id="sticky-people-panel"' +
+                   ' style="display:flex;align-items:center;gap:6px;flex:1;min-width:0;">' +
+
+                /* All button */
+                '<div id="sticky-chip-ALL"' +
+                     ' onclick="taggingSetFace(\'\')"' +
+                     ' style="width:32px;height:32px;border-radius:50%;' +
+                             'background:' + T.blue + ';' +
+                             'display:flex;align-items:center;justify-content:center;' +
+                             'cursor:pointer;flex-shrink:0;">' +
+                  '<svg width="14" height="14" viewBox="0 0 24 24" fill="none"' +
+                       ' stroke="#fff" stroke-width="2.2" stroke-linecap="round">' +
+                    '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>' +
+                    '<circle cx="9" cy="7" r="4"/>' +
+                    '<path d="M23 21v-2a4 4 0 0 0-3-3.87"/>' +
+                    '<path d="M16 3.13a4 4 0 0 1 0 7.75"/>' +
+                  '</svg>' +
+                '</div>' +
+
+                /* Compact person chips */
+                compactChipsHTML +
+
+                /* Active category chip — updated by taggingUpdateStickyBar */
+                '<div id="sticky-cat-chip" style="display:none;flex-shrink:0;"></div>' +
+
+                /* Spacer */
+                '<div style="flex:1;min-width:4px;"></div>' +
+
               '</div>' +
 
-              /* Compact person chips */
-              compactChipsHTML +
+              /* ── Category panel (hidden until toggle tapped) ── */
+              '<div id="sticky-cat-panel"' +
+                   ' style="display:none;flex:1;min-width:0;overflow:hidden;">' +
+                '<div class="hscroll"' +
+                     ' style="display:flex;gap:8px;overflow-x:auto;align-items:center;' +
+                             'padding:0 2px;">' +
+                  stickyCATPillsHTML +
+                '</div>' +
+              '</div>' +
 
-              /* Active category chip — updated by taggingUpdateStickyBar */
-              '<div id="sticky-cat-chip" style="display:none;flex-shrink:0;"></div>' +
-
-              /* Spacer */
-              '<div style="flex:1;min-width:8px;"></div>' +
-
-              /* Filter icon */
-              '<button onclick="showGroupFilterSheet()"' +
-                ' style="width:32px;height:32px;border:none;background:' + T.bgSub + ';' +
-                       'border-radius:50%;cursor:pointer;' +
-                       'display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
-                '<svg width="14" height="14" viewBox="0 0 24 24" fill="none"' +
+              /* ── Category toggle circle — always visible on right ── */
+              '<div id="sticky-cat-toggle"' +
+                   ' onclick="stickyToggleMode()"' +
+                   ' style="width:32px;height:32px;border-radius:50%;' +
+                           'background:' + T.bgSub + ';' +
+                           'display:flex;align-items:center;justify-content:center;' +
+                           'cursor:pointer;flex-shrink:0;">' +
+                '<svg width="13" height="13" viewBox="0 0 24 24" fill="none"' +
                      ' stroke="' + T.text + '" stroke-width="2" stroke-linecap="round">' +
-                  '<line x1="4" y1="6" x2="20" y2="6"/>' +
-                  '<line x1="8" y1="12" x2="16" y2="12"/>' +
-                  '<line x1="11" y1="18" x2="13" y2="18"/>' +
+                  '<rect x="3" y="3" width="7" height="7" rx="1"/>' +
+                  '<rect x="14" y="3" width="7" height="7" rx="1"/>' +
+                  '<rect x="3" y="14" width="7" height="7" rx="1"/>' +
+                  '<rect x="14" y="14" width="7" height="7" rx="1"/>' +
                 '</svg>' +
-              '</button>' +
+              '</div>' +
 
             '</div>' +
           '</div>' +
@@ -9282,6 +9351,27 @@
         if (photoPermJustGranted) {
           photoPermJustGranted = false;
           setTimeout(function () { showSyncReassuranceSheet(); }, 320);
+        }
+      }
+
+      /* Measure filter block height for smooth JS-driven animation */
+      if (state.screen === 'varun-tagging') {
+        /* Reset sticky mode state on fresh render */
+        _stickyMode = 'people';
+        var _ff = document.getElementById('tagging-filters-full');
+        if (_ff) {
+          /* Capture natural height, then switch from max-height to height */
+          var _fh = _ff.scrollHeight;
+          window._taggingFiltersH = _fh;
+          _ff.style.transition = 'none';
+          _ff.style.maxHeight  = 'none';
+          _ff.style.height     = _fh + 'px';
+          /* Re-enable transition next frame so initial render isn't animated */
+          requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+              if (_ff) _ff.style.transition = 'height .28s cubic-bezier(.4,0,.2,1),opacity .22s ease';
+            });
+          });
         }
       }
 
