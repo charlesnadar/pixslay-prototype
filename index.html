@@ -58,7 +58,7 @@
     @media (max-width: 500px), (display-mode: standalone) {
       body {
         padding: 0;
-        background: #F8F7F5;
+        background: #fff;   /* matches most screens so the safe-area strip is invisible */
         align-items: flex-start;
         overflow: hidden;
         overscroll-behavior: none;
@@ -76,6 +76,7 @@
         padding-top: 0;
         padding-bottom: 0;
         overscroll-behavior: none;
+        background: #fff;   /* safe-area strip matches screen backgrounds */
       }
     }
 
@@ -181,13 +182,30 @@
         if (!isMobile()) return;
         var phone = document.getElementById('phone');
         if (!phone) return;
-        var vv = window.visualViewport;
-        var h  = vv ? Math.round(vv.height) : window.innerHeight;
-        if (h < 100) return;
-        phone.style.height = h + 'px';
-        /* Also pin the active .screen to the same height */
-        var screen = phone.querySelector('.screen');
-        if (screen) screen.style.height = h + 'px';
+        var vv    = window.visualViewport;
+        var viewH = vv ? Math.round(vv.height) : window.innerHeight;
+        if (viewH < 100) return;
+
+        /* iOS PWA: visualViewport.height is shorter than the physical screen
+           by the bottom safe-area / home-indicator (~34 px on Face-ID iPhones,
+           ~20 px on older models). Extend the phone div to cover that gap so
+           no blank strip shows below the app.
+           Guard: only do this when the shortfall is small (≤ 120 px).
+           A bigger gap means the software keyboard is open — in that case we
+           want viewH so the UI stays above the keyboard. */
+        var phoneH = viewH;
+        try {
+          var screenH = Math.round(window.screen.height);
+          if (screenH > viewH && (screenH - viewH) <= 120) {
+            phoneH = screenH;
+          }
+        } catch (e) {}
+
+        phone.style.height = phoneH + 'px';
+        /* Screen content is capped at viewH so nothing hides behind the
+           home indicator — the phone div's background fills the extra strip. */
+        var sc = phone.querySelector('.screen');
+        if (sc) sc.style.height = viewH + 'px';
       }
 
       /* Expose globally so boot script can call before first render() */
@@ -1098,7 +1116,7 @@
                         'background:' + (sessionStorage.getItem('_refreshed') === '1' ? T.ok : T.alert) + ';' +
                         'color:#fff;transition:background .3s;">' +
                 '<span style="font-size:16px;">' + (sessionStorage.getItem('_refreshed') === '1' ? '✓' : '↻') + '</span>' +
-                (sessionStorage.getItem('_refreshed') === '1' ? 'You\'re on the latest version · v84' : 'Update available · tap to get v84') +
+                (sessionStorage.getItem('_refreshed') === '1' ? 'You\'re on the latest version · v85' : 'Update available · tap to get v85') +
               '</button>' +
 
             '</div>' +
@@ -1115,7 +1133,7 @@
 
             '<p style="text-align:center;font-size:10px;font-weight:500;' +
                       'color:' + T.textT + ';margin-top:8px;letter-spacing:.04em;">' +
-              'v84' +
+              'v85' +
             '</p>' +
 
           '</div>' +
