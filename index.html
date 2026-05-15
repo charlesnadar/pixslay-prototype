@@ -1098,7 +1098,7 @@
                         'background:' + (sessionStorage.getItem('_refreshed') === '1' ? T.ok : T.alert) + ';' +
                         'color:#fff;transition:background .3s;">' +
                 '<span style="font-size:16px;">' + (sessionStorage.getItem('_refreshed') === '1' ? '✓' : '↻') + '</span>' +
-                (sessionStorage.getItem('_refreshed') === '1' ? 'You\'re on the latest version · v74' : 'Update available · tap to get v74') +
+                (sessionStorage.getItem('_refreshed') === '1' ? 'You\'re on the latest version · v75' : 'Update available · tap to get v75') +
               '</button>' +
 
             '</div>' +
@@ -1115,7 +1115,7 @@
 
             '<p style="text-align:center;font-size:10px;font-weight:500;' +
                       'color:' + T.textT + ';margin-top:8px;letter-spacing:.04em;">' +
-              'v74' +
+              'v75' +
             '</p>' +
 
           '</div>' +
@@ -3089,54 +3089,67 @@
                 '</svg>'
               : '') +
           '</div>' +
-          /* ── shared-to-group badge (bottom-left) ── */
-          (sharedPhotoIds.indexOf(photo.id) !== -1
-            ? '<div style="position:absolute;bottom:8px;left:8px;' +
-                          'width:22px;height:22px;border-radius:6px;' +
-                          'background:rgba(27,79,216,.82);backdrop-filter:blur(6px);' +
-                          'display:flex;align-items:center;justify-content:center;' +
-                          'filter:drop-shadow(0 1px 3px rgba(0,0,0,.25));">' +
-                '<svg width="11" height="11" viewBox="0 0 24 24" fill="none"' +
-                     ' stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' +
-                  '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>' +
-                  '<circle cx="9" cy="7" r="4"/>' +
-                  '<path d="M23 21v-2a4 4 0 0 0-3-3.87"/>' +
-                  '<path d="M16 3.13a4 4 0 0 1 0 7.75"/>' +
-                '</svg>' +
-              '</div>'
-            : '') +
-          /* ── saved / downloaded corner badges ── */
-          ((photo.saved || photo.downloaded)
-            ? '<div style="position:absolute;bottom:8px;right:8px;' +
-                          'display:flex;gap:4px;align-items:center;">' +
+          /* ── bottom overlay bar: shared · likes · comments · saved · downloaded ── */
+          (function () {
+            var likes    = pvGetLikes(photo.id);
+            var comments = pvGetComments(photo.id).length;
+            var isShared = sharedPhotoIds.indexOf(photo.id) !== -1;
+            return (
+              '<div style="' +
+                'position:absolute;bottom:0;left:0;right:0;' +
+                'background:linear-gradient(to top,rgba(0,0,0,.55) 0%,transparent 100%);' +
+                'padding:14px 7px 5px;' +
+                'display:flex;align-items:flex-end;gap:5px;">' +
+                /* Shared badge — left */
+                (isShared
+                  ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="none"' +
+                         ' stroke="rgba(255,255,255,.9)" stroke-width="2.2"' +
+                         ' stroke-linecap="round" stroke-linejoin="round"' +
+                         ' style="flex-shrink:0;">' +
+                      '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>' +
+                      '<circle cx="9" cy="7" r="4"/>' +
+                      '<path d="M23 21v-2a4 4 0 0 0-3-3.87"/>' +
+                      '<path d="M16 3.13a4 4 0 0 1 0 7.75"/>' +
+                    '</svg>'
+                  : '') +
+                '<div style="flex:1;min-width:0;"></div>' +
+                /* Likes */
+                '<span style="font-size:10px;font-weight:700;color:#fff;' +
+                             'text-shadow:0 1px 3px rgba(0,0,0,.5);line-height:1;' +
+                             'display:flex;align-items:center;gap:2px;">' +
+                  '<svg width="9" height="9" viewBox="0 0 24 24" fill="#fff" stroke="none">' +
+                    '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/>' +
+                  '</svg>' +
+                  likes +
+                '</span>' +
+                /* Comments */
+                '<span style="font-size:10px;font-weight:600;color:rgba(255,255,255,.85);' +
+                             'text-shadow:0 1px 3px rgba(0,0,0,.5);line-height:1;' +
+                             'display:flex;align-items:center;gap:2px;">' +
+                  '<svg width="9" height="9" viewBox="0 0 24 24" fill="rgba(255,255,255,.85)" stroke="none">' +
+                    '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>' +
+                  '</svg>' +
+                  comments +
+                '</span>' +
+                /* Saved icon */
                 (photo.saved
-                  ? '<div style="width:22px;height:22px;border-radius:6px;' +
-                               'background:rgba(0,0,0,.38);backdrop-filter:blur(6px);' +
-                               'display:flex;align-items:center;justify-content:center;' +
-                               'filter:drop-shadow(0 1px 2px rgba(0,0,0,.3));">' +
-                      '<svg width="11" height="11" viewBox="0 0 24 24" fill="none"' +
-                           ' stroke="#fff" stroke-width="2.5"' +
-                           ' stroke-linecap="round" stroke-linejoin="round">' +
-                        '<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>' +
-                      '</svg>' +
-                    '</div>'
+                  ? '<svg width="9" height="9" viewBox="0 0 24 24" fill="rgba(255,255,255,.8)" stroke="none"' +
+                         ' style="flex-shrink:0;">' +
+                      '<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>' +
+                    '</svg>'
                   : '') +
+                /* Downloaded icon */
                 (photo.downloaded
-                  ? '<div style="width:22px;height:22px;border-radius:6px;' +
-                               'background:rgba(0,0,0,.38);backdrop-filter:blur(6px);' +
-                               'display:flex;align-items:center;justify-content:center;' +
-                               'filter:drop-shadow(0 1px 2px rgba(0,0,0,.3));">' +
-                      '<svg width="11" height="11" viewBox="0 0 24 24" fill="none"' +
-                           ' stroke="#fff" stroke-width="2.5"' +
-                           ' stroke-linecap="round" stroke-linejoin="round">' +
-                        '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>' +
-                        '<polyline points="7 10 12 15 17 10"/>' +
-                        '<line x1="12" y1="15" x2="12" y2="3"/>' +
-                      '</svg>' +
-                    '</div>'
+                  ? '<svg width="9" height="9" viewBox="0 0 24 24" fill="none"' +
+                         ' stroke="rgba(255,255,255,.8)" stroke-width="2.5" stroke-linecap="round"' +
+                         ' style="flex-shrink:0;">' +
+                      '<polyline points="7 10 12 15 17 10"/>' +
+                      '<line x1="12" y1="15" x2="12" y2="3"/>' +
+                    '</svg>'
                   : '') +
               '</div>'
-            : '') +
+            );
+          }()) +
         '</div>'
       );
     }
@@ -4144,9 +4157,7 @@
             '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"' +
                  ' stroke="' + T.text + '" stroke-width="2"' +
                  ' stroke-linecap="round" stroke-linejoin="round">' +
-              '<line x1="4" y1="6" x2="20" y2="6"/>' +
-              '<line x1="8" y1="12" x2="16" y2="12"/>' +
-              '<line x1="11" y1="18" x2="13" y2="18"/>' +
+              '<path d="M22 3H2l8 9.46V19l4 2V12.46z"/>' +
             '</svg>' +
           '</button>' +
         '</div>'
@@ -4229,15 +4240,9 @@
       }
 
       return (
-        '<div style="grid-column:1/-1;background:#F7F6F4;padding:8px 12px;margin:2px 0;">' +
+        '<div style="grid-column:1/-1;background:#fff;padding:6px 10px;">' +
           '<div class="hscroll"' +
                ' style="display:flex;align-items:center;gap:8px;overflow-x:auto;">' +
-            /* Small "filter" label */
-            '<span style="font-size:10px;font-weight:600;color:' + T.textT + ';' +
-                         'letter-spacing:.04em;text-transform:uppercase;flex-shrink:0;">' +
-              'Filter' +
-            '</span>' +
-            '<div style="width:1px;height:16px;background:rgba(0,0,0,.1);flex-shrink:0;"></div>' +
             pChips +
             (pChips && cPills
               ? '<div style="width:1px;height:16px;background:rgba(0,0,0,.1);flex-shrink:0;"></div>'
@@ -4249,47 +4254,67 @@
     }
 
     /* ─── sticky filter bar collapse/expand on scroll ─── */
+    /* Strategy: instant height snap (zero layout animation) + opacity-only fade  */
+    /* Hysteresis: hide at >72px, show at <40px — prevents threshold flutter      */
     function taggingGridScroll(el) {
-      /* Read scrollTop synchronously (must happen in scroll event) */
       _taggingScrollY = el.scrollTop;
-      /* rAF debounce — only run style changes once per frame */
       if (_taggingScrollTick) return;
       _taggingScrollTick = true;
-      var _snapY = _taggingScrollY;
       requestAnimationFrame(function () {
         _taggingScrollTick = false;
-        var y    = _taggingScrollY;
-        var prev = _snapY;
+        var y      = _taggingScrollY;
         var full   = document.getElementById('tagging-filters-full');
         var sticky = document.getElementById('tagging-sticky-bar');
         if (!full || !sticky) return;
 
-        /* Collapse: scrolled down past 72px — filter fades+collapses, sticky fades in */
-        if (y > 72 && prev <= 72) {
-          full.style.height    = '0';
-          full.style.opacity   = '0';
-          /* Sticky: set height instantly, then fade in via opacity only (GPU composited) */
+        var isHidden = (full.getAttribute('data-hidden') === '1');
+
+        /* ── Collapse on scroll down ── */
+        if (y > 72 && !isHidden) {
+          full.setAttribute('data-hidden', '1');
+          /* Fade filter out, THEN snap height (avoids content jump during fade) */
+          full.style.transition  = 'opacity .18s ease';
+          full.style.opacity     = '0';
+          full.style.pointerEvents = 'none';
+          setTimeout(function () {
+            if (full.getAttribute('data-hidden') === '1') {
+              full.style.transition = 'none';
+              full.style.height     = '0';
+            }
+          }, 190);
+          /* Sticky: set height instantly, fade opacity in */
           sticky.style.transition = 'none';
           sticky.style.height     = '46px';
           sticky.style.opacity    = '0';
           requestAnimationFrame(function () {
-            sticky.style.transition = 'opacity .2s ease';
-            sticky.style.opacity    = '1';
+            requestAnimationFrame(function () {
+              sticky.style.transition = 'opacity .18s ease';
+              sticky.style.opacity    = '1';
+            });
           });
         }
 
-        /* Expand: scrolled back up near top — sticky fades out, filter expands */
-        if (y < 36 && prev >= 36) {
-          /* Sticky: fade out first, then collapse height instantly after */
+        /* ── Expand on scroll back up ── */
+        if (y < 40 && isHidden) {
+          full.setAttribute('data-hidden', '0');
+          /* Snap height back, then fade in */
+          full.style.transition   = 'none';
+          full.style.height       = (window._taggingFiltersH || 160) + 'px';
+          full.style.pointerEvents = 'auto';
+          requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+              full.style.transition = 'opacity .18s ease';
+              full.style.opacity    = '1';
+            });
+          });
+          /* Sticky: fade out, then snap height to 0 */
           sticky.style.transition = 'opacity .15s ease';
           sticky.style.opacity    = '0';
           setTimeout(function () {
             sticky.style.transition = 'none';
             sticky.style.height     = '0';
           }, 160);
-          full.style.height  = (window._taggingFiltersH || 160) + 'px';
-          full.style.opacity = '1';
-          /* Reset sticky to people mode for next appearance */
+          /* Reset sticky to people mode */
           if (_stickyMode !== 'people') {
             _stickyMode = 'people';
             var pp2 = document.getElementById('sticky-people-panel');
@@ -5853,9 +5878,7 @@
                 '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"' +
                      ' stroke="' + T.text + '" stroke-width="2"' +
                      ' stroke-linecap="round" stroke-linejoin="round">' +
-                  '<line x1="4" y1="6" x2="20" y2="6"/>' +
-                  '<line x1="8" y1="12" x2="16" y2="12"/>' +
-                  '<line x1="11" y1="18" x2="13" y2="18"/>' +
+                  '<path d="M22 3H2l8 9.46V19l4 2V12.46z"/>' +
                 '</svg>' +
               '</button>' +
 
@@ -7963,7 +7986,7 @@
                 '<svg id="al-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="' + (albumSearchOpen ? T.blue : T.text) + '" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
               '</button>' +
               '<button onclick="showAlbumFilterSheet()" style="width:36px;height:36px;border:none;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;">' +
-                '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="' + T.text + '" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>' +
+                '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="' + T.text + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3H2l8 9.46V19l4 2V12.46z"/></svg>' +
                 (hasFilters ? '<div style="position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:' + T.blue + ';border:1.5px solid ' + T.bgWarm + ';"></div>' : '') +
               '</button>' +
             '</div>' +
