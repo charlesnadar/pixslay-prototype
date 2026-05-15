@@ -1098,7 +1098,7 @@
                         'background:' + (sessionStorage.getItem('_refreshed') === '1' ? T.ok : T.alert) + ';' +
                         'color:#fff;transition:background .3s;">' +
                 '<span style="font-size:16px;">' + (sessionStorage.getItem('_refreshed') === '1' ? '✓' : '↻') + '</span>' +
-                (sessionStorage.getItem('_refreshed') === '1' ? 'You\'re on the latest version · v82' : 'Update available · tap to get v82') +
+                (sessionStorage.getItem('_refreshed') === '1' ? 'You\'re on the latest version · v83' : 'Update available · tap to get v83') +
               '</button>' +
 
             '</div>' +
@@ -1115,7 +1115,7 @@
 
             '<p style="text-align:center;font-size:10px;font-weight:500;' +
                       'color:' + T.textT + ';margin-top:8px;letter-spacing:.04em;">' +
-              'v82' +
+              'v83' +
             '</p>' +
 
           '</div>' +
@@ -10009,10 +10009,14 @@
     /* ─────────────────────────────────────────────────────
        ONBOARDING — 4 slides shown once before entry screen
     ───────────────────────────────────────────────────── */
-    var _obSlide = 0;
+    var _obSlide     = 0;
+    var _obScrollInt = null;
+    var _obScrollPaused = false;
 
     function screenOnboarding() {
-      var isLast = (_obSlide === 3);
+      var isLast  = (_obSlide === 3);
+      var isChat  = (_obSlide === 0 || _obSlide === 1); /* slides with auto-scroll */
+
       /* Dot bar */
       var dots = '';
       for (var d = 0; d < 4; d++) {
@@ -10021,35 +10025,55 @@
           'transition:width .22s,background .22s;"></div>';
       }
 
-      var visuals  = [_obV0, _obV1, _obV2, _obV3];
-      var copies   = [
+      var visuals = [_obV0, _obV1, _obV2, _obV3];
+      var copies  = [
         { h: '"Hey, can you send\nthe photos?"',
           s: 'You know how this ends.' },
         { h: 'When they finally share...',
-          s: 'Compressed. Three Drive folders. Still missing the good ones.' },
+          s: 'Compressed. Two Drive folders. Sunset photos — gone forever.' },
         { h: 'Your face. Everyone\'s camera.',
           s: 'Tap your name — see every photo you\'re in, from every phone in the room.' },
         { h: 'Yours until you say otherwise.',
           s: 'Private by default. You choose what goes to the group.' },
       ];
-      var c = copies[_obSlide];
-      var headLines = c.h.split('\n');
-      var headHTML  = headLines.map(function(l) { return '<span>' + l + '</span>'; }).join('<br>');
+      var c        = copies[_obSlide];
+      var headHTML = c.h.split('\n').map(function(l) { return '<span>' + l + '</span>'; }).join('<br>');
+
+      /* Left button: Skip on slide 0, ← Back on others */
+      var leftBtn = (_obSlide === 0)
+        ? '<button onclick="onboardingSkip()" style="min-width:52px;background:none;border:none;cursor:pointer;font-family:inherit;font-size:14px;font-weight:600;color:' + T.textT + ';padding:0;">Skip</button>'
+        : '<button onclick="onboardingBack()" style="min-width:52px;background:none;border:none;cursor:pointer;font-family:inherit;font-size:14px;font-weight:600;color:' + T.textT + ';padding:0;display:flex;align-items:center;gap:4px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Back</button>';
+
+      /* Next button — disabled until scroll done on chat slides */
+      var nextDisabled = isChat;
+      var nextBtn = '<button id="ob-next-btn" onclick="onboardingNext()" style="' +
+        'height:44px;padding:0 22px;border-radius:12px;border:none;' +
+        'background:' + T.blue + ';color:#fff;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;' +
+        'opacity:' + (nextDisabled ? '0.32' : '1') + ';' +
+        'pointer-events:' + (nextDisabled ? 'none' : 'auto') + ';">' +
+        (isLast ? 'Get started →' : 'Next →') +
+      '</button>';
 
       return (
         '<div class="screen" style="display:flex;flex-direction:column;background:#fff;overflow:hidden;">' +
+          /* Visual area */
           '<div style="flex:1;overflow:hidden;position:relative;">' +
             visuals[_obSlide]() +
+            /* Scroll hint — only on chat slides */
+            (isChat
+              ? '<div id="ob-scroll-hint" style="position:absolute;bottom:8px;left:0;right:0;text-align:center;pointer-events:none;transition:opacity .3s;">' +
+                  '<span style="background:rgba(0,0,0,.55);color:#fff;font-size:10px;font-weight:600;padding:3px 10px;border-radius:10px;letter-spacing:.02em;">⏸ Tap to pause</span>' +
+                '</div>'
+              : '') +
           '</div>' +
           /* Copy + nav */
-          '<div style="padding:22px 26px 38px;background:#fff;flex-shrink:0;">' +
+          '<div style="padding:20px 26px 36px;background:#fff;flex-shrink:0;">' +
             '<h1 style="margin:0 0 8px;font-size:22px;font-weight:800;line-height:1.22;color:' + T.text + ';">' + headHTML + '</h1>' +
-            '<p style="margin:0 0 26px;font-size:15px;font-weight:400;color:' + T.textS + ';line-height:1.5;">' + c.s + '</p>' +
+            '<p style="margin:0 0 24px;font-size:15px;font-weight:400;color:' + T.textS + ';line-height:1.5;">' + c.s + '</p>' +
             '<div style="display:flex;justify-content:space-between;align-items:center;">' +
-              /* Skip — hidden on last slide */
-              '<button onclick="onboardingSkip()" style="min-width:48px;background:none;border:none;cursor:pointer;font-family:inherit;font-size:14px;font-weight:600;color:' + T.textT + ';padding:0;opacity:' + (isLast ? '0;pointer-events:none' : '1') + ';">Skip</button>' +
+              leftBtn +
               '<div style="display:flex;align-items:center;gap:5px;">' + dots + '</div>' +
-              '<button onclick="onboardingNext()" style="height:44px;padding:0 22px;border-radius:12px;border:none;background:' + T.blue + ';color:#fff;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;">' + (isLast ? 'Get started →' : 'Next →') + '</button>' +
+              nextBtn +
             '</div>' +
           '</div>' +
         '</div>'
@@ -10058,107 +10082,135 @@
 
     /* ── Slide visuals ── */
 
-    /* Slide 0 — Broken promise loop (dark WhatsApp) */
-    function _obV0() {
-      var BG='#0B141A', HDR='#1F2C34', RCV='#202C33', SND='#005C4B';
-      var TXT='#E9EDEF', TS='#8696A0';
-      var names = { charles:'#53BDEB', ruban:'#FCB04A', rey:'#CEB0FB', joye:'#20C09F' };
-
-      function rcv(who, clr, msg, time) {
-        return '<div style="display:flex;justify-content:flex-start;margin-bottom:4px;padding:0 10px;">' +
-          '<div style="background:' + RCV + ';border-radius:2px 10px 10px 10px;padding:7px 10px 5px;max-width:76%;">' +
-            '<span style="display:block;font-size:11px;font-weight:700;color:' + clr + ';margin-bottom:3px;">' + who + '</span>' +
-            '<span style="display:block;font-size:13px;color:' + TXT + ';line-height:1.4;">' + msg + '</span>' +
-            '<span style="display:block;font-size:10px;color:' + TS + ';text-align:right;margin-top:2px;">' + time + '</span>' +
-          '</div></div>';
-      }
-      function dateSep(lbl) {
-        return '<div style="text-align:center;padding:8px 0;">' +
-          '<span style="background:#182229;color:' + TS + ';font-size:11px;font-weight:500;padding:3px 10px;border-radius:6px;">' + lbl + '</span>' +
-          '</div>';
-      }
-
+    /* ── Shared WA helpers (used by both chat slides) ── */
+    function _waHeader(emoji, title, members, BG, HDR, TXT, TS) {
+      return '<div style="background:' + HDR + ';padding:10px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;">' +
+        '<div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#1B5E20,#43A047);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">' + emoji + '</div>' +
+        '<div><div style="font-size:14px;font-weight:700;color:' + TXT + ';">' + title + '</div>' +
+        '<div style="font-size:11px;color:' + TS + ';">' + members + '</div></div>' +
+      '</div>';
+    }
+    function _waRcv(who, clr, content, time, RCV, TXT, TS) {
+      return '<div style="display:flex;justify-content:flex-start;margin-bottom:4px;padding:0 10px;">' +
+        '<div style="background:' + RCV + ';border-radius:2px 10px 10px 10px;padding:7px 10px 5px;max-width:84%;">' +
+          '<span style="display:block;font-size:11px;font-weight:700;color:' + clr + ';margin-bottom:3px;">' + who + '</span>' +
+          content +
+          '<span style="display:block;font-size:10px;color:' + TS + ';text-align:right;margin-top:2px;">' + time + '</span>' +
+        '</div></div>';
+    }
+    function _waDate(lbl, TS) {
+      return '<div style="text-align:center;padding:8px 0;">' +
+        '<span style="background:#182229;color:' + TS + ';font-size:11px;font-weight:500;padding:3px 10px;border-radius:6px;">' + lbl + '</span>' +
+        '</div>';
+    }
+    function _waTxt(txt, TXT) { return '<span style="display:block;font-size:13px;color:' + TXT + ';line-height:1.4;">' + txt + '</span>'; }
+    /* Real Google Drive card — matches actual WA link preview style */
+    function _waDrive(folderName, TXT, TS) {
+      var driveIco = (
+        '<svg width="22" height="20" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">' +
+          '<path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8H0c0 1.55.4 3.1 1.2 4.5z" fill="#0066DA"/>' +
+          '<path d="M43.65 25L29.9 1.2C28.55 2 27.4 3.1 26.6 4.5L1.2 48.5c-.8 1.4-1.2 2.95-1.2 4.5h27.5z" fill="#00AC47"/>' +
+          '<path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5H60l5.85 11.2z" fill="#EA4335"/>' +
+          '<path d="M43.65 25L57.4 1.2C56.05.4 54.5 0 52.9 0H34.4c-1.6 0-3.15.45-4.5 1.2z" fill="#00832D"/>' +
+          '<path d="M60 53H27.5L13.75 76.8c1.35.8 2.9 1.2 4.5 1.2h50.1c1.6 0 3.15-.45 4.5-1.2z" fill="#2684FC"/>' +
+          '<path d="M73.4 27L48.1 4.5C46.75 3.1 45.2 2 43.65 1.2L57.4 25l16.1 28H87.3c0-1.55-.4-3.1-1.2-4.5z" fill="#FFBA00"/>' +
+        '</svg>'
+      );
       return (
-        '<div style="background:' + BG + ';height:100%;display:flex;flex-direction:column;">' +
-          /* WA header */
-          '<div style="background:' + HDR + ';padding:10px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;">' +
-            '<div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#1B5E20,#43A047);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🌊</div>' +
-            '<div>' +
-              '<div style="font-size:14px;font-weight:700;color:' + TXT + ';">Goa Trip 🌊</div>' +
-              '<div style="font-size:11px;color:' + TS + ';">Charles, Ruban, Rey, Joye, Anbu +2</div>' +
+        '<div style="background:rgba(255,255,255,.05);border:0.5px solid rgba(255,255,255,.1);border-radius:10px;overflow:hidden;margin:4px 0;width:200px;">' +
+          /* Preview strip */
+          '<div style="height:36px;background:linear-gradient(135deg,#1B5E20 0%,#388E3C 50%,#1565C0 100%);display:flex;align-items:center;justify-content:center;">' +
+            driveIco +
+          '</div>' +
+          /* Meta */
+          '<div style="padding:6px 8px;">' +
+            '<div style="font-size:12px;font-weight:600;color:' + TXT + ';margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + folderName + '</div>' +
+            '<div style="font-size:10px;color:' + TS + ';display:flex;align-items:center;gap:4px;">' +
+              driveIco.replace('width="22" height="20"','width="11" height="10"') +
+              'drive.google.com' +
             '</div>' +
           '</div>' +
-          /* Chat */
-          '<div style="flex:1;padding:4px 0;overflow:hidden;">' +
-            dateSep('16 May') +
-            rcv('Charles', names.charles, 'hey guys can we get the Goa photos? 🙏', '10:42 AM') +
-            rcv('Ruban',   names.ruban,   'yeah will send tomorrow bro, been busy', '10:45 AM') +
-            rcv('Rey',     names.rey,     'same, this weekend for sure 👍',          '10:47 AM') +
-            dateSep('3 days later') +
-            rcv('Joye',    names.joye,    'Ruban? Rey? photos? 👀',                  '11:20 AM') +
-            rcv('Ruban',   names.ruban,   'sorry yaar — definitely by weekend',     '11:38 AM') +
-            dateSep('2 weeks later') +
-            rcv('Charles', names.charles, '...guys 🥺',                              '9:03 AM') +
-            '<div style="padding:12px 10px 0;text-align:center;">' +
-              '<span style="background:#182229;color:' + TS + ';font-size:10px;padding:3px 10px;border-radius:6px;">Seen by all · No replies</span>' +
+        '</div>'
+      );
+    }
+    /* WhatsApp-style photo grid (2×2 + overflow count) */
+    function _waPhotos(n, colors) {
+      var tiles = '';
+      for (var i = 0; i < Math.min(n, 4); i++) {
+        var c = colors[i % colors.length];
+        var isCountCell = (i === 3 && n > 4);
+        tiles += '<div style="width:66px;height:66px;border-radius:' + (i===0?'6px 0 0 0':i===1?'0 6px 0 0':i===2?'0 0 0 6px':'0 0 6px 0') + ';' +
+          'background:linear-gradient(135deg,' + c[0] + ',' + c[1] + ');' +
+          'filter:saturate(.55) blur(.4px);overflow:hidden;position:relative;' +
+          'display:flex;align-items:center;justify-content:center;">' +
+          /* grain overlay */
+          '<div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.04) 2px,rgba(0,0,0,.04) 4px);"></div>' +
+          (isCountCell ? '<span style="position:relative;color:#fff;font-size:15px;font-weight:800;text-shadow:0 1px 3px rgba(0,0,0,.6);">+' + (n - 3) + '</span>' : '') +
+        '</div>';
+      }
+      return '<div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;width:134px;margin:4px 0;border-radius:6px;overflow:hidden;">' + tiles + '</div>';
+    }
+
+    /* Slide 0 — Broken promise loop */
+    function _obV0() {
+      var BG='#0B141A', HDR='#1F2C34', RCV='#202C33', TXT='#E9EDEF', TS='#8696A0';
+      var C = { charles:'#53BDEB', ruban:'#FCB04A', rey:'#CEB0FB', joye:'#20C09F' };
+      var R = function(w,c,m,t) { return _waRcv(w,c,_waTxt(m,TXT),t,RCV,TXT,TS); };
+      return (
+        '<div style="background:' + BG + ';height:100%;display:flex;flex-direction:column;">' +
+          _waHeader('🌊','Goa Trip 🌊','Charles, Ruban, Rey, Joye, Anbu +2',BG,HDR,TXT,TS) +
+          '<div id="ob-chat" style="flex:1;padding:4px 0;overflow-y:scroll;-webkit-overflow-scrolling:touch;" ontouchstart="_obTogglePause()" >' +
+            _waDate('16 May', TS) +
+            R('Charles',C.charles,'hey guys can we get the Goa photos? 🙏','10:42 AM') +
+            R('Ruban',  C.ruban,  'yeah will send tomorrow bro, been busy 😅','10:45 AM') +
+            R('Rey',    C.rey,    'same yaar, this weekend for sure 👍','10:47 AM') +
+            _waDate('3 days later', TS) +
+            R('Joye',   C.joye,   'Ruban? Rey? photos? 👀','11:20 AM') +
+            R('Ruban',  C.ruban,  'sorry yaar, it\'s been hectic — definitely by weekend','11:38 AM') +
+            R('Rey',    C.rey,    '^ same, will send tonight 🙏','11:41 AM') +
+            _waDate('2 weeks later', TS) +
+            R('Charles',C.charles,'...guys 🥺','9:03 AM') +
+            '<div style="padding:14px 10px 16px;text-align:center;">' +
+              '<span style="background:#182229;color:' + TS + ';font-size:10px;padding:3px 10px;border-radius:6px;">Seen by everyone · No replies</span>' +
             '</div>' +
           '</div>' +
         '</div>'
       );
     }
 
-    /* Slide 1 — The dump chaos (dark WhatsApp) */
+    /* Slide 1 — The dump chaos */
     function _obV1() {
-      var BG='#0B141A', HDR='#1F2C34', RCV='#202C33', SND='#005C4B';
-      var TXT='#E9EDEF', TS='#8696A0';
-      var names = { anbu:'#E47FB1', obeth:'#3FDE8A', richie:'#FF8C69', joye:'#20C09F', rey:'#CEB0FB', ruban:'#FCB04A' };
-
-      function rcv(who, clr, content, time) {
-        return '<div style="display:flex;justify-content:flex-start;margin-bottom:4px;padding:0 10px;">' +
-          '<div style="background:' + RCV + ';border-radius:2px 10px 10px 10px;padding:7px 10px 5px;max-width:82%;">' +
-            '<span style="display:block;font-size:11px;font-weight:700;color:' + clr + ';margin-bottom:3px;">' + who + '</span>' +
-            content +
-            '<span style="display:block;font-size:10px;color:' + TS + ';text-align:right;margin-top:2px;">' + time + '</span>' +
-          '</div></div>';
-      }
-      function msgTxt(txt) { return '<span style="display:block;font-size:13px;color:' + TXT + ';line-height:1.4;">' + txt + '</span>'; }
-      function photos(n, g1, g2) {
-        var thumbs = '';
-        for (var i = 0; i < Math.min(n, 3); i++) {
-          thumbs += '<div style="width:52px;height:52px;border-radius:4px;background:linear-gradient(135deg,' + g1 + ',' + g2 + ');opacity:.75;display:inline-flex;align-items:center;justify-content:center;margin-right:2px;">' +
-            '<svg width="14" height="14" viewBox="0 0 24 24" fill="rgba(255,255,255,.7)"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21" fill="rgba(255,255,255,.5)"/></svg>' +
-            '</div>';
-        }
-        if (n > 3) thumbs += '<div style="width:52px;height:52px;border-radius:4px;background:rgba(255,255,255,.07);display:inline-flex;align-items:center;justify-content:center;"><span style="color:rgba(255,255,255,.6);font-size:12px;font-weight:700;">+' + (n - 3) + '</span></div>';
-        return '<div style="display:flex;gap:2px;flex-wrap:nowrap;margin:3px 0;">' + thumbs + '</div>';
-      }
-      function driveLink(label) {
-        return '<div style="background:rgba(255,255,255,.06);border-radius:8px;padding:7px 9px;display:flex;align-items:center;gap:8px;margin:3px 0;">' +
-          '<div style="width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,#1976D2,#42A5F5);display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
-            '<svg width="14" height="14" viewBox="0 0 24 24" fill="#fff"><path d="M4.5 18L9 9l3 6 2-4 4 7H4.5z"/></svg>' +
-          '</div>' +
-          '<div><div style="font-size:11px;font-weight:600;color:' + TXT + ';">' + label + '</div><div style="font-size:10px;color:' + TS + ';">drive.google.com</div></div>' +
-        '</div>';
-      }
+      var BG='#0B141A', HDR='#1F2C34', RCV='#202C33', TXT='#E9EDEF', TS='#8696A0';
+      var C = { anbu:'#E47FB1', obeth:'#3FDE8A', richie:'#FF8C69', karthik:'#FF7C7C',
+                rey:'#CEB0FB', ruban:'#FCB04A', charles:'#53BDEB',
+                yasin:'#7BC8F6', kavitha:'#78D89B', mayank:'#FFD166' };
+      var R  = function(w,c,ct,t) { return _waRcv(w,c,ct,t,RCV,TXT,TS); };
+      var Rt = function(w,c,m,t)  { return R(w,c,_waTxt(m,TXT),t); };
+      var blue1 = [['#1A237E','#3949AB'],['#283593','#42A5F5'],['#1565C0','#64B5F6'],['#0D47A1','#1976D2']];
+      var purp1 = [['#4A148C','#7B1FA2'],['#6A1B9A','#AB47BC'],['#38006B','#9C27B0'],['#4527A0','#7E57C2']];
 
       return (
         '<div style="background:' + BG + ';height:100%;display:flex;flex-direction:column;">' +
-          '<div style="background:' + HDR + ';padding:10px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;">' +
-            '<div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#1B5E20,#43A047);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🌊</div>' +
-            '<div>' +
-              '<div style="font-size:14px;font-weight:700;color:' + TXT + ';">Goa Trip 🌊</div>' +
-              '<div style="font-size:11px;color:' + TS + ';">Charles, Ruban, Rey, Joye, Anbu +2</div>' +
-            '</div>' +
-          '</div>' +
-          '<div style="flex:1;padding:4px 0;overflow:hidden;">' +
-            rcv('Anbu',   names.anbu,   photos(14,'#1A237E','#3F51B5') + msgTxt('here are the photos finally 😅'), '11:05 AM') +
-            rcv('Obeth',  names.obeth,  driveLink('Goa Photos (Final)'), '11:07 AM') +
-            rcv('Richie', names.richie, photos(9,'#4A148C','#9C27B0'), '11:12 AM') +
-            rcv('Joye',   names.joye,   msgTxt('these are so compressed 😭'), '11:13 AM') +
-            rcv('Rey',    names.rey,    msgTxt('anyone have the originals?? 🙏'), '11:14 AM') +
-            rcv('Ruban',  names.ruban,  msgTxt('my storage is full can someone make a drive'), '11:15 AM') +
-            rcv('Obeth',  names.obeth,  driveLink('Goa Photos FINAL FINAL'), '11:16 AM') +
-            rcv('Anbu',   names.anbu,   msgTxt('which folder is the right one 😭'), '11:17 AM') +
+          _waHeader('🌊','Goa Trip 🌊','Charles, Ruban, Rey, Joye, Anbu +4',BG,HDR,TXT,TS) +
+          '<div id="ob-chat" style="flex:1;padding:4px 0;overflow-y:scroll;-webkit-overflow-scrolling:touch;" ontouchstart="_obTogglePause()">' +
+            R('Anbu',    C.anbu,    _waPhotos(14, blue1) + _waTxt('here are the photos finally 😅', TXT), '11:05 AM') +
+            R('Obeth',   C.obeth,   _waDrive('Goa Photos Final (2)', TXT, TS), '11:07 AM') +
+            R('Ruban',   C.ruban,   _waPhotos(9, purp1), '11:10 AM') +
+            Rt('Karthik',C.karthik, 'bro send my solo pics separately', '11:13 AM') +
+            Rt('Rey',    C.rey,     'cna yuo send my drinking photo personally 😭', '11:14 AM') +
+            Rt('Richie', C.richie,  'my storage is full can someone make another Drive', '11:15 AM') +
+            R('Obeth',   C.obeth,   _waTxt('uploaded again',TXT) + _waDrive('Goa Photos FINAL FINAL', TXT, TS), '11:16 AM') +
+            Rt('Charles',C.charles, 'wait which folder is the latest 😭', '11:17 AM') +
+            Rt('Yasin',  C.yasin,   'who even clicked this screenshot 💀', '11:18 AM') +
+            '<div style="height:8px;"></div>' +
+            _waDate('later that day', TS) +
+            Rt('Kavitha',C.kavitha, 'guys did anyone get my photos?', '3:42 PM') +
+            Rt('Rey',    C.rey,     'which ones?', '3:44 PM') +
+            Rt('Kavitha',C.kavitha, 'the sunset ones near the fort :(', '3:45 PM') +
+            Rt('Ruban',  C.ruban,   'I think Mayank clicked', '3:46 PM') +
+            Rt('Mayank', C.mayank,  'bro I changed phones', '3:48 PM') +
+            Rt('Kavitha',C.kavitha, '👍', '3:49 PM') +
+            '<div style="height:16px;"></div>' +
           '</div>' +
         '</div>'
       );
@@ -10280,13 +10332,55 @@
       );
     }
 
+    /* Onboarding auto-scroll */
+    function _obStartScroll() {
+      clearInterval(_obScrollInt);
+      _obScrollPaused = false;
+      var chat    = document.getElementById('ob-chat');
+      var nextBtn = document.getElementById('ob-next-btn');
+      var hint    = document.getElementById('ob-scroll-hint');
+      if (!chat) return;
+
+      function enableNext() {
+        clearInterval(_obScrollInt);
+        if (nextBtn) { nextBtn.style.opacity = '1'; nextBtn.style.pointerEvents = 'auto'; }
+        if (hint)    { hint.style.opacity = '0'; }
+      }
+      function atBottom() {
+        return chat.scrollTop + chat.clientHeight >= chat.scrollHeight - 6;
+      }
+      if (atBottom()) { enableNext(); return; }
+
+      /* Manual scroll to bottom also enables Next */
+      chat.addEventListener('scroll', function() { if (atBottom()) enableNext(); }, { passive: true });
+
+      _obScrollInt = setInterval(function() {
+        if (_obScrollPaused) return;
+        chat.scrollTop += 1.4;
+        if (atBottom()) enableNext();
+      }, 16);
+    }
+    function _obTogglePause() {
+      _obScrollPaused = !_obScrollPaused;
+      var hint = document.getElementById('ob-scroll-hint');
+      if (hint) hint.innerHTML = _obScrollPaused
+        ? '<span style="background:rgba(0,0,0,.55);color:#fff;font-size:10px;font-weight:600;padding:3px 10px;border-radius:10px;">▶ Tap to resume</span>'
+        : '<span style="background:rgba(0,0,0,.55);color:#fff;font-size:10px;font-weight:600;padding:3px 10px;border-radius:10px;">⏸ Tap to pause</span>';
+    }
+
     /* Onboarding navigation */
     function onboardingNext() {
+      clearInterval(_obScrollInt);
       _obSlide++;
       if (_obSlide >= 4) { onboardingDone(); } else { render(); }
     }
-    function onboardingSkip() { onboardingDone(); }
+    function onboardingBack() {
+      clearInterval(_obScrollInt);
+      if (_obSlide > 0) { _obSlide--; render(); }
+    }
+    function onboardingSkip() { clearInterval(_obScrollInt); onboardingDone(); }
     function onboardingDone() {
+      clearInterval(_obScrollInt);
       sessionStorage.setItem('_onboarding_done', '1');
       _obSlide = 0;
       go('entry');
@@ -10385,6 +10479,11 @@
        Timers and focus calls that must run after DOM insert.
     ───────────────────────────────────────────────────── */
     function postRender() {
+      /* Onboarding auto-scroll — kick off on chat slides */
+      if (state.screen === 'onboarding' && (_obSlide === 0 || _obSlide === 1)) {
+        setTimeout(_obStartScroll, 700);
+      }
+
       /* Album listing search — restore focus after render */
       if (albumSearchOpen) {
         setTimeout(function () {
