@@ -2768,6 +2768,7 @@
     ───────────────────────────────────────────────────── */
     var photoPermJustGranted = false; /* true when OS permission just granted — auto-opens sync sheet */
     var _taggingScrollY      = 0;    /* last scroll position for collapse/expand logic */
+    var _taggingScrollTick   = false; /* rAF debounce flag for scroll handler */
     var _stickyMode          = 'people'; /* 'people' | 'category' — which row sticky bar shows */
     var taggingTab           = 'all';
     var taggingFilterCat     = '';
@@ -2779,9 +2780,9 @@
     var momentBFired         = false;
     var momentAFace          = -1;
     var taggingLongTimer     = null;
-    var groupPoolCount       = 34;
+    var groupPoolCount       = 60;
     var groupPhotosUnlocked  = false; /* false = empty group tab (Varun pre-share); true = photos visible */
-    var groupDisplayCount  = 258;   /* total group pool count (all members) */
+    var groupDisplayCount  = 312;   /* total group pool count (all members) */
     var taggingSearchActive    = false;
     var taggingCategory        = '';   /* active category pill */
     var taggingOpenTab         = '';   /* if set, overrides default tab on next render */
@@ -2877,18 +2878,35 @@
       'bonfire','forest','lake','night','waterfall',
       'food','selfie','travel','group'
     ];
-    var TRIP_BY_LIST = ['VR','MA','KA','?','VR','MA','KA','VR','?','MA'];
+    var TRIP_BY_LIST = ['VR','MA','KA','?','VR','MA','KA','VR','?','MA','BE','VI','AN','BE','VI'];
+
+    /* Global category pills — used by filter header, sticky bar, and inline grid strips */
+    var CAT_PILLS = [
+      { cat: 'Bonfire',  emoji: '🔥', bg: '#FFF3E0', clr: '#9D3500', count: 9  },
+      { cat: 'Forest',   emoji: '🌲', bg: '#E8F5E9', clr: '#2E7D32', count: 11 },
+      { cat: 'Lake',     emoji: '🏞', bg: '#E3F2FD', clr: '#1565C0', count: 14 },
+      { cat: 'Night',    emoji: '✨', bg: '#EDE7F6', clr: '#4527A0', count: 12 },
+      { cat: 'Waterfall',emoji: '💦', bg: '#E0F7FA', clr: '#006064', count: 8  },
+      { cat: 'Food',     emoji: '🍛', bg: '#FBE9E7', clr: '#8D2000', count: 6  },
+      { cat: 'Selfies',  emoji: '🤳', bg: '#FCE4EC', clr: '#880E4F', count: 16 },
+      { cat: 'Travel',   emoji: '🚗', bg: '#FFF3E0', clr: '#E65100', count: 10 },
+      { cat: 'Group',    emoji: '👥', bg: '#FFEBEE', clr: '#B71C1C', count: 18 }
+    ];
+
+    /* Tracks which My Photos IDs have been shared to the group */
+    var sharedPhotoIds = [];
+
     var TRIP_PHOTOS = (function () {
-      var savedIds      = [3, 7, 11, 14, 19, 24, 28];
-      var downloadedIds = [5, 12, 19, 27, 31];
-      var videoIds      = [4, 9, 16, 22, 29];   /* ~15% videos — realistic ratio */
+      var savedIds      = [3, 7, 11, 14, 19, 24, 28, 35, 42, 51];
+      var downloadedIds = [5, 12, 19, 27, 31, 38, 47, 55];
+      var videoIds      = [4, 9, 16, 22, 29, 37, 43, 50, 57];   /* ~15% videos */
       var arr = [];
-      for (var i = 1; i <= 34; i++) {
+      for (var i = 1; i <= 60; i++) {
         arr.push({
           id:         i,
           scene:      TRIP_SCENE_LIST[(i - 1) % 9],
           by:         TRIP_BY_LIST[(i - 1) % 10],
-          day:        i <= 18 ? 1 : 2,
+          day:        i <= 15 ? 1 : i <= 30 ? 2 : i <= 45 ? 3 : 4,
           type:       videoIds.indexOf(i) !== -1 ? 'video' : 'photo',
           saved:      savedIds.indexOf(i)      !== -1,
           downloaded: downloadedIds.indexOf(i) !== -1
@@ -3071,6 +3089,22 @@
                 '</svg>'
               : '') +
           '</div>' +
+          /* ── shared-to-group badge (bottom-left) ── */
+          (sharedPhotoIds.indexOf(photo.id) !== -1
+            ? '<div style="position:absolute;bottom:8px;left:8px;' +
+                          'width:22px;height:22px;border-radius:6px;' +
+                          'background:rgba(27,79,216,.82);backdrop-filter:blur(6px);' +
+                          'display:flex;align-items:center;justify-content:center;' +
+                          'filter:drop-shadow(0 1px 3px rgba(0,0,0,.25));">' +
+                '<svg width="11" height="11" viewBox="0 0 24 24" fill="none"' +
+                     ' stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' +
+                  '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>' +
+                  '<circle cx="9" cy="7" r="4"/>' +
+                  '<path d="M23 21v-2a4 4 0 0 0-3-3.87"/>' +
+                  '<path d="M16 3.13a4 4 0 0 1 0 7.75"/>' +
+                '</svg>' +
+              '</div>'
+            : '') +
           /* ── saved / downloaded corner badges ── */
           ((photo.saved || photo.downloaded)
             ? '<div style="position:absolute;bottom:8px;right:8px;' +
@@ -4119,38 +4153,126 @@
       );
     }
 
+    /* ─── inline filter strip injected every 9 photos in the grid ─── */
+    function inlineFilterStrip() {
+      /* Compact person chips */
+      var pChips = '';
+      for (var ip = 0; ip < AL_PEOPLE.length; ip++) {
+        var p = AL_PEOPLE[ip];
+        var on = (taggingFaceFilter === p.id);
+        pChips += (
+          '<div onclick="taggingSetFace(\'' + p.id + '\')"' +
+               ' style="width:30px;height:30px;border-radius:50%;' +
+                       'background:' + p.bg + ';' +
+                       'display:flex;align-items:center;justify-content:center;' +
+                       'cursor:pointer;flex-shrink:0;' +
+                       'font-size:10px;font-weight:800;color:#fff;' +
+                       'box-shadow:' + (on ? '0 0 0 2.5px ' + T.blue + ',0 0 0 4px rgba(27,79,216,.2)' : 'none') + ';' +
+                       'opacity:' + (!taggingFaceFilter || on ? '1' : '0.4') + ';">' +
+            p.id +
+          '</div>'
+        );
+      }
+      /* Category pills */
+      var cPills = '';
+      for (var ic = 0; ic < CAT_PILLS.length; ic++) {
+        var cp = CAT_PILLS[ic];
+        if (!cp.count) continue;
+        var cOn = (taggingCategory === cp.cat);
+        cPills += (
+          '<div onclick="taggingSetCategory(\'' + cp.cat + '\')"' +
+               ' style="display:inline-flex;align-items:center;gap:3px;' +
+                       'height:26px;padding:0 9px;' +
+                       'border-radius:13px;flex-shrink:0;cursor:pointer;' +
+                       'background:' + (cOn ? cp.bg : 'rgba(0,0,0,.06)') + ';' +
+                       'border:1.5px solid ' + (cOn ? cp.clr : 'transparent') + ';">' +
+            '<span style="font-size:12px;line-height:1;">' + cp.emoji + '</span>' +
+            '<span style="font-size:11px;font-weight:600;color:' + (cOn ? cp.clr : T.textS) + ';">' + cp.cat + '</span>' +
+          '</div>'
+        );
+      }
+      return (
+        '<div style="grid-column:1/-1;background:#F7F6F4;' +
+                    'padding:8px 12px;margin:2px 0;">' +
+          '<div class="hscroll"' +
+               ' style="display:flex;align-items:center;gap:8px;overflow-x:auto;">' +
+            /* ALL circle */
+            '<div onclick="taggingSetFace(\'\')"' +
+                 ' style="width:30px;height:30px;border-radius:50%;' +
+                         'background:' + (!taggingFaceFilter ? T.blue : T.bgSub) + ';' +
+                         'display:flex;align-items:center;justify-content:center;' +
+                         'cursor:pointer;flex-shrink:0;">' +
+              '<svg width="13" height="13" viewBox="0 0 24 24" fill="none"' +
+                   ' stroke="' + (!taggingFaceFilter ? '#fff' : T.textS) + '"' +
+                   ' stroke-width="2.2" stroke-linecap="round">' +
+                '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>' +
+                '<circle cx="9" cy="7" r="4"/>' +
+                '<path d="M23 21v-2a4 4 0 0 0-3-3.87"/>' +
+                '<path d="M16 3.13a4 4 0 0 1 0 7.75"/>' +
+              '</svg>' +
+            '</div>' +
+            pChips +
+            /* Slim divider */
+            '<div style="width:1px;height:18px;background:rgba(0,0,0,.12);flex-shrink:0;"></div>' +
+            cPills +
+          '</div>' +
+        '</div>'
+      );
+    }
+
     /* ─── sticky filter bar collapse/expand on scroll ─── */
     function taggingGridScroll(el) {
-      var y    = el.scrollTop;
-      var prev = _taggingScrollY;
-      _taggingScrollY = y;
-      var full   = document.getElementById('tagging-filters-full');
-      var sticky = document.getElementById('tagging-sticky-bar');
-      if (!full || !sticky) return;
-      /* Collapse: scrolled down past 72px */
-      if (y > 72 && prev <= 72) {
-        full.style.height    = '0';
-        full.style.opacity   = '0';
-        sticky.style.height  = '46px';
-        sticky.style.opacity = '1';
-      }
-      /* Expand: scrolled back up near top */
-      if (y < 36 && prev >= 36) {
-        full.style.height    = (window._taggingFiltersH || 160) + 'px';
-        full.style.opacity   = '1';
-        sticky.style.height  = '0';
-        sticky.style.opacity = '0';
-        /* Reset sticky to people mode for next appearance */
-        if (_stickyMode !== 'people') {
-          _stickyMode = 'people';
-          var pp2 = document.getElementById('sticky-people-panel');
-          var cp2 = document.getElementById('sticky-cat-panel');
-          var tb2 = document.getElementById('sticky-cat-toggle');
-          if (pp2) pp2.style.display = 'flex';
-          if (cp2) cp2.style.display = 'none';
-          if (tb2) { tb2.style.background = T.bgSub; tb2.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="' + T.text + '" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>'; }
+      /* Read scrollTop synchronously (must happen in scroll event) */
+      _taggingScrollY = el.scrollTop;
+      /* rAF debounce — only run style changes once per frame */
+      if (_taggingScrollTick) return;
+      _taggingScrollTick = true;
+      var _snapY = _taggingScrollY;
+      requestAnimationFrame(function () {
+        _taggingScrollTick = false;
+        var y    = _taggingScrollY;
+        var prev = _snapY;
+        var full   = document.getElementById('tagging-filters-full');
+        var sticky = document.getElementById('tagging-sticky-bar');
+        if (!full || !sticky) return;
+
+        /* Collapse: scrolled down past 72px — filter fades+collapses, sticky fades in */
+        if (y > 72 && prev <= 72) {
+          full.style.height    = '0';
+          full.style.opacity   = '0';
+          /* Sticky: set height instantly, then fade in via opacity only (GPU composited) */
+          sticky.style.transition = 'none';
+          sticky.style.height     = '46px';
+          sticky.style.opacity    = '0';
+          requestAnimationFrame(function () {
+            sticky.style.transition = 'opacity .2s ease';
+            sticky.style.opacity    = '1';
+          });
         }
-      }
+
+        /* Expand: scrolled back up near top — sticky fades out, filter expands */
+        if (y < 36 && prev >= 36) {
+          /* Sticky: fade out first, then collapse height instantly after */
+          sticky.style.transition = 'opacity .15s ease';
+          sticky.style.opacity    = '0';
+          setTimeout(function () {
+            sticky.style.transition = 'none';
+            sticky.style.height     = '0';
+          }, 160);
+          full.style.height  = (window._taggingFiltersH || 160) + 'px';
+          full.style.opacity = '1';
+          /* Reset sticky to people mode for next appearance */
+          if (_stickyMode !== 'people') {
+            _stickyMode = 'people';
+            var pp2 = document.getElementById('sticky-people-panel');
+            var cp2 = document.getElementById('sticky-cat-panel');
+            var tb2 = document.getElementById('sticky-cat-toggle');
+            if (pp2) pp2.style.display = 'flex';
+            if (cp2) cp2.style.display = 'none';
+            if (tb2) { tb2.style.background = T.bgSub; tb2.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="' + T.text + '" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>'; }
+          }
+        }
+      });
     }
 
     function taggingUpdateStickyBar() {
@@ -4285,6 +4407,7 @@
           var poolHTML = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;">';
           var shown = Math.min(groupPoolCount, filtered.length);
           for (var j = 0; j < shown; j++) {
+            if (j > 0 && j % 9 === 0) poolHTML += inlineFilterStrip();
             poolHTML += taggingPhotoCell(filtered[j], 0);
           }
           poolHTML += '</div>';
@@ -4315,6 +4438,7 @@
       } else {
         var myHTML = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;">';
         for (var k = 0; k < TRIP_PHOTOS.length; k++) {
+          if (k > 0 && k % 9 === 0) myHTML += inlineFilterStrip();
           myHTML += taggingPhotoCell(TRIP_PHOTOS[k], 9);
         }
         myHTML += '</div>';
@@ -5334,8 +5458,12 @@
     }
 
     function completeShareWithGroup(shared) {
-      groupPoolCount    = Math.min(groupPoolCount + shared.length, 34);
+      groupPoolCount    = Math.min(groupPoolCount + shared.length, 60);
       groupDisplayCount = groupDisplayCount + shared.length;
+      /* Track which photo IDs were shared so My Photos can badge them */
+      for (var si = 0; si < shared.length; si++) {
+        if (sharedPhotoIds.indexOf(shared[si]) === -1) sharedPhotoIds.push(shared[si]);
+      }
       flyPhotosToGroupTab(shared);
     }
 
@@ -5450,8 +5578,8 @@
       momentAFired        = false;
       momentBFired        = false;
       momentAFace         = -1;
-      groupPoolCount      = 34;
-      groupDisplayCount   = 258;
+      groupPoolCount      = 60;
+      groupDisplayCount   = 312;
 
       /* ── people row — journey-aware ── */
       var PEOPLE;
@@ -5542,18 +5670,7 @@
       }
       /* +4 More chip removed — all members visible via horizontal scroll */
 
-      /* ── category pills ── */
-      var CAT_PILLS = [
-        { cat: 'Bonfire',   emoji: '🔥', bg: '#FFF3E0', clr: '#9D3500', count: 6  },
-        { cat: 'Forest',    emoji: '🌲', bg: '#E8F5E9', clr: '#2E7D32', count: 8  },
-        { cat: 'Lake',      emoji: '🏞', bg: '#E3F2FD', clr: '#1565C0', count: 11 },
-        { cat: 'Night',     emoji: '✨', bg: '#EDE7F6', clr: '#4527A0', count: 9  },
-        { cat: 'Waterfall', emoji: '💦', bg: '#E0F7FA', clr: '#006064', count: 5  },
-        { cat: 'Food',      emoji: '🍛', bg: '#FBE9E7', clr: '#8D2000', count: 4  },
-        { cat: 'Selfies',   emoji: '🤳', bg: '#FCE4EC', clr: '#880E4F', count: 12 },
-        { cat: 'Travel',    emoji: '🚗', bg: '#FFF3E0', clr: '#E65100', count: 7  },
-        { cat: 'Group',     emoji: '👥', bg: '#FFEBEE', clr: '#B71C1C', count: 15 }
-      ];
+      /* ── category pills (uses global CAT_PILLS) ── */
       var catHTML = '';
       for (var ci = 0; ci < CAT_PILLS.length; ci++) {
         var cp = CAT_PILLS[ci];
@@ -5609,10 +5726,12 @@
         var filt  = getFilteredGroupPhotos();
         var shown = Math.min(groupPoolCount, filt.length);
         for (var gi = 0; gi < shown; gi++) {
+          if (gi > 0 && gi % 9 === 0) gridHTML += inlineFilterStrip();
           gridHTML += taggingPhotoCell(filt[gi], 0);
         }
       } else {
         for (var gi = 0; gi < TRIP_PHOTOS.length; gi++) {
+          if (gi > 0 && gi % 9 === 0) gridHTML += inlineFilterStrip();
           gridHTML += taggingPhotoCell(TRIP_PHOTOS[gi], 9);
         }
       }
@@ -5720,6 +5839,7 @@
                ' style="overflow:hidden;' +
                        'height:auto;' +
                        'opacity:1;' +
+                       'will-change:height,opacity;' +
                        'transition:height .28s cubic-bezier(.4,0,.2,1),opacity .22s ease;' +
                        'flex-shrink:0;">' +
 
@@ -7440,6 +7560,7 @@
       groupCreated         = false;
       /* Varun starts with empty group tab (he hasn't shared yet); everyone else sees photos */
       groupPhotosUnlocked  = (journey !== 'varun');
+      sharedPhotoIds       = [];
       go(dest);
     }
 
