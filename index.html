@@ -988,11 +988,11 @@
         { num:2, name:'Mayank',  initials:'MA', bg:'linear-gradient(135deg,#E65100,#FF8F00)',
           tag:'Existing',  tagBg:'#E8F5E9', tagClr:'#2E7D32',
           desc:'Existing user · Got Varun\'s invite via WhatsApp group',
-          action:'startJourney(\'mayank\',\'mayank-scene\',{taggingOpenTab:\'group\',hasSynced:true})' },
+          action:'startJourney(\'mayank\',\'mayank-scene\',{taggingOpenTab:\'group\'})' },
         { num:3, name:'Anand',   initials:'AN', bg:'linear-gradient(135deg,#006064,#00838F)',
           tag:'Existing',  tagBg:'#E8F5E9', tagClr:'#2E7D32',
           desc:'Existing user · Got Varun\'s invite via WhatsApp DM',
-          action:'startJourney(\'anand\',\'anand-scene\',{taggingOpenTab:\'group\',inviteAccepted:true,hasSynced:true})' },
+          action:'startJourney(\'anand\',\'anand-scene\',{taggingOpenTab:\'group\'})' },
         { num:4, name:'Vishal',  initials:'VI', bg:'linear-gradient(135deg,#4A148C,#7B1FA2)',
           tag:'New user',  tagBg:'#FFF3E0', tagClr:'#E65100',
           desc:'New user · Got Varun\'s invite via SMS',
@@ -1098,7 +1098,7 @@
                         'background:' + (sessionStorage.getItem('_refreshed') === '1' ? T.ok : T.alert) + ';' +
                         'color:#fff;transition:background .3s;">' +
                 '<span style="font-size:16px;">' + (sessionStorage.getItem('_refreshed') === '1' ? '✓' : '↻') + '</span>' +
-                (sessionStorage.getItem('_refreshed') === '1' ? 'You\'re on the latest version · v60' : 'Update available · tap to get v60') +
+                (sessionStorage.getItem('_refreshed') === '1' ? 'You\'re on the latest version · v62' : 'Update available · tap to get v62') +
               '</button>' +
 
             '</div>' +
@@ -1115,7 +1115,7 @@
 
             '<p style="text-align:center;font-size:10px;font-weight:500;' +
                       'color:' + T.textT + ';margin-top:8px;letter-spacing:.04em;">' +
-              'v60' +
+              'v62' +
             '</p>' +
 
           '</div>' +
@@ -2522,7 +2522,7 @@
               'Find my trip photos' +
             '</button>' +
             '<button id="sync-later-btn"' +
-              ' onclick="taggingOpenTab=\'my-photos\';go(\'varun-tagging\')"' +
+              ' onclick="taggingOpenTab=(activeJourney===\'mayank\'||activeJourney===\'anand\'?\'group\':\'my-photos\');go(\'varun-tagging\')"' +
               ' style="display:block;width:100%;height:44px;' +
                      'border-radius:12px;border:none;background:transparent;' +
                      'color:' + T.textS + ';font-family:inherit;' +
@@ -3972,55 +3972,27 @@
           grid.innerHTML = poolHTML;
         }
       } else if (tab === 'my-photos' && !hasSynced) {
-        if (activeJourney === 'mayank' || activeJourney === 'anand') {
-          /* Mayank / Anand — auto-sync in progress bar (no user action needed) */
-          grid.innerHTML = (
-            '<div style="padding:20px 0;">' +
-              '<div style="background:' + T.blueTint + ';border-radius:12px;padding:14px 16px;">' +
-                '<div style="display:flex;align-items:center;justify-content:space-between;' +
-                            'margin-bottom:10px;">' +
-                  '<p style="font-size:13px;font-weight:600;color:' + T.blue + ';">' +
-                    'Syncing your Iceland photos' +
-                  '</p>' +
-                  '<p id="mayank-sync-pct"' +
-                     ' style="font-size:12px;font-weight:700;color:' + T.blue + ';">60%</p>' +
-                '</div>' +
-                '<div style="background:rgba(27,79,216,.15);border-radius:4px;' +
-                            'height:4px;overflow:hidden;">' +
-                  '<div id="mayank-sync-bar"' +
-                       ' style="height:100%;width:60%;background:' + T.blue + ';' +
-                               'border-radius:4px;transition:width .3s linear;"></div>' +
-                '</div>' +
-                '<p style="font-size:11px;color:' + T.textT + ';margin-top:8px;">' +
-                  'Your photos will appear here when sync is complete.' +
-                '</p>' +
-              '</div>' +
-            '</div>'
-          );
-          mayankStartAutoSync();
-        } else {
-          /* Varun / Beulah — show sync nudge */
-          grid.innerHTML = (
-            '<div style="display:flex;flex-direction:column;align-items:center;' +
-                        'justify-content:center;padding:60px 32px;text-align:center;">' +
-              '<div style="font-size:44px;margin-bottom:16px;">📷</div>' +
-              '<p style="font-size:16px;font-weight:700;color:' + T.text + ';margin-bottom:8px;">' +
-                'Your captures, with everyone' +
-              '</p>' +
-              '<p style="font-size:13px;font-weight:400;color:' + T.textS + ';' +
-                        'line-height:1.6;margin-bottom:28px;">' +
-                'Sync your photo album to share your captures from the trip with your friends.' +
-              '</p>' +
-              '<button onclick="go(\'varun-sync\')"' +
-                ' style="height:48px;padding:0 28px;border-radius:12px;border:none;' +
-                       'background:' + T.blue + ';color:#fff;' +
-                       'font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;' +
-                       'box-shadow:0 4px 16px rgba(27,79,216,.26);">' +
-                'Sync my photos' +
-              '</button>' +
-            '</div>'
-          );
-        }
+        /* All users — show sync nudge until they explicitly sync */
+        grid.innerHTML = (
+          '<div style="display:flex;flex-direction:column;align-items:center;' +
+                      'justify-content:center;padding:60px 32px;text-align:center;">' +
+            '<div style="font-size:44px;margin-bottom:16px;">📷</div>' +
+            '<p style="font-size:16px;font-weight:700;color:' + T.text + ';margin-bottom:8px;">' +
+              'Your captures, with everyone' +
+            '</p>' +
+            '<p style="font-size:13px;font-weight:400;color:' + T.textS + ';' +
+                      'line-height:1.6;margin-bottom:28px;">' +
+              'Sync your photo album to share your captures from the trip with your friends.' +
+            '</p>' +
+            '<button onclick="go(\'varun-sync\')"' +
+              ' style="height:48px;padding:0 28px;border-radius:12px;border:none;' +
+                     'background:' + T.blue + ';color:#fff;' +
+                     'font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;' +
+                     'box-shadow:0 4px 16px rgba(27,79,216,.26);">' +
+              'Sync my photos' +
+            '</button>' +
+          '</div>'
+        );
       } else {
         var myHTML = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;">';
         for (var k = 0; k < TRIP_PHOTOS.length; k++) {
@@ -5207,9 +5179,9 @@
       if (taggingTab === 'my-photos' && !hasSynced) {
         /* show sync nudge inline — taggingSetTab will also handle tab switches */
         gridHTML = '';
-      } else if (taggingTab === 'group' && !hasSynced) {
-        /* group is empty — no one has synced yet */
-        gridHTML = emptyState('📸', 'No group photos yet', 'Sync your trip photos and invite others to build the shared album.', 'Sync my photos', 'go(\'varun-sync\')');
+      } else if (taggingTab === 'group' && !groupPhotosUnlocked) {
+        /* group tab — locked until photos are shared */
+        gridHTML = '';
       } else if (taggingTab === 'group') {
         var filt  = getFilteredGroupPhotos();
         var shown = Math.min(groupPoolCount, filt.length);
@@ -5434,38 +5406,13 @@
           '<div id="tagging-grid" class="pscroll"' +
                ' style="flex:1;overflow-y:auto;background:#fff;padding:0 0 20px;">' +
             (taggingTab === 'my-photos' && !hasSynced
-              ? (activeJourney === 'mayank' || activeJourney === 'anand'
-                  /* Mayank / Anand — auto-sync progress, fires from postRender */
-                  ? '<div style="padding:20px 0;">' +
-                      '<div style="background:' + T.blueTint + ';border-radius:12px;padding:14px 16px;">' +
-                        '<div style="display:flex;align-items:center;justify-content:space-between;' +
-                                    'margin-bottom:10px;">' +
-                          '<p style="font-size:13px;font-weight:600;color:' + T.blue + ';">' +
-                            'Syncing your Iceland photos' +
-                          '</p>' +
-                          '<p id="mayank-sync-pct"' +
-                             ' style="font-size:12px;font-weight:700;color:' + T.blue + ';">60%</p>' +
-                        '</div>' +
-                        '<div style="background:rgba(27,79,216,.15);border-radius:4px;height:4px;overflow:hidden;">' +
-                          '<div id="mayank-sync-bar"' +
-                               ' style="height:100%;width:60%;background:' + T.blue + ';' +
-                                       'border-radius:4px;transition:width .3s linear;"></div>' +
-                        '</div>' +
-                        '<p style="font-size:11px;color:' + T.textT + ';margin-top:8px;">' +
-                          'Your photos will appear here when sync is complete.' +
-                        '</p>' +
-                      '</div>' +
-                    '</div>'
-                  /* Varun / Beulah — sync nudge */
-                  : emptyState('📷', 'Your captures, with everyone', 'Sync your photo album to share your trip moments with the group.', 'Sync my photos', 'go(\'varun-sync\')')
-                )
-              : (taggingTab === 'group' && !hasSynced && !groupPhotosUnlocked
-                  ? emptyState('📸', 'No group photos yet', 'Sync your photos first, then invite others to build the shared album.', 'Sync my photos', 'go(\'varun-sync\')')
-                  : (taggingTab === 'group' && !groupPhotosUnlocked
-                      ? groupEmptyState()
-                      : '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;">' +
-                          gridHTML +
-                        '</div>'))) +
+              /* All users — show sync nudge until explicitly synced */
+              ? emptyState('📷', 'Your captures, with everyone', 'Sync your photo album to share your trip moments with the group.', 'Sync my photos', 'go(\'varun-sync\')')
+              : (taggingTab === 'group' && !groupPhotosUnlocked
+                  ? groupEmptyState()
+                  : '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;">' +
+                      gridHTML +
+                    '</div>')) +
           '</div>' +
 
           /* ── share bottom bar — populated by taggingRefreshSelectionUI ── */
@@ -8932,15 +8879,6 @@
           var first = document.getElementById('otp-0');
           if (first) first.focus();
         }, 150);
-      }
-
-      /* Mayank — start auto-sync animation if My Photos tab is initially shown */
-      if (state.screen === 'varun-tagging' &&
-          (activeJourney === 'mayank' || activeJourney === 'anand') &&
-          taggingTab === 'my-photos' &&
-          !hasSynced) {
-        clearInterval(mayankSyncInt);
-        setTimeout(mayankStartAutoSync, 300);
       }
 
     }
