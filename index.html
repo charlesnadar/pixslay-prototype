@@ -1098,7 +1098,7 @@
                         'background:' + (sessionStorage.getItem('_refreshed') === '1' ? T.ok : T.alert) + ';' +
                         'color:#fff;transition:background .3s;">' +
                 '<span style="font-size:16px;">' + (sessionStorage.getItem('_refreshed') === '1' ? '✓' : '↻') + '</span>' +
-                (sessionStorage.getItem('_refreshed') === '1' ? 'You\'re on the latest version · v70' : 'Update available · tap to get v70') +
+                (sessionStorage.getItem('_refreshed') === '1' ? 'You\'re on the latest version · v71' : 'Update available · tap to get v71') +
               '</button>' +
 
             '</div>' +
@@ -1115,7 +1115,7 @@
 
             '<p style="text-align:center;font-size:10px;font-weight:500;' +
                       'color:' + T.textT + ';margin-top:8px;letter-spacing:.04em;">' +
-              'v70' +
+              'v71' +
             '</p>' +
 
           '</div>' +
@@ -2767,6 +2767,7 @@
        TAGGING SCREEN — GLOBALS
     ───────────────────────────────────────────────────── */
     var photoPermJustGranted = false; /* true when OS permission just granted — auto-opens sync sheet */
+    var _taggingScrollY      = 0;    /* last scroll position for collapse/expand logic */
     var taggingTab           = 'all';
     var taggingFilterCat     = '';
     var taggingFilterSub     = '';
@@ -4117,6 +4118,63 @@
       );
     }
 
+    /* ─── sticky filter bar collapse/expand on scroll ─── */
+    function taggingGridScroll(el) {
+      var y    = el.scrollTop;
+      var prev = _taggingScrollY;
+      _taggingScrollY = y;
+      var full   = document.getElementById('tagging-filters-full');
+      var sticky = document.getElementById('tagging-sticky-bar');
+      if (!full || !sticky) return;
+      /* Collapse: scrolled down past 72px */
+      if (y > 72 && prev <= 72) {
+        full.style.maxHeight = '0';
+        full.style.opacity   = '0';
+        sticky.style.maxHeight = '48px';
+        sticky.style.opacity   = '1';
+      }
+      /* Expand: scrolled back up near top */
+      if (y < 36 && prev >= 36) {
+        full.style.maxHeight = '220px';
+        full.style.opacity   = '1';
+        sticky.style.maxHeight = '0';
+        sticky.style.opacity   = '0';
+      }
+    }
+
+    function taggingUpdateStickyBar() {
+      /* Update person chip rings in sticky bar */
+      var people = ['VR','MA','KA','BE','VI','AN','?'];
+      for (var i = 0; i < people.length; i++) {
+        var sc = document.getElementById('sticky-chip-' + people[i]);
+        if (!sc) continue;
+        var on = (taggingFaceFilter === people[i]) || (!taggingFaceFilter && people[i] === 'ALL');
+        sc.style.boxShadow = on ? '0 0 0 2.5px ' + T.blue : 'none';
+        sc.style.opacity   = (!taggingFaceFilter || taggingFaceFilter === people[i]) ? '1' : '0.4';
+      }
+      var allBtn = document.getElementById('sticky-chip-ALL');
+      if (allBtn) {
+        allBtn.style.background = !taggingFaceFilter ? T.blue : T.bgSub;
+      }
+      /* Update active category chip */
+      var catChip = document.getElementById('sticky-cat-chip');
+      if (!catChip) return;
+      if (taggingCategory) {
+        catChip.style.display = 'flex';
+        catChip.innerHTML = (
+          '<span style="font-size:11px;font-weight:600;color:' + T.blue + ';' +
+                       'background:#EEF2FD;border-radius:12px;padding:3px 10px;' +
+                       'display:flex;align-items:center;gap:4px;">' +
+            taggingCategory +
+            '<span onclick="taggingSetCategory(\'' + taggingCategory + '\')" ' +
+                  'style="cursor:pointer;font-size:13px;line-height:1;margin-left:2px;">×</span>' +
+          '</span>'
+        );
+      } else {
+        catChip.style.display = 'none';
+      }
+    }
+
     /* ─── face / people row filter ─── */
     function taggingSetFace(face) {
       taggingFaceFilter = (taggingFaceFilter === face) ? '' : face;
@@ -4137,6 +4195,7 @@
         var cell = document.getElementById('photo-cell-' + ph.id);
         if (cell) cell.style.opacity = (!taggingFaceFilter || ph.by === taggingFaceFilter) ? '1' : '0.15';
       }
+      taggingUpdateStickyBar();
     }
 
     /* ─── filter bar ─── */
@@ -4561,6 +4620,7 @@
         if (!cell) continue;
         cell.style.opacity = (!targetScene || ph.scene === targetScene) ? '1' : '0.12';
       }
+      taggingUpdateStickyBar();
     }
 
     /* ─────────────────────────────────────────────────────
@@ -5355,6 +5415,7 @@
       taggingCategory     = '';
       taggingSelected     = [];
       taggingSelectMode   = false;
+      _taggingScrollY     = 0;
       momentAFired        = false;
       momentBFired        = false;
       momentAFace         = -1;
@@ -5401,6 +5462,7 @@
         ];
       }
       var peopleHTML = '';
+      var compactChipsHTML = '';
       for (var pi = 0; pi < PEOPLE.length; pi++) {
         var p       = PEOPLE[pi];
         var bdr     = p.solid ? '2px solid ' + p.ring : '2px dashed ' + p.ring;
@@ -5430,6 +5492,20 @@
                          'color:' + (p.identified ? T.text : T.textS) + ';">' +
               p.name + ' (' + p.count + ')' +
             '</span>' +
+          '</div>'
+        );
+        /* Compact chip for sticky bar */
+        compactChipsHTML += (
+          '<div id="sticky-chip-' + p.personId + '"' +
+               ' onclick="' + tap + '"' +
+               ' style="width:32px;height:32px;border-radius:50%;' +
+                       'background:' + p.bg + ';' +
+                       'display:flex;align-items:center;justify-content:center;' +
+                       'cursor:pointer;flex-shrink:0;' +
+                       'font-size:10px;font-weight:800;' +
+                       'color:' + (p.identified ? '#fff' : p.ring) + ';' +
+                       'transition:box-shadow .2s,opacity .2s;">' +
+            initials +
           '</div>'
         );
       }
@@ -5589,25 +5665,82 @@
             '</div>' +
           '</div>' +
 
-          /* ── people row — all members, swipe to reveal, right fade hint ── */
-          '<div style="position:relative;flex-shrink:0;background:#fff;overflow:hidden;">' +
-            '<div class="hscroll"' +
-                 ' style="display:flex;gap:16px;overflow-x:auto;' +
-                         'padding:18px 18px 16px;">' +
-              peopleHTML +
-              /* Spacer so last avatar clears the fade */
-              '<div style="width:36px;flex-shrink:0;"></div>' +
+          /* ══ collapsible filter block ══ */
+          '<div id="tagging-filters-full"' +
+               ' style="overflow:hidden;' +
+                       'max-height:220px;' +
+                       'opacity:1;' +
+                       'transition:max-height .32s cubic-bezier(.4,0,.2,1),opacity .22s ease;' +
+                       'flex-shrink:0;">' +
+
+            /* ── people row ── */
+            '<div style="position:relative;background:#fff;overflow:hidden;">' +
+              '<div class="hscroll"' +
+                   ' style="display:flex;gap:16px;overflow-x:auto;padding:18px 18px 16px;">' +
+                peopleHTML +
+                '<div style="width:36px;flex-shrink:0;"></div>' +
+              '</div>' +
+              '<div style="position:absolute;top:0;right:0;height:100%;width:56px;' +
+                          'background:linear-gradient(to left,#fff 20%,transparent 100%);' +
+                          'pointer-events:none;"></div>' +
             '</div>' +
-            '<div style="position:absolute;top:0;right:0;height:100%;width:56px;' +
-                        'background:linear-gradient(to left,#fff 20%,transparent 100%);' +
-                        'pointer-events:none;"></div>' +
+
+            /* ── category pills ── */
+            '<div class="hscroll"' +
+                 ' style="display:flex;gap:12px;overflow-x:auto;' +
+                         'padding:4px 18px 12px;flex-shrink:0;background:#fff;">' +
+              catHTML +
+            '</div>' +
+
           '</div>' +
 
-          /* ── category pills ── */
-          '<div class="hscroll"' +
-               ' style="display:flex;gap:12px;overflow-x:auto;' +
-                       'padding:10px 18px 12px;flex-shrink:0;background:#fff;">' +
-            catHTML +
+          /* ══ sticky compact bar — slides in when filters collapse ══ */
+          '<div id="tagging-sticky-bar"' +
+               ' style="max-height:0;overflow:hidden;opacity:0;flex-shrink:0;' +
+                       'background:#fff;' +
+                       'border-bottom:0.5px solid rgba(0,0,0,.07);' +
+                       'transition:max-height .32s cubic-bezier(.4,0,.2,1),opacity .22s ease;">' +
+            '<div style="display:flex;align-items:center;gap:8px;padding:7px 14px;">' +
+
+              /* All button */
+              '<div id="sticky-chip-ALL"' +
+                   ' onclick="taggingSetFace(\'\')"' +
+                   ' style="width:32px;height:32px;border-radius:50%;' +
+                           'background:' + T.blue + ';' +
+                           'display:flex;align-items:center;justify-content:center;' +
+                           'cursor:pointer;flex-shrink:0;">' +
+                '<svg width="14" height="14" viewBox="0 0 24 24" fill="none"' +
+                     ' stroke="#fff" stroke-width="2.2" stroke-linecap="round">' +
+                  '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>' +
+                  '<circle cx="9" cy="7" r="4"/>' +
+                  '<path d="M23 21v-2a4 4 0 0 0-3-3.87"/>' +
+                  '<path d="M16 3.13a4 4 0 0 1 0 7.75"/>' +
+                '</svg>' +
+              '</div>' +
+
+              /* Compact person chips */
+              compactChipsHTML +
+
+              /* Active category chip — updated by taggingUpdateStickyBar */
+              '<div id="sticky-cat-chip" style="display:none;flex-shrink:0;"></div>' +
+
+              /* Spacer */
+              '<div style="flex:1;min-width:8px;"></div>' +
+
+              /* Filter icon */
+              '<button onclick="showGroupFilterSheet()"' +
+                ' style="width:32px;height:32px;border:none;background:' + T.bgSub + ';' +
+                       'border-radius:50%;cursor:pointer;' +
+                       'display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+                '<svg width="14" height="14" viewBox="0 0 24 24" fill="none"' +
+                     ' stroke="' + T.text + '" stroke-width="2" stroke-linecap="round">' +
+                  '<line x1="4" y1="6" x2="20" y2="6"/>' +
+                  '<line x1="8" y1="12" x2="16" y2="12"/>' +
+                  '<line x1="11" y1="18" x2="13" y2="18"/>' +
+                '</svg>' +
+              '</button>' +
+
+            '</div>' +
           '</div>' +
 
           /* ── invite nudge strip — creator only, slim pill ── */
@@ -5701,6 +5834,7 @@
 
           /* ── photo grid — scrollable ── */
           '<div id="tagging-grid" class="pscroll"' +
+               ' onscroll="taggingGridScroll(this)"' +
                ' style="flex:1;overflow-y:auto;background:#fff;padding:0 0 20px;">' +
             (taggingTab === 'my-photos' && !hasSynced
               /* All users — show sync nudge until explicitly synced */
