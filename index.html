@@ -3278,57 +3278,74 @@
       var ctaWrap = document.getElementById('tagging-share-bottom');
       var inner   = document.getElementById('tagging-share-inner');
       if (ctaWrap && inner) {
-        var n    = taggingSelected.length;
-        var nTxt = n + (n !== 1 ? ' photos' : ' photo');
-        /* SVG helpers */
-        var svgSave = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none"' +
-                          ' stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-                        '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>' +
-                        '<polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>' +
-                      '</svg>';
-        var svgShare = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none"' +
-                           ' stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-                         '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>' +
-                         '<line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>' +
-                         '<line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>' +
-                       '</svg>';
-        var secBtn = 'flex:1;height:40px;border-radius:10px;border:none;background:#F1F5F9;' +
-                     'color:#475569;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;' +
-                     'display:flex;align-items:center;justify-content:center;gap:6px;';
+        var n = taggingSelected.length;
+        var sz = '26';
+
+        /* ── SVG icons for selection bar ── */
+        var siSave = (
+          '<svg width="' + sz + '" height="' + sz + '" viewBox="0 0 24 24" fill="none"' +
+          ' stroke="CLRTOKEN" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+          '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>' +
+          '<polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>' +
+          '</svg>'
+        );
+        var siSend = (
+          '<svg width="' + sz + '" height="' + sz + '" viewBox="0 0 24 24" fill="none"' +
+          ' stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+          '<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>' +
+          '</svg>'
+        );
+        var siGroup = (
+          '<svg width="' + sz + '" height="' + sz + '" viewBox="0 0 24 24" fill="none"' +
+          ' stroke="#1B4FD8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+          '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>' +
+          '<circle cx="9" cy="7" r="4"/>' +
+          '<path d="M23 21v-2a4 4 0 0 0-3-3.87"/>' +
+          '<path d="M16 3.13a4 4 0 0 1 0 7.75"/>' +
+          '</svg>'
+        );
+
+        /* ── icon-column button base ── */
+        var siBtn = (
+          'display:flex;flex-direction:column;align-items:center;gap:6px;' +
+          'background:none;border:none;cursor:pointer;padding:14px 24px;font-family:inherit;'
+        );
+        var siLbl = function(txt, primary) {
+          return (
+            '<span style="font-size:11px;font-weight:700;letter-spacing:.1px;' +
+            'color:' + (primary ? '#1B4FD8' : '#64748B') + ';">' + txt + '</span>'
+          );
+        };
 
         if (taggingTab === 'group') {
-          /* Group tab — photos already shared; primary = external share */
+          /* Group tab — Save (blue primary) · Send */
           inner.innerHTML = (
-            '<button onclick="taggingExternalShare()"' +
-                    ' style="display:block;width:100%;height:46px;border-radius:12px;border:none;' +
-                           'background:#1B4FD8;color:#fff;font-family:inherit;' +
-                           'font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px;' +
-                           'display:flex;align-items:center;justify-content:center;gap:8px;">' +
-              svgShare.replace('stroke="currentColor"','stroke="#fff"') +
-              'Send' +
-            '</button>' +
-            '<button onclick="taggingSaveSelectedPhotos()"' +
-                    ' style="' + secBtn + 'width:100%;">' +
-              svgSave +
-              'Save to device' +
-            '</button>'
+            '<div style="display:flex;justify-content:center;">' +
+              '<button onclick="taggingSaveSelectedPhotos()" style="' + siBtn + '">' +
+                siSave.replace('CLRTOKEN', '#1B4FD8') +
+                siLbl('Save', true) +
+              '</button>' +
+              '<button onclick="taggingExternalShare()" style="' + siBtn + '">' +
+                siSend +
+                siLbl('Send', false) +
+              '</button>' +
+            '</div>'
           );
         } else {
-          /* My photos tab — primary = share to group */
+          /* My Photos tab — Group share (blue primary) · Send · Save */
           inner.innerHTML = (
-            '<button id="tagging-share-cta" onclick="taggingGoShareRecipients()"' +
-                    ' style="display:block;width:100%;height:46px;border-radius:12px;border:none;' +
-                           'background:#1B4FD8;color:#fff;font-family:inherit;' +
-                           'font-size:15px;font-weight:700;cursor:pointer;letter-spacing:-.2px;' +
-                           'box-shadow:0 3px 14px rgba(27,79,216,.32);margin-bottom:10px;">' +
-              'Share ' + nTxt + ' to group  →' +
-            '</button>' +
-            '<div style="display:flex;gap:8px;">' +
-              '<button onclick="taggingSaveSelectedPhotos()" style="' + secBtn + '">' +
-                svgSave + 'Save' +
+            '<div style="display:flex;justify-content:center;">' +
+              '<button id="tagging-share-cta" onclick="taggingGoShareRecipients()" style="' + siBtn + '">' +
+                siGroup +
+                siLbl('Share ' + n, true) +
               '</button>' +
-              '<button onclick="taggingExternalShare()" style="' + secBtn + '">' +
-                svgShare + 'Send' +
+              '<button onclick="taggingExternalShare()" style="' + siBtn + '">' +
+                siSend +
+                siLbl('Send', false) +
+              '</button>' +
+              '<button onclick="taggingSaveSelectedPhotos()" style="' + siBtn + '">' +
+                siSave.replace('CLRTOKEN', '#64748B') +
+                siLbl('Save', false) +
               '</button>' +
             '</div>'
           );
@@ -3384,53 +3401,130 @@
     }
 
     function pvBuildViewerBottom(photoId, isLiked, likes, cmtCount, pvReact) {
+      var isGroup = (taggingTab === 'group');
+      var sz = '24';
+
+      /* ── SVG icons ── */
+      var svgHeart = (
+        '<svg width="' + sz + '" height="' + sz + '" viewBox="0 0 24 24"' +
+        ' fill="' + (isLiked ? '#F43F5E' : 'none') + '"' +
+        ' stroke="' + (isLiked ? '#F43F5E' : 'rgba(255,255,255,.85)') + '"' +
+        ' stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+        '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>' +
+        '</svg>'
+      );
+      var svgComment = (
+        '<svg width="' + sz + '" height="' + sz + '" viewBox="0 0 24 24" fill="none"' +
+        ' stroke="rgba(255,255,255,.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+        '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>' +
+        '</svg>'
+      );
+      var svgSend = (
+        '<svg width="' + sz + '" height="' + sz + '" viewBox="0 0 24 24" fill="none"' +
+        ' stroke="rgba(255,255,255,.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+        '<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>' +
+        '</svg>'
+      );
+      /* Group-share icon — blue */
+      var svgGroupBlue = (
+        '<svg width="' + sz + '" height="' + sz + '" viewBox="0 0 24 24" fill="none"' +
+        ' stroke="#1B4FD8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+        '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>' +
+        '<circle cx="9" cy="7" r="4"/>' +
+        '<path d="M23 21v-2a4 4 0 0 0-3-3.87"/>' +
+        '<path d="M16 3.13a4 4 0 0 1 0 7.75"/>' +
+        '</svg>'
+      );
+      /* Save — blue (Group primary) */
+      var svgSaveBlue = (
+        '<svg width="' + sz + '" height="' + sz + '" viewBox="0 0 24 24" fill="none"' +
+        ' stroke="#1B4FD8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+        '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>' +
+        '<polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>' +
+        '</svg>'
+      );
+      /* Save — muted white (My Photos secondary) */
+      var svgSaveWhite = (
+        '<svg width="' + sz + '" height="' + sz + '" viewBox="0 0 24 24" fill="none"' +
+        ' stroke="rgba(255,255,255,.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+        '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>' +
+        '<polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>' +
+        '</svg>'
+      );
+
+      /* ── icon-column button base ── */
+      var btnBase = (
+        'display:flex;flex-direction:column;align-items:center;gap:5px;' +
+        'background:none;border:none;cursor:pointer;padding:12px 0;flex:1;font-family:inherit;'
+      );
+
+      /* ── label helper ── */
+      function lbl(txt, primary) {
+        return (
+          '<span style="font-size:10px;font-weight:600;letter-spacing:.2px;' +
+          'color:' + (primary ? '#93B4FF' : 'rgba(255,255,255,.45)') + ';">' +
+          txt + '</span>'
+        );
+      }
+
+      /* ── icon row — Like + Comment + Send are common ── */
+      var iconRow = (
+        /* Like — IDs kept so pvLikePhoto() can update them */
+        '<button id="pv-like-btn" onclick="pvLikePhoto(' + photoId + ')"' +
+                ' style="' + btnBase + 'transition:transform .15s;">' +
+          svgHeart +
+          '<span id="pv-like-count" style="font-size:10px;font-weight:600;color:rgba(255,255,255,.45);">' + likes + '</span>' +
+        '</button>' +
+        /* Comment */
+        '<button id="pv-cmt-btn" onclick="pvShowComments(' + photoId + ')"' +
+                ' style="' + btnBase + '">' +
+          svgComment +
+          lbl(String(cmtCount || 0), false) +
+        '</button>' +
+        /* Send (external) */
+        '<button onclick="pvExternalShare(' + photoId + ')"' +
+                ' style="' + btnBase + '">' +
+          svgSend +
+          lbl('Send', false) +
+        '</button>'
+      );
+
+      if (!isGroup) {
+        /* My Photos — Group share (blue, primary) + Save (secondary) */
+        iconRow += (
+          '<button onclick="pvShareFromViewer(' + photoId + ')"' +
+                  ' style="' + btnBase + '">' +
+            svgGroupBlue +
+            lbl('Group', true) +
+          '</button>' +
+          '<button onclick="pvDownloadPhoto(' + photoId + ')"' +
+                  ' style="' + btnBase + '">' +
+            svgSaveWhite +
+            lbl('Save', false) +
+          '</button>'
+        );
+      } else {
+        /* Group Photos — Save (blue, primary) */
+        iconRow += (
+          '<button onclick="pvDownloadPhoto(' + photoId + ')"' +
+                  ' style="' + btnBase + '">' +
+            svgSaveBlue +
+            lbl('Save', true) +
+          '</button>'
+        );
+      }
+
       return (
-        /* solid dark strip — icon row */
+        /* dark icon strip */
         '<div ontouchstart="event.stopPropagation()"' +
-             ' style="background:#111;flex-shrink:0;padding:10px 18px;">' +
-          '<div style="display:flex;align-items:center;">' +
-            /* Like */
-            '<button id="pv-like-btn" onclick="pvLikePhoto(' + photoId + ')"' +
-                    ' style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;padding:0 16px 0 0;transition:transform .15s;">' +
-              '<svg width="24" height="24" viewBox="0 0 24 24"' +
-                   ' fill="' + (isLiked ? '#F43F5E' : 'none') + '" stroke="' + (isLiked ? '#F43F5E' : '#fff') + '"' +
-                   ' stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-                '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>' +
-              '</svg>' +
-              '<span id="pv-like-count" style="font-size:13px;font-weight:600;color:#fff;">' + likes + '</span>' +
-            '</button>' +
-            /* Comment */
-            '<button id="pv-cmt-btn" onclick="pvShowComments(' + photoId + ')"' +
-                    ' style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;padding:0 16px 0 0;">' +
-              '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-                '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>' +
-              '</svg>' +
-              '<span style="font-size:13px;font-weight:600;color:#fff;">' + cmtCount + '</span>' +
-            '</button>' +
-            /* Send (paper plane) */
-            '<button onclick="pvExternalShare(' + photoId + ')"' +
-                    ' style="display:flex;align-items:center;background:none;border:none;cursor:pointer;padding:0 16px 0 0;">' +
-              '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.78)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-                '<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>' +
-              '</svg>' +
-            '</button>' +
-            /* Save + Emoji — right */
-            '<div style="display:flex;align-items:center;gap:18px;margin-left:auto;">' +
-              '<button onclick="pvDownloadPhoto(' + photoId + ')" style="background:none;border:none;cursor:pointer;padding:0;">' +
-                '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.65)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-                  '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>' +
-                '</svg>' +
-              '</button>' +
-              '<button id="pv-emoji-btn" onclick="pvShowEmojiPicker(' + photoId + ')"' +
-                      ' style="background:none;border:none;cursor:pointer;font-size:21px;line-height:1;padding:0;">' +
-                (pvReact || '😊') +
-              '</button>' +
-            '</div>' +
+             ' style="background:#111;flex-shrink:0;">' +
+          '<div style="display:flex;align-items:flex-start;">' +
+            iconRow +
           '</div>' +
         '</div>' +
-        /* white CTA — context-aware: My Photos = share to group, Group = send externally */
+        /* white primary CTA */
         '<div id="pv-cta-zone" style="background:#fff;padding:12px 16px calc(env(safe-area-inset-bottom,16px)+12px);">' +
-          (taggingTab === 'group'
+          (isGroup
             ? '<button onclick="pvExternalShare(' + photoId + ')"' +
                       ' style="display:block;width:100%;height:46px;border:none;border-radius:12px;' +
                              'background:#1B4FD8;color:#fff;font-family:inherit;font-size:15px;font-weight:700;' +
