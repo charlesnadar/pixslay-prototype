@@ -1098,7 +1098,7 @@
                         'background:' + (sessionStorage.getItem('_refreshed') === '1' ? T.ok : T.alert) + ';' +
                         'color:#fff;transition:background .3s;">' +
                 '<span style="font-size:16px;">' + (sessionStorage.getItem('_refreshed') === '1' ? '✓' : '↻') + '</span>' +
-                (sessionStorage.getItem('_refreshed') === '1' ? 'You\'re on the latest version · v63' : 'Update available · tap to get v63') +
+                (sessionStorage.getItem('_refreshed') === '1' ? 'You\'re on the latest version · v64' : 'Update available · tap to get v64') +
               '</button>' +
 
             '</div>' +
@@ -1115,7 +1115,7 @@
 
             '<p style="text-align:center;font-size:10px;font-weight:500;' +
                       'color:' + T.textT + ';margin-top:8px;letter-spacing:.04em;">' +
-              'v63' +
+              'v64' +
             '</p>' +
 
           '</div>' +
@@ -1746,11 +1746,37 @@
     var syncProg     = 0;
     var syncDone     = false;
 
+    /* Photo indices used for sync grid reveal — spread across the trip */
+    var SYNC_GRID_PHOTOS = [0, 3, 6, 9, 12, 1, 4, 8, 11];
+    /* Progress % at which each cell (0-8) reveals */
+    var SYNC_GRID_THRESH = [12, 24, 36, 46, 57, 67, 76, 86, 95];
+
     function syncUpdateBar(pct) {
       var fill    = document.getElementById('sync-bar-fill');
       var counter = document.getElementById('sync-counter');
       if (fill)    fill.style.width = pct + '%';
       if (counter) counter.textContent = 'Scanning ' + Math.round((pct / 100) * 847) + ' photos...';
+
+      /* Reveal grid cells as % crosses each threshold */
+      for (var ci = 0; ci < SYNC_GRID_THRESH.length; ci++) {
+        if (pct >= SYNC_GRID_THRESH[ci]) {
+          var cell = document.getElementById('sync-grid-cell-' + ci);
+          if (cell && !cell.getAttribute('data-rev')) {
+            cell.setAttribute('data-rev', '1');
+            var photoSrc = PHOTO_FILES[SYNC_GRID_PHOTOS[ci] % PHOTO_FILES.length];
+            cell.style.opacity = '0';
+            cell.innerHTML = (
+              '<img src="' + photoSrc + '"' +
+                   ' style="width:100%;height:100%;object-fit:cover;display:block;">'
+            );
+            (function (c) {
+              requestAnimationFrame(function () {
+                requestAnimationFrame(function () { c.style.opacity = '1'; });
+              });
+            }(cell));
+          }
+        }
+      }
     }
 
     /* ─── Sync Reassurance Sheet ─── */
@@ -2220,7 +2246,7 @@
             '</button>' +
 
             /* Allow */
-            '<button onclick="dismissPhotoPerm();go(\'varun-sync\')"' +
+            '<button onclick="dismissPhotoPerm();photoPermJustGranted=true;go(\'varun-sync\')"' +
               ' style="flex:1;height:44px;border:none;' +
                      'background:transparent;' +
                      'font-family:-apple-system,BlinkMacSystemFont,\'SF Pro Text\',inherit;' +
@@ -2469,6 +2495,31 @@
                 '</p>' +
               '</div>' +
 
+              /* ── Photo grid — placeholders reveal as sync progresses ── */
+              '<div id="sync-photo-grid"' +
+                   ' style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;' +
+                           'border-radius:10px;overflow:hidden;margin-top:12px;">' +
+                (function () {
+                  var cells = '';
+                  for (var gi = 0; gi < 9; gi++) {
+                    cells += (
+                      '<div id="sync-grid-cell-' + gi + '"' +
+                           ' style="aspect-ratio:1;background:#F0EFED;' +
+                                   'display:flex;align-items:center;justify-content:center;' +
+                                   'transition:opacity .4s ease;">' +
+                        '<svg width="22" height="22" viewBox="0 0 24 24" fill="none"' +
+                             ' stroke="#C4BFBA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' +
+                          '<rect x="3" y="3" width="18" height="18" rx="2"/>' +
+                          '<circle cx="8.5" cy="8.5" r="1.5"/>' +
+                          '<polyline points="21 15 16 10 5 21"/>' +
+                        '</svg>' +
+                      '</div>'
+                    );
+                  }
+                  return cells;
+                }()) +
+              '</div>' +
+
               /* Results — hidden until complete */
               '<div id="sync-results" style="display:none;opacity:0;">' +
 
@@ -2647,6 +2698,7 @@
     /* ─────────────────────────────────────────────────────
        TAGGING SCREEN — GLOBALS
     ───────────────────────────────────────────────────── */
+    var photoPermJustGranted = false; /* true when OS permission just granted — auto-opens sync sheet */
     var taggingTab           = 'all';
     var taggingFilterCat     = '';
     var taggingFilterSub     = '';
@@ -5125,31 +5177,101 @@
     function completeShareWithGroup(shared) {
       groupPoolCount    = Math.min(groupPoolCount + shared.length, 34);
       groupDisplayCount = groupDisplayCount + shared.length;
+      flyPhotosToGroupTab(shared);
+    }
 
-      for (var i = 0; i < shared.length; i++) {
-        (function (pid) {
-          var cell = document.getElementById('photo-cell-' + pid);
-          if (!cell) return;
-          cell.style.transition = 'opacity .12s';
-          cell.style.opacity    = '0.25';
+    function flyPhotosToGroupTab(shared) {
+      var phone = document.getElementById('phone');
+      if (!phone) { finishGroupShare(shared); return; }
+
+      /* Target: the "Group photos" segmented tab button */
+      var target = document.getElementById('seg-group');
+      if (!target) { finishGroupShare(shared); return; }
+
+      var phoneRect  = phone.getBoundingClientRect();
+      var targetRect = target.getBoundingClientRect();
+      var targetCx   = targetRect.left + targetRect.width  / 2 - phoneRect.left;
+      var targetCy   = targetRect.top  + targetRect.height / 2 - phoneRect.top;
+
+      var landed = 0;
+      var total  = shared.length;
+
+      for (var i = 0; i < total; i++) {
+        (function (pid, idx) {
           setTimeout(function () {
-            cell.style.opacity = '1';
-            setTimeout(function () {
-              cell.style.opacity = '0.25';
-              setTimeout(function () { cell.style.opacity = '1'; }, 140);
-            }, 140);
-          }, 80 + i * 30);
-        }(shared[i]));
-      }
+            var cell = document.getElementById('photo-cell-' + pid);
+            if (!cell) { if (++landed === total) finishGroupShare(shared); return; }
 
-      setTimeout(function () {
-        taggingExitSelect();
-        groupPhotosUnlocked = true;
-        var badge = document.getElementById('ttab-group-badge');
-        if (badge) badge.textContent = groupDisplayCount;
-        taggingSetTab('group');
-        showToast('Your photos are now in the group 🎉');
-      }, shared.length * 30 + 480);
+            var cellRect = cell.getBoundingClientRect();
+            var cx   = cellRect.left + cellRect.width  / 2 - phoneRect.left;
+            var cy   = cellRect.top  + cellRect.height / 2 - phoneRect.top;
+            var size = Math.round(Math.min(cellRect.width, cellRect.height) * 0.72);
+
+            /* Dim source cell */
+            cell.style.transition = 'opacity .15s';
+            cell.style.opacity    = '0.35';
+
+            /* Clone thumbnail */
+            var thumb = document.createElement('div');
+            thumb.style.cssText = (
+              'position:absolute;z-index:9999;pointer-events:none;' +
+              'width:' + size + 'px;height:' + size + 'px;' +
+              'border-radius:8px;overflow:hidden;' +
+              'left:' + (cx - size / 2) + 'px;top:' + (cy - size / 2) + 'px;' +
+              'box-shadow:0 4px 18px rgba(0,0,0,.32);' +
+              'transition:left .42s cubic-bezier(.4,0,.2,1),' +
+                          'top .42s cubic-bezier(.4,0,.2,1),' +
+                          'width .42s ease,height .42s ease,' +
+                          'border-radius .42s ease,' +
+                          'opacity .28s ease .18s;'
+            );
+            var img = cell.querySelector('img');
+            if (img) {
+              var clone = document.createElement('img');
+              clone.src = img.src;
+              clone.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
+              thumb.appendChild(clone);
+            }
+            phone.appendChild(thumb);
+
+            /* Fly to group tab */
+            var finalSize = 24;
+            requestAnimationFrame(function () {
+              requestAnimationFrame(function () {
+                thumb.style.left         = (targetCx - finalSize / 2) + 'px';
+                thumb.style.top          = (targetCy - finalSize / 2) + 'px';
+                thumb.style.width        = finalSize + 'px';
+                thumb.style.height       = finalSize + 'px';
+                thumb.style.borderRadius = '50%';
+                thumb.style.opacity      = '0';
+              });
+            });
+
+            /* After landing: pulse the tab badge */
+            setTimeout(function () {
+              if (thumb.parentNode) thumb.parentNode.removeChild(thumb);
+              /* Pulse the group tab */
+              var tabBtn = document.getElementById('seg-group');
+              if (tabBtn) {
+                tabBtn.style.transition = 'transform .12s ease';
+                tabBtn.style.transform  = 'scale(1.12)';
+                setTimeout(function () { tabBtn.style.transform = 'scale(1)'; }, 130);
+              }
+              if (++landed === total) finishGroupShare(shared);
+            }, 500 + idx * 70);
+
+          }, idx * 90);
+        }(shared[i], i));
+      }
+    }
+
+    function finishGroupShare(shared) {
+      taggingExitSelect();
+      groupPhotosUnlocked = true;
+      var badge = document.getElementById('ttab-group-badge');
+      if (badge) badge.textContent = groupDisplayCount;
+      taggingSetTab('group');
+      showToast('Your photos are now in the group 🎉');
     }
 
     /* ═══════════════════════════════════════════════════════
@@ -8950,6 +9072,15 @@
         clearInterval(syncPhaseInt);
         syncProg = 0;
         syncDone = false;
+        /* Reset grid cell reveal state */
+        for (var gci = 0; gci < 9; gci++) {
+          var gc = document.getElementById('sync-grid-cell-' + gci);
+          if (gc) gc.removeAttribute('data-rev');
+        }
+        if (photoPermJustGranted) {
+          photoPermJustGranted = false;
+          setTimeout(function () { showSyncReassuranceSheet(); }, 320);
+        }
       }
 
       if (state.screen === 'varun-create-group') {
