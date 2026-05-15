@@ -2525,9 +2525,10 @@
     var pvDragging      = false;
     var pvTouchStartX   = 0;
     var pvTouchStartY   = 0;
-    var pvCurrentPhotoId = -1;
-    var pvCommentLikes    = {};   /* { rowId: bool } — per-comment heart likes */
-    var pvCommentRowCtr   = 0;    /* monotone counter for unique comment row IDs */
+    var pvCurrentPhotoId  = -1;
+    var pvCommentLikes    = {};
+    var pvCommentRowCtr   = 0;
+    var pvPhotoReactions  = {};   /* { photoId: emoji string } */
 
     var PV_COMMENT_SEED = [
       { author:'Mayank',  av:'linear-gradient(135deg,#E65100,#FF8F00)', initials:'MA', text:'🔥 this one is fire',              time:'2h ago' },
@@ -2860,112 +2861,141 @@
         'display:flex;flex-direction:column;opacity:0;transition:opacity .18s ease;'
       );
 
+      var pvReact = pvPhotoReactions[photo.id] || '';
       overlay.innerHTML = (
-        /* ── image area ── */
+        /* ── photo area — all overlays live inside here ── */
         '<div id="pv-img-wrap" style="position:relative;flex:1;overflow:hidden;' +
                                      'display:flex;align-items:center;justify-content:center;">' +
+
           '<img id="pv-img" src="' + imgSrc + '"' +
                ' style="width:100%;height:100%;object-fit:contain;display:block;' +
                        'user-select:none;-webkit-user-select:none;" draggable="false">' +
-          /* heart burst on double-tap */
+
+          /* heart burst */
           '<div id="pv-heart-burst"' +
                ' style="position:absolute;inset:0;display:flex;align-items:center;' +
                        'justify-content:center;pointer-events:none;opacity:0;">' +
             '<span style="font-size:88px;filter:drop-shadow(0 4px 20px rgba(0,0,0,.5));">❤️</span>' +
           '</div>' +
-        '</div>' +
 
-        /* ── top bar ── */
-        '<div style="position:absolute;top:0;left:0;right:0;z-index:10;' +
-                    'background:linear-gradient(to bottom,rgba(0,0,0,.55),transparent);' +
-                    'padding:18px 14px 36px;display:flex;align-items:center;' +
-                    'justify-content:space-between;">' +
-          /* back */
-          '<button onclick="taggingClosePreview(false)"' +
-                  ' style="width:36px;height:36px;border:none;border-radius:50%;' +
-                         'background:rgba(255,255,255,.18);backdrop-filter:blur(8px);' +
-                         'cursor:pointer;display:flex;align-items:center;justify-content:center;">' +
-            '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"' +
-                 ' stroke="#fff" stroke-width="2.5" stroke-linecap="round">' +
-              '<polyline points="15 18 9 12 15 6"/>' +
-            '</svg>' +
-          '</button>' +
-          '<span id="pv-counter"' +
-                ' style="font-size:13px;font-weight:600;color:rgba(255,255,255,.8);">' +
-            counter +
-          '</span>' +
-        '</div>' +
-
-        /* ── bottom bar — outside the photo, clean separation ── */
-        '<div style="position:absolute;bottom:0;left:0;right:0;z-index:10;' +
-                    'background:linear-gradient(to top,rgba(0,0,0,.82) 0%,rgba(0,0,0,.4) 60%,transparent 100%);' +
-                    'padding:28px 20px 36px;">' +
-
-          /* Instagram-style icon row */
-          '<div style="display:flex;align-items:center;gap:0;margin-bottom:16px;">' +
-
-            /* Like */
-            '<button id="pv-like-btn" onclick="pvLikePhoto(' + photo.id + ')"' +
-                    ' style="display:flex;align-items:center;gap:6px;background:none;border:none;' +
-                           'cursor:pointer;padding:0 18px 0 0;' +
-                           'transition:transform .15s cubic-bezier(.22,1,.36,1);">' +
-              '<svg width="26" height="26" viewBox="0 0 24 24"' +
-                   ' fill="' + (isLiked ? '#F43F5E' : 'none') + '"' +
-                   ' stroke="' + (isLiked ? '#F43F5E' : '#fff') + '"' +
-                   ' stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-                '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06' +
-                        'a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78' +
-                        '1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>' +
-              '</svg>' +
-              '<span id="pv-like-count" style="font-size:13px;font-weight:600;color:#fff;">' + likes + '</span>' +
-            '</button>' +
-
-            /* Comment */
-            '<button id="pv-cmt-btn" onclick="pvShowComments(' + photo.id + ')"' +
-                    ' style="display:flex;align-items:center;gap:6px;background:none;border:none;' +
-                           'cursor:pointer;padding:0 18px 0 0;">' +
-              '<svg width="24" height="24" viewBox="0 0 24 24" fill="none"' +
-                   ' stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-                '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>' +
-              '</svg>' +
-              '<span style="font-size:13px;font-weight:600;color:#fff;">' + cmts.length + '</span>' +
-            '</button>' +
-
-            /* Share externally */
-            '<button onclick="pvExternalShare(' + photo.id + ')"' +
-                    ' style="display:flex;align-items:center;gap:6px;background:none;border:none;' +
-                           'cursor:pointer;padding:0 18px 0 0;">' +
-              '<svg width="24" height="24" viewBox="0 0 24 24" fill="none"' +
-                   ' stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-                '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>' +
-                '<line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>' +
-                '<line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>' +
-              '</svg>' +
-            '</button>' +
-
-            /* Save — pushed to far right */
-            '<button onclick="pvDownloadPhoto(' + photo.id + ')"' +
-                    ' style="display:flex;align-items:center;gap:6px;background:none;border:none;' +
-                           'cursor:pointer;margin-left:auto;">' +
-              '<svg width="22" height="22" viewBox="0 0 24 24" fill="none"' +
-                   ' stroke="rgba(255,255,255,.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-                '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>' +
-                '<polyline points="7 10 12 15 17 10"/>' +
-                '<line x1="12" y1="15" x2="12" y2="3"/>' +
-              '</svg>' +
-            '</button>' +
-
+          /* emoji reaction badge — bottom-left of photo */
+          '<div id="pv-reaction-badge"' +
+               ' style="position:absolute;bottom:68px;left:14px;font-size:34px;' +
+                       'pointer-events:none;transition:opacity .2s,transform .25s;' +
+                       'opacity:' + (pvReact ? '1' : '0') + ';' +
+                       'transform:scale(' + (pvReact ? '1' : '0.4') + ');">' +
+            pvReact +
           '</div>' +
 
-          /* Share to group — full-width pill, below icons, outside photo */
+          /* emoji picker — hidden until 😊 tapped */
+          '<div id="pv-emoji-picker"' +
+               ' style="position:absolute;bottom:66px;left:12px;z-index:20;display:none;' +
+                       'background:rgba(20,20,20,.82);backdrop-filter:blur(14px);' +
+                       'border-radius:32px;padding:8px 14px;flex-direction:row;gap:12px;">' +
+            ['❤️','🔥','😍','😂','👏','😮'].map(function(e) {
+              return '<button onclick="pvPickReaction(' + photo.id + ',\'' + e + '\')"' +
+                             ' style="font-size:24px;border:none;background:none;cursor:pointer;padding:0;line-height:1;">' +
+                       e + '</button>';
+            }).join('') +
+          '</div>' +
+
+          /* top bar */
+          '<div style="position:absolute;top:0;left:0;right:0;z-index:10;' +
+                      'background:linear-gradient(to bottom,rgba(0,0,0,.55),transparent);' +
+                      'padding:18px 14px 36px;display:flex;align-items:center;' +
+                      'justify-content:space-between;">' +
+            '<button onclick="taggingClosePreview(false)"' +
+                    ' style="width:36px;height:36px;border:none;border-radius:50%;' +
+                           'background:rgba(255,255,255,.18);backdrop-filter:blur(8px);' +
+                           'cursor:pointer;display:flex;align-items:center;justify-content:center;">' +
+              '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"' +
+                   ' stroke="#fff" stroke-width="2.5" stroke-linecap="round">' +
+                '<polyline points="15 18 9 12 15 6"/>' +
+              '</svg>' +
+            '</button>' +
+            '<span id="pv-counter" style="font-size:13px;font-weight:600;color:rgba(255,255,255,.8);">' +
+              counter +
+            '</span>' +
+          '</div>' +
+
+          /* icon row — sits at bottom of photo, gradient behind */
+          '<div ontouchstart="event.stopPropagation()"' +
+               ' style="position:absolute;bottom:0;left:0;right:0;z-index:10;' +
+                       'background:linear-gradient(to top,rgba(0,0,0,.72) 0%,transparent 100%);' +
+                       'padding:20px 16px 14px;">' +
+            '<div style="display:flex;align-items:center;">' +
+
+              /* Like */
+              '<button id="pv-like-btn" onclick="pvLikePhoto(' + photo.id + ')"' +
+                      ' style="display:flex;align-items:center;gap:6px;background:none;border:none;' +
+                             'cursor:pointer;padding:0 16px 0 0;' +
+                             'transition:transform .15s cubic-bezier(.22,1,.36,1);">' +
+                '<svg width="24" height="24" viewBox="0 0 24 24"' +
+                     ' fill="' + (isLiked ? '#F43F5E' : 'none') + '"' +
+                     ' stroke="' + (isLiked ? '#F43F5E' : '#fff') + '"' +
+                     ' stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                  '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06' +
+                          'a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78' +
+                          '1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>' +
+                '</svg>' +
+                '<span id="pv-like-count" style="font-size:13px;font-weight:600;color:#fff;">' + likes + '</span>' +
+              '</button>' +
+
+              /* Comment */
+              '<button id="pv-cmt-btn" onclick="pvShowComments(' + photo.id + ')"' +
+                      ' style="display:flex;align-items:center;gap:6px;background:none;border:none;' +
+                             'cursor:pointer;padding:0 16px 0 0;">' +
+                '<svg width="22" height="22" viewBox="0 0 24 24" fill="none"' +
+                     ' stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                  '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>' +
+                '</svg>' +
+                '<span style="font-size:13px;font-weight:600;color:#fff;">' + cmts.length + '</span>' +
+              '</button>' +
+
+              /* Send / external share */
+              '<button onclick="pvExternalShare(' + photo.id + ')"' +
+                      ' style="display:flex;align-items:center;gap:6px;background:none;border:none;' +
+                             'cursor:pointer;padding:0 16px 0 0;">' +
+                '<svg width="22" height="22" viewBox="0 0 24 24" fill="none"' +
+                     ' stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                  '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>' +
+                  '<line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>' +
+                  '<line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>' +
+                '</svg>' +
+              '</button>' +
+
+              /* Save + Emoji — right side */
+              '<div style="display:flex;align-items:center;gap:18px;margin-left:auto;">' +
+                '<button onclick="pvDownloadPhoto(' + photo.id + ')"' +
+                        ' style="background:none;border:none;cursor:pointer;padding:0;">' +
+                  '<svg width="22" height="22" viewBox="0 0 24 24" fill="none"' +
+                       ' stroke="rgba(255,255,255,.72)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                    '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>' +
+                    '<polyline points="7 10 12 15 17 10"/>' +
+                    '<line x1="12" y1="15" x2="12" y2="3"/>' +
+                  '</svg>' +
+                '</button>' +
+                '<button id="pv-emoji-btn" onclick="pvShowEmojiPicker(' + photo.id + ')"' +
+                        ' style="background:none;border:none;cursor:pointer;font-size:21px;line-height:1;padding:0;">' +
+                  (pvReact || '😊') +
+                '</button>' +
+              '</div>' +
+
+            '</div>' +
+          '</div>' +
+
+        '</div>' + /* end pv-img-wrap */
+
+        /* ── white CTA strip — below photo, in normal flex flow ── */
+        '<div style="background:#fff;flex-shrink:0;' +
+                    'padding:12px 16px calc(env(safe-area-inset-bottom,16px) + 12px);">' +
           '<button onclick="taggingShareFromPreview()"' +
-                  ' style="display:block;width:100%;height:44px;border:none;border-radius:12px;' +
+                  ' style="display:block;width:100%;height:46px;border:none;border-radius:12px;' +
                          'background:#1B4FD8;color:#fff;font-family:inherit;' +
                          'font-size:15px;font-weight:700;cursor:pointer;letter-spacing:-.1px;' +
-                         'box-shadow:0 3px 16px rgba(27,79,216,.45);">' +
+                         'box-shadow:0 3px 16px rgba(27,79,216,.38);">' +
             'Share to group  →' +
           '</button>' +
-
         '</div>'
       );
 
@@ -3033,6 +3063,13 @@
         taggingSelectMode = true;
         taggingSelected   = [photoId];
         taggingRefreshSelectionUI();
+        /* pulse the cell so user's eye lands on it */
+        var cell = document.getElementById('photo-cell-' + photoId);
+        if (cell) {
+          cell.style.transition = 'box-shadow .15s';
+          cell.style.boxShadow  = '0 0 0 4px #1B4FD8, 0 8px 28px rgba(27,79,216,.5)';
+          setTimeout(function() { cell.style.boxShadow = '0 16px 32px rgba(27,79,216,.12)'; }, 350);
+        }
       }, 220);
     }
 
@@ -3430,6 +3467,29 @@
     function taggingSaveSelectedPhotos() {
       if (!taggingSelected.length) return;
       showToast('Saved ' + taggingSelected.length + ' photo' + (taggingSelected.length !== 1 ? 's' : '') + ' to camera roll ✓', 'ok');
+    }
+
+    function pvShowEmojiPicker(photoId) {
+      var picker = document.getElementById('pv-emoji-picker');
+      if (!picker) return;
+      var open = picker.style.display === 'flex';
+      picker.style.display = open ? 'none' : 'flex';
+    }
+
+    function pvPickReaction(photoId, emoji) {
+      /* Toggle off if same emoji tapped again */
+      pvPhotoReactions[photoId] = (pvPhotoReactions[photoId] === emoji) ? '' : emoji;
+      var badge  = document.getElementById('pv-reaction-badge');
+      var btn    = document.getElementById('pv-emoji-btn');
+      var picker = document.getElementById('pv-emoji-picker');
+      var react  = pvPhotoReactions[photoId];
+      if (badge) {
+        badge.textContent = react;
+        badge.style.opacity   = react ? '1' : '0';
+        badge.style.transform = react ? 'scale(1)' : 'scale(0.4)';
+      }
+      if (btn) btn.textContent = react || '😊';
+      if (picker) picker.style.display = 'none';
     }
 
     function pvExternalShare(photoId) {
