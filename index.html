@@ -1098,7 +1098,7 @@
                         'background:' + (sessionStorage.getItem('_refreshed') === '1' ? T.ok : T.alert) + ';' +
                         'color:#fff;transition:background .3s;">' +
                 '<span style="font-size:16px;">' + (sessionStorage.getItem('_refreshed') === '1' ? '✓' : '↻') + '</span>' +
-                (sessionStorage.getItem('_refreshed') === '1' ? 'You\'re on the latest version · v77' : 'Update available · tap to get v77') +
+                (sessionStorage.getItem('_refreshed') === '1' ? 'You\'re on the latest version · v78' : 'Update available · tap to get v78') +
               '</button>' +
 
             '</div>' +
@@ -1115,7 +1115,7 @@
 
             '<p style="text-align:center;font-size:10px;font-weight:500;' +
                       'color:' + T.textT + ';margin-top:8px;letter-spacing:.04em;">' +
-              'v77' +
+              'v78' +
             '</p>' +
 
           '</div>' +
@@ -6113,7 +6113,7 @@
           ? 'taggingSetFace(\'' + p.personId + '\')'
           : 'taggingIdentifyPerson(\'' + p.personId + '\')';
         var initials = p.identified ? p.personId : '?';
-        var iStyle   = 'font-size:' + (p.identified ? '18' : '22') + 'px;' +
+        var iStyle   = 'font-size:' + (p.identified ? '13' : '18') + 'px;' +
                        'color:' + (p.identified ? '#fff' : p.ring) + ';';
         peopleHTML += (
           '<div id="people-avatar-' + p.avId + '"' +
@@ -6121,7 +6121,7 @@
                ' style="display:flex;flex-direction:column;align-items:center;' +
                        'gap:4px;cursor:pointer;flex-shrink:0;">' +
             '<div style="' +
-                'width:56px;height:56px;border-radius:50%;' +
+                'width:44px;height:44px;border-radius:50%;' +
                 'background:' + p.bg + ';' +
                 'border:' + bdr + ';' +
                 'display:flex;align-items:center;justify-content:center;' +
@@ -6163,15 +6163,15 @@
           '<button id="fcat-' + cp.cat + '"' +
                   ' onclick="taggingSetCategory(\'' + cp.cat + '\')"' +
                   ' style="' +
-                    'display:inline-flex;align-items:center;gap:6px;' +
-                    'height:36px;padding:0 14px;' +
-                    'border-radius:18px;border:none;' +
+                    'display:inline-flex;align-items:center;gap:5px;' +
+                    'height:30px;padding:0 12px;' +
+                    'border-radius:15px;border:none;' +
                     'background:' + cp.bg + ';' +
-                    'font-family:inherit;font-size:13px;font-weight:600;' +
+                    'font-family:inherit;font-size:12px;font-weight:600;' +
                     'color:' + cp.clr + ';' +
                     'cursor:pointer;white-space:nowrap;flex-shrink:0;' +
                     'transition:opacity .15s,transform .15s;">' +
-            '<span style="font-size:16px;line-height:1;">' + cp.emoji + '</span>' +
+            '<span style="font-size:14px;line-height:1;">' + cp.emoji + '</span>' +
             '<span>' + cp.cat + ' (' + cp.count + ')</span>' +
           '</button>'
         );
@@ -6328,7 +6328,7 @@
             /* ── people row ── */
             '<div style="position:relative;background:#fff;overflow:hidden;">' +
               '<div class="hscroll"' +
-                   ' style="display:flex;gap:16px;overflow-x:auto;padding:18px 18px 16px;">' +
+                   ' style="display:flex;gap:12px;overflow-x:auto;padding:12px 16px 10px;">' +
                 peopleHTML +
                 '<div style="width:36px;flex-shrink:0;"></div>' +
               '</div>' +
@@ -6340,7 +6340,7 @@
             /* ── category pills ── */
             '<div class="hscroll"' +
                  ' style="display:flex;gap:12px;overflow-x:auto;' +
-                         'padding:4px 18px 12px;flex-shrink:0;background:#fff;">' +
+                         'padding:4px 16px 10px;flex-shrink:0;background:#fff;">' +
               catHTML +
             '</div>' +
 
