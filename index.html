@@ -1098,7 +1098,7 @@
                         'background:' + (sessionStorage.getItem('_refreshed') === '1' ? T.ok : T.alert) + ';' +
                         'color:#fff;transition:background .3s;">' +
                 '<span style="font-size:16px;">' + (sessionStorage.getItem('_refreshed') === '1' ? '✓' : '↻') + '</span>' +
-                (sessionStorage.getItem('_refreshed') === '1' ? 'You\'re on the latest version · v57' : 'Update available · tap to get v57') +
+                (sessionStorage.getItem('_refreshed') === '1' ? 'You\'re on the latest version · v58' : 'Update available · tap to get v58') +
               '</button>' +
 
             '</div>' +
@@ -1115,7 +1115,7 @@
 
             '<p style="text-align:center;font-size:10px;font-weight:500;' +
                       'color:' + T.textT + ';margin-top:8px;letter-spacing:.04em;">' +
-              'v57' +
+              'v58' +
             '</p>' +
 
           '</div>' +
@@ -5417,7 +5417,7 @@
                              (taggingTab === 'group'
                                ? 'color:' + T.blue + ';background:#EEF2FD;'
                                : 'color:#9B9590;background:#E8E6E1;') + '">' +
-                  (hasSynced ? groupDisplayCount : '0') +
+                  (groupPhotosUnlocked ? groupDisplayCount : '0') +
                 '</span>' +
               '</button>' +
               '<button id="seg-my-photos"' +
@@ -7404,6 +7404,38 @@
               alSection('Recent Trips', cfg.recent) +
               alSection('Memories',     cfg.memories) +
             '</div>' +
+            /* Add past trip prompt — new users with no past trips */
+            (['varun','kavitha','beulah'].indexOf(activeJourney) !== -1 && cfg.recent.length === 0 && cfg.memories.length === 0
+              ? '<div style="margin-top:4px;">' +
+                  '<p style="font-size:11px;font-weight:700;color:' + T.textT + ';' +
+                            'letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;">Past trips</p>' +
+                  '<div style="background:#fff;border-radius:16px;padding:24px 16px;' +
+                              'box-shadow:0 2px 12px rgba(0,0,0,.06);' +
+                              'display:flex;flex-direction:column;align-items:center;text-align:center;">' +
+                    '<div style="width:52px;height:52px;border-radius:14px;background:' + T.bgSub + ';' +
+                                'display:flex;align-items:center;justify-content:center;' +
+                                'margin-bottom:12px;font-size:24px;">🗺️</div>' +
+                    '<p style="font-size:14px;font-weight:700;color:' + T.text + ';margin-bottom:6px;">' +
+                      'Got memories from a past trip?' +
+                    '</p>' +
+                    '<p style="font-size:12px;font-weight:400;color:' + T.textS + ';' +
+                              'line-height:1.5;margin-bottom:18px;max-width:210px;">' +
+                      'Add your old trip photos and relive the moments with your people.' +
+                    '</p>' +
+                    '<button onclick="go(\'varun-create-group\')"' +
+                            ' style="height:40px;padding:0 22px;border-radius:10px;border:none;' +
+                                   'background:' + T.blue + ';color:#fff;font-family:inherit;' +
+                                   'font-size:13px;font-weight:600;cursor:pointer;' +
+                                   'display:flex;align-items:center;gap:6px;">' +
+                      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" ' +
+                           'stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">' +
+                        '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>' +
+                      '</svg>' +
+                      'Add a past trip' +
+                    '</button>' +
+                  '</div>' +
+                '</div>'
+              : '') +
           '</div>' +
 
           navBar('home') +
@@ -8763,7 +8795,7 @@
       'varun-reg':           screenVarunReg,
       'varun-otp':           screenVarunOtp,
       'varun-profile':       screenVarunProfile,
-      'varun-home':          screenVarunHome,
+      'varun-home':          screenAlbumListing,
       'varun-create-group':  screenVarunCreateGroup,
       'varun-sync':          screenVarunSync,
       'varun-tagging':       screenVarunTagging,
