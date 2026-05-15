@@ -1098,7 +1098,7 @@
                         'background:' + (sessionStorage.getItem('_refreshed') === '1' ? T.ok : T.alert) + ';' +
                         'color:#fff;transition:background .3s;">' +
                 '<span style="font-size:16px;">' + (sessionStorage.getItem('_refreshed') === '1' ? '✓' : '↻') + '</span>' +
-                (sessionStorage.getItem('_refreshed') === '1' ? 'You\'re on the latest version · v64' : 'Update available · tap to get v64') +
+                (sessionStorage.getItem('_refreshed') === '1' ? 'You\'re on the latest version · v65' : 'Update available · tap to get v65') +
               '</button>' +
 
             '</div>' +
@@ -1115,7 +1115,7 @@
 
             '<p style="text-align:center;font-size:10px;font-weight:500;' +
                       'color:' + T.textT + ';margin-top:8px;letter-spacing:.04em;">' +
-              'v64' +
+              'v65' +
             '</p>' +
 
           '</div>' +
@@ -2098,6 +2098,11 @@
             });
           }
           showConfetti();
+          /* Auto-navigate to My Photos after a short celebration pause */
+          setTimeout(function () {
+            taggingOpenTab = 'my-photos';
+            go('varun-tagging');
+          }, 1800);
         }, 300);
       }
       syncSetStickyState('done');
