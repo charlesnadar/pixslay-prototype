@@ -260,7 +260,7 @@
        STATE + NAVIGATION
     ───────────────────────────────────────────────────── */
     var state = {
-      screen:    'entry',
+      screen:    sessionStorage.getItem('_onboarding_done') ? 'entry' : 'onboarding',
       journey:   'varun',
       completed: [],
       backOnce:  false,
@@ -1098,7 +1098,7 @@
                         'background:' + (sessionStorage.getItem('_refreshed') === '1' ? T.ok : T.alert) + ';' +
                         'color:#fff;transition:background .3s;">' +
                 '<span style="font-size:16px;">' + (sessionStorage.getItem('_refreshed') === '1' ? '✓' : '↻') + '</span>' +
-                (sessionStorage.getItem('_refreshed') === '1' ? 'You\'re on the latest version · v81' : 'Update available · tap to get v81') +
+                (sessionStorage.getItem('_refreshed') === '1' ? 'You\'re on the latest version · v82' : 'Update available · tap to get v82') +
               '</button>' +
 
             '</div>' +
@@ -1115,7 +1115,7 @@
 
             '<p style="text-align:center;font-size:10px;font-weight:500;' +
                       'color:' + T.textT + ';margin-top:8px;letter-spacing:.04em;">' +
-              'v81' +
+              'v82' +
             '</p>' +
 
           '</div>' +
@@ -10007,9 +10007,296 @@
     }
 
     /* ─────────────────────────────────────────────────────
+       ONBOARDING — 4 slides shown once before entry screen
+    ───────────────────────────────────────────────────── */
+    var _obSlide = 0;
+
+    function screenOnboarding() {
+      var isLast = (_obSlide === 3);
+      /* Dot bar */
+      var dots = '';
+      for (var d = 0; d < 4; d++) {
+        dots += '<div style="width:' + (d === _obSlide ? '20' : '6') + 'px;height:6px;border-radius:3px;' +
+          'background:' + (d === _obSlide ? T.blue : 'rgba(0,0,0,.14)') + ';' +
+          'transition:width .22s,background .22s;"></div>';
+      }
+
+      var visuals  = [_obV0, _obV1, _obV2, _obV3];
+      var copies   = [
+        { h: '"Hey, can you send\nthe photos?"',
+          s: 'You know how this ends.' },
+        { h: 'When they finally share...',
+          s: 'Compressed. Three Drive folders. Still missing the good ones.' },
+        { h: 'Your face. Everyone\'s camera.',
+          s: 'Tap your name — see every photo you\'re in, from every phone in the room.' },
+        { h: 'Yours until you say otherwise.',
+          s: 'Private by default. You choose what goes to the group.' },
+      ];
+      var c = copies[_obSlide];
+      var headLines = c.h.split('\n');
+      var headHTML  = headLines.map(function(l) { return '<span>' + l + '</span>'; }).join('<br>');
+
+      return (
+        '<div class="screen" style="display:flex;flex-direction:column;background:#fff;overflow:hidden;">' +
+          '<div style="flex:1;overflow:hidden;position:relative;">' +
+            visuals[_obSlide]() +
+          '</div>' +
+          /* Copy + nav */
+          '<div style="padding:22px 26px 38px;background:#fff;flex-shrink:0;">' +
+            '<h1 style="margin:0 0 8px;font-size:22px;font-weight:800;line-height:1.22;color:' + T.text + ';">' + headHTML + '</h1>' +
+            '<p style="margin:0 0 26px;font-size:15px;font-weight:400;color:' + T.textS + ';line-height:1.5;">' + c.s + '</p>' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+              /* Skip — hidden on last slide */
+              '<button onclick="onboardingSkip()" style="min-width:48px;background:none;border:none;cursor:pointer;font-family:inherit;font-size:14px;font-weight:600;color:' + T.textT + ';padding:0;opacity:' + (isLast ? '0;pointer-events:none' : '1') + ';">Skip</button>' +
+              '<div style="display:flex;align-items:center;gap:5px;">' + dots + '</div>' +
+              '<button onclick="onboardingNext()" style="height:44px;padding:0 22px;border-radius:12px;border:none;background:' + T.blue + ';color:#fff;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;">' + (isLast ? 'Get started →' : 'Next →') + '</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>'
+      );
+    }
+
+    /* ── Slide visuals ── */
+
+    /* Slide 0 — Broken promise loop (dark WhatsApp) */
+    function _obV0() {
+      var BG='#0B141A', HDR='#1F2C34', RCV='#202C33', SND='#005C4B';
+      var TXT='#E9EDEF', TS='#8696A0';
+      var names = { charles:'#53BDEB', ruban:'#FCB04A', rey:'#CEB0FB', joye:'#20C09F' };
+
+      function rcv(who, clr, msg, time) {
+        return '<div style="display:flex;justify-content:flex-start;margin-bottom:4px;padding:0 10px;">' +
+          '<div style="background:' + RCV + ';border-radius:2px 10px 10px 10px;padding:7px 10px 5px;max-width:76%;">' +
+            '<span style="display:block;font-size:11px;font-weight:700;color:' + clr + ';margin-bottom:3px;">' + who + '</span>' +
+            '<span style="display:block;font-size:13px;color:' + TXT + ';line-height:1.4;">' + msg + '</span>' +
+            '<span style="display:block;font-size:10px;color:' + TS + ';text-align:right;margin-top:2px;">' + time + '</span>' +
+          '</div></div>';
+      }
+      function dateSep(lbl) {
+        return '<div style="text-align:center;padding:8px 0;">' +
+          '<span style="background:#182229;color:' + TS + ';font-size:11px;font-weight:500;padding:3px 10px;border-radius:6px;">' + lbl + '</span>' +
+          '</div>';
+      }
+
+      return (
+        '<div style="background:' + BG + ';height:100%;display:flex;flex-direction:column;">' +
+          /* WA header */
+          '<div style="background:' + HDR + ';padding:10px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;">' +
+            '<div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#1B5E20,#43A047);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🌊</div>' +
+            '<div>' +
+              '<div style="font-size:14px;font-weight:700;color:' + TXT + ';">Goa Trip 🌊</div>' +
+              '<div style="font-size:11px;color:' + TS + ';">Charles, Ruban, Rey, Joye, Anbu +2</div>' +
+            '</div>' +
+          '</div>' +
+          /* Chat */
+          '<div style="flex:1;padding:4px 0;overflow:hidden;">' +
+            dateSep('16 May') +
+            rcv('Charles', names.charles, 'hey guys can we get the Goa photos? 🙏', '10:42 AM') +
+            rcv('Ruban',   names.ruban,   'yeah will send tomorrow bro, been busy', '10:45 AM') +
+            rcv('Rey',     names.rey,     'same, this weekend for sure 👍',          '10:47 AM') +
+            dateSep('3 days later') +
+            rcv('Joye',    names.joye,    'Ruban? Rey? photos? 👀',                  '11:20 AM') +
+            rcv('Ruban',   names.ruban,   'sorry yaar — definitely by weekend',     '11:38 AM') +
+            dateSep('2 weeks later') +
+            rcv('Charles', names.charles, '...guys 🥺',                              '9:03 AM') +
+            '<div style="padding:12px 10px 0;text-align:center;">' +
+              '<span style="background:#182229;color:' + TS + ';font-size:10px;padding:3px 10px;border-radius:6px;">Seen by all · No replies</span>' +
+            '</div>' +
+          '</div>' +
+        '</div>'
+      );
+    }
+
+    /* Slide 1 — The dump chaos (dark WhatsApp) */
+    function _obV1() {
+      var BG='#0B141A', HDR='#1F2C34', RCV='#202C33', SND='#005C4B';
+      var TXT='#E9EDEF', TS='#8696A0';
+      var names = { anbu:'#E47FB1', obeth:'#3FDE8A', richie:'#FF8C69', joye:'#20C09F', rey:'#CEB0FB', ruban:'#FCB04A' };
+
+      function rcv(who, clr, content, time) {
+        return '<div style="display:flex;justify-content:flex-start;margin-bottom:4px;padding:0 10px;">' +
+          '<div style="background:' + RCV + ';border-radius:2px 10px 10px 10px;padding:7px 10px 5px;max-width:82%;">' +
+            '<span style="display:block;font-size:11px;font-weight:700;color:' + clr + ';margin-bottom:3px;">' + who + '</span>' +
+            content +
+            '<span style="display:block;font-size:10px;color:' + TS + ';text-align:right;margin-top:2px;">' + time + '</span>' +
+          '</div></div>';
+      }
+      function msgTxt(txt) { return '<span style="display:block;font-size:13px;color:' + TXT + ';line-height:1.4;">' + txt + '</span>'; }
+      function photos(n, g1, g2) {
+        var thumbs = '';
+        for (var i = 0; i < Math.min(n, 3); i++) {
+          thumbs += '<div style="width:52px;height:52px;border-radius:4px;background:linear-gradient(135deg,' + g1 + ',' + g2 + ');opacity:.75;display:inline-flex;align-items:center;justify-content:center;margin-right:2px;">' +
+            '<svg width="14" height="14" viewBox="0 0 24 24" fill="rgba(255,255,255,.7)"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21" fill="rgba(255,255,255,.5)"/></svg>' +
+            '</div>';
+        }
+        if (n > 3) thumbs += '<div style="width:52px;height:52px;border-radius:4px;background:rgba(255,255,255,.07);display:inline-flex;align-items:center;justify-content:center;"><span style="color:rgba(255,255,255,.6);font-size:12px;font-weight:700;">+' + (n - 3) + '</span></div>';
+        return '<div style="display:flex;gap:2px;flex-wrap:nowrap;margin:3px 0;">' + thumbs + '</div>';
+      }
+      function driveLink(label) {
+        return '<div style="background:rgba(255,255,255,.06);border-radius:8px;padding:7px 9px;display:flex;align-items:center;gap:8px;margin:3px 0;">' +
+          '<div style="width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,#1976D2,#42A5F5);display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+            '<svg width="14" height="14" viewBox="0 0 24 24" fill="#fff"><path d="M4.5 18L9 9l3 6 2-4 4 7H4.5z"/></svg>' +
+          '</div>' +
+          '<div><div style="font-size:11px;font-weight:600;color:' + TXT + ';">' + label + '</div><div style="font-size:10px;color:' + TS + ';">drive.google.com</div></div>' +
+        '</div>';
+      }
+
+      return (
+        '<div style="background:' + BG + ';height:100%;display:flex;flex-direction:column;">' +
+          '<div style="background:' + HDR + ';padding:10px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;">' +
+            '<div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#1B5E20,#43A047);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🌊</div>' +
+            '<div>' +
+              '<div style="font-size:14px;font-weight:700;color:' + TXT + ';">Goa Trip 🌊</div>' +
+              '<div style="font-size:11px;color:' + TS + ';">Charles, Ruban, Rey, Joye, Anbu +2</div>' +
+            '</div>' +
+          '</div>' +
+          '<div style="flex:1;padding:4px 0;overflow:hidden;">' +
+            rcv('Anbu',   names.anbu,   photos(14,'#1A237E','#3F51B5') + msgTxt('here are the photos finally 😅'), '11:05 AM') +
+            rcv('Obeth',  names.obeth,  driveLink('Goa Photos (Final)'), '11:07 AM') +
+            rcv('Richie', names.richie, photos(9,'#4A148C','#9C27B0'), '11:12 AM') +
+            rcv('Joye',   names.joye,   msgTxt('these are so compressed 😭'), '11:13 AM') +
+            rcv('Rey',    names.rey,    msgTxt('anyone have the originals?? 🙏'), '11:14 AM') +
+            rcv('Ruban',  names.ruban,  msgTxt('my storage is full can someone make a drive'), '11:15 AM') +
+            rcv('Obeth',  names.obeth,  driveLink('Goa Photos FINAL FINAL'), '11:16 AM') +
+            rcv('Anbu',   names.anbu,   msgTxt('which folder is the right one 😭'), '11:17 AM') +
+          '</div>' +
+        '</div>'
+      );
+    }
+
+    /* Slide 2 — Face recognition (PixSlay light UI) */
+    function _obV2() {
+      var faces = [
+        { init:'RE', bg:'linear-gradient(135deg,#E65100,#FF8F00)', active:false },
+        { init:'AN', bg:'linear-gradient(135deg,#006064,#00838F)', active:false },
+        { init:'JO', bg:'linear-gradient(135deg,#880E4F,#C2185B)', active:true  },
+        { init:'CH', bg:'linear-gradient(135deg,#1B4FD8,#2D7DD2)', active:false },
+        { init:'RU', bg:'linear-gradient(135deg,#1B5E20,#388E3C)', active:false },
+      ];
+      var faceHTML = '';
+      for (var fi = 0; fi < faces.length; fi++) {
+        var f = faces[fi];
+        faceHTML += '<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;">' +
+          '<div style="width:44px;height:44px;border-radius:50%;background:' + f.bg + ';' +
+            'display:flex;align-items:center;justify-content:center;' +
+            'font-size:13px;font-weight:800;color:#fff;' +
+            (f.active ? 'box-shadow:0 0 0 3px ' + T.blue + ',0 0 0 5px rgba(27,79,216,.2);transform:scale(1.08);' : 'opacity:0.35;') + '">' +
+            f.init +
+          '</div>' +
+          '<span style="font-size:10px;font-weight:' + (f.active ? '700' : '400') + ';color:' + (f.active ? T.text : T.textT) + ';">' + f.init + '</span>' +
+        '</div>';
+      }
+      /* Photo grid — some bright (matching), some dimmed */
+      var photoColors = [
+        ['#C2185B','#F06292',true], ['#1565C0','#42A5F5',true], ['#2E7D32','#66BB6A',true],
+        ['#E65100','#FFA726',false], ['#880E4F','#CE93D8',true], ['#37474F','#78909C',false],
+        ['#1B5E20','#A5D6A7',true], ['#4A148C','#AB47BC',false], ['#BF360C','#FF7043',true],
+      ];
+      var gridHTML = '';
+      for (var gi = 0; gi < photoColors.length; gi++) {
+        var pc = photoColors[gi];
+        gridHTML += '<div style="aspect-ratio:1;border-radius:10px;background:linear-gradient(135deg,' + pc[0] + ',' + pc[1] + ');' +
+          'opacity:' + (pc[2] ? '1' : '0.1') + ';' +
+          'transition:opacity .2s;">' +
+          (pc[2] ? '<div style="width:100%;height:100%;display:flex;align-items:flex-end;padding:4px;"><div style="width:16px;height:16px;border-radius:50%;background:' + T.blue + ';border:1.5px solid #fff;display:flex;align-items:center;justify-content:center;"><svg width="8" height="8" viewBox="0 0 12 12" fill="none"><polyline points="2,6 5,9 10,3" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg></div></div>' : '') +
+        '</div>';
+      }
+
+      return (
+        '<div style="background:#F8F9FA;height:100%;display:flex;flex-direction:column;padding:20px 16px 12px;">' +
+          /* Top label */
+          '<p style="font-size:12px;font-weight:700;color:' + T.textT + ';letter-spacing:.05em;text-transform:uppercase;margin:0 0 12px;text-align:center;">Who\'s in your photos</p>' +
+          /* Face strip */
+          '<div style="display:flex;justify-content:center;gap:16px;margin-bottom:16px;">' + faceHTML + '</div>' +
+          /* Filter active label */
+          '<div style="text-align:center;margin-bottom:14px;">' +
+            '<span style="display:inline-flex;align-items:center;gap:5px;background:#EEF2FD;border-radius:16px;padding:5px 12px;font-size:12px;font-weight:700;color:' + T.blue + ';">' +
+              '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>' +
+              'Joye · 11 photos' +
+            '</span>' +
+          '</div>' +
+          /* Photo grid */
+          '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;flex:1;">' + gridHTML + '</div>' +
+        '</div>'
+      );
+    }
+
+    /* Slide 3 — Private → Shared (clean PixSlay concept) */
+    function _obV3() {
+      var photoSwatches = [
+        ['#C2185B','#F06292'],['#1565C0','#42A5F5'],['#2E7D32','#66BB6A'],
+        ['#E65100','#FFA726'],['#880E4F','#CE93D8'],['#37474F','#78909C'],
+      ];
+      function photoTile(g1, g2, sz) {
+        sz = sz || '52px';
+        return '<div style="width:' + sz + ';height:' + sz + ';border-radius:8px;background:linear-gradient(135deg,' + g1 + ',' + g2 + ');flex-shrink:0;"></div>';
+      }
+
+      return (
+        '<div style="background:linear-gradient(160deg,#EEF2FD 0%,#F8F9FA 100%);height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 24px;gap:0;">' +
+
+          /* Two cards side by side */
+          '<div style="display:flex;gap:12px;width:100%;max-width:320px;">' +
+
+            /* Private card */
+            '<div style="flex:1;background:#fff;border-radius:18px;padding:16px 14px;box-shadow:0 4px 20px rgba(0,0,0,.07);display:flex;flex-direction:column;align-items:center;gap:10px;">' +
+              '<div style="width:44px;height:44px;background:#F1F5F9;border-radius:50%;display:flex;align-items:center;justify-content:center;">' +
+                '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' +
+              '</div>' +
+              '<span style="font-size:12px;font-weight:700;color:#94A3B8;text-align:center;">Your photos</span>' +
+              /* Blurred tile stack */
+              '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;filter:blur(4px);opacity:.4;">' +
+                photoTile('#C2185B','#F06292','36px') + photoTile('#1565C0','#42A5F5','36px') +
+                photoTile('#2E7D32','#66BB6A','36px') + photoTile('#E65100','#FFA726','36px') +
+              '</div>' +
+              '<span style="font-size:10px;font-weight:500;color:#CBD5E1;text-align:center;">Only you can see</span>' +
+            '</div>' +
+
+            /* Arrow */
+            '<div style="display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+              '<div style="width:32px;height:32px;background:' + T.blue + ';border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(27,79,216,.3);">' +
+                '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>' +
+              '</div>' +
+            '</div>' +
+
+            /* Shared card */
+            '<div style="flex:1;background:#fff;border-radius:18px;padding:16px 14px;box-shadow:0 4px 20px rgba(0,0,0,.07);display:flex;flex-direction:column;align-items:center;gap:10px;">' +
+              '<div style="width:44px;height:44px;background:#EEF2FD;border-radius:50%;display:flex;align-items:center;justify-content:center;">' +
+                '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="' + T.blue + '" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>' +
+              '</div>' +
+              '<span style="font-size:12px;font-weight:700;color:' + T.blue + ';text-align:center;">Group album</span>' +
+              '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">' +
+                photoTile('#880E4F','#CE93D8','36px') + photoTile('#37474F','#78909C','36px') +
+                photoTile('#1B5E20','#A5D6A7','36px') + photoTile('#4A148C','#AB47BC','36px') +
+              '</div>' +
+              '<span style="font-size:10px;font-weight:600;color:' + T.blue + ';text-align:center;">Shared by you</span>' +
+            '</div>' +
+
+          '</div>' +
+
+          /* Footnote */
+          '<p style="font-size:11px;color:' + T.textT + ';text-align:center;margin-top:18px;line-height:1.5;">You decide what the group sees.<br>Everything else stays on your phone.</p>' +
+        '</div>'
+      );
+    }
+
+    /* Onboarding navigation */
+    function onboardingNext() {
+      _obSlide++;
+      if (_obSlide >= 4) { onboardingDone(); } else { render(); }
+    }
+    function onboardingSkip() { onboardingDone(); }
+    function onboardingDone() {
+      sessionStorage.setItem('_onboarding_done', '1');
+      _obSlide = 0;
+      go('entry');
+    }
+
+    /* ─────────────────────────────────────────────────────
        SCREEN MAP
     ───────────────────────────────────────────────────── */
     var SCREEN_MAP = {
+      'onboarding':          screenOnboarding,
       'entry':               screenEntry,
       'varun-reg':           screenVarunReg,
       'varun-otp':           screenVarunOtp,
