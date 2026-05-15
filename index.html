@@ -1098,7 +1098,7 @@
                         'background:' + (sessionStorage.getItem('_refreshed') === '1' ? T.ok : T.alert) + ';' +
                         'color:#fff;transition:background .3s;">' +
                 '<span style="font-size:16px;">' + (sessionStorage.getItem('_refreshed') === '1' ? '✓' : '↻') + '</span>' +
-                (sessionStorage.getItem('_refreshed') === '1' ? 'You\'re on the latest version · v75' : 'Update available · tap to get v75') +
+                (sessionStorage.getItem('_refreshed') === '1' ? 'You\'re on the latest version · v76' : 'Update available · tap to get v76') +
               '</button>' +
 
             '</div>' +
@@ -1115,7 +1115,7 @@
 
             '<p style="text-align:center;font-size:10px;font-weight:500;' +
                       'color:' + T.textT + ';margin-top:8px;letter-spacing:.04em;">' +
-              'v75' +
+              'v76' +
             '</p>' +
 
           '</div>' +
@@ -3065,6 +3065,7 @@
              ' onmouseup="taggingLongEnd()"' +
              ' onmouseleave="taggingLongEnd()"' +
              ' ontouchstart="taggingLongStart(' + photo.id + ',event)"' +
+             ' ontouchmove="taggingLongMove(event)"' +
              ' ontouchend="taggingLongEnd()"' +
              ' ontouchcancel="taggingLongEnd()">' +
           '<img src="' + PHOTO_FILES[photoIdx] + '"' +
@@ -3537,10 +3538,25 @@
       }
     }
 
-    /* ─── long press ─── */
+    /* ─── long press — 800ms threshold + movement cancellation ─── */
+    var _longPressX = 0;
+    var _longPressY = 0;
     function taggingLongStart(id, e) {
       if (taggingSelectMode) return;
-      taggingLongTimer = setTimeout(function () { taggingEnterSelect(id); }, 600);
+      var t = e.touches ? e.touches[0] : e;
+      _longPressX = t.clientX;
+      _longPressY = t.clientY;
+      taggingLongTimer = setTimeout(function () { taggingEnterSelect(id); }, 800);
+    }
+    function taggingLongMove(e) {
+      if (!taggingLongTimer) return;
+      var t = e.touches ? e.touches[0] : e;
+      var dx = t.clientX - _longPressX;
+      var dy = t.clientY - _longPressY;
+      if (Math.sqrt(dx * dx + dy * dy) > 8) {
+        clearTimeout(taggingLongTimer);
+        taggingLongTimer = null;
+      }
     }
     function taggingLongEnd() {
       if (taggingLongTimer) { clearTimeout(taggingLongTimer); taggingLongTimer = null; }
@@ -3690,6 +3706,8 @@
         selAll.style.opacity = canSelectMore ? '1' : '0.35';
         selAll.style.cursor  = canSelectMore ? 'pointer' : 'default';
       }
+      /* Hide filter action bar while in select mode */
+      taggingUpdateFilterActionBar();
     }
 
     function taggingPhotoMatchesFilter(photo) {
@@ -3704,6 +3722,56 @@
         if (taggingPhotoMatchesFilter(TRIP_PHOTOS[i])) ids.push(TRIP_PHOTOS[i].id);
       }
       return ids;
+    }
+
+    /* ─── filter action bar — shown whenever a filter is active ─── */
+    function taggingUpdateFilterActionBar() {
+      var bar = document.getElementById('tagging-filter-action-bar');
+      if (!bar) return;
+      var hasFilter = !!(taggingFaceFilter || taggingCategory);
+      /* Hide if no filter, or if select mode is active */
+      if (!hasFilter || taggingSelectMode) {
+        bar.style.opacity   = '0';
+        bar.style.transform = 'translateY(8px)';
+        setTimeout(function () {
+          if (bar.style.opacity === '0') bar.style.display = 'none';
+        }, 220);
+        return;
+      }
+      /* Count matching photos for this tab */
+      var sourcePhotos = (taggingTab === 'group')
+        ? getFilteredGroupPhotos().slice(0, groupPoolCount)
+        : TRIP_PHOTOS;
+      var count = 0;
+      for (var fi = 0; fi < sourcePhotos.length; fi++) {
+        if (taggingPhotoMatchesFilter(sourcePhotos[fi])) count++;
+      }
+      if (!count) {
+        bar.style.opacity = '0';
+        bar.style.display = 'none';
+        return;
+      }
+      /* Build label */
+      var filterName = taggingFaceFilter || taggingCategory;
+      var isGroup    = (taggingTab === 'group');
+      var label      = isGroup
+        ? 'Save ' + count + ' · ' + filterName + ' photos'
+        : 'Share ' + count + ' · ' + filterName + ' photos with group →';
+      var btn = document.getElementById('tagging-filter-action-btn');
+      if (btn) btn.textContent = label;
+      /* Slide in */
+      bar.style.display   = 'block';
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          bar.style.opacity   = '1';
+          bar.style.transform = 'translateY(0)';
+        });
+      });
+    }
+
+    function taggingFilterSelectAll() {
+      taggingSelectAllMatching();
+      taggingUpdateFilterActionBar(); /* hides filter bar once select mode is on */
     }
 
     function taggingSelectAllMatching() {
@@ -4082,6 +4150,8 @@
           setTimeout(function () { ctaWrap.style.display = 'none'; }, 240);
         }
       }
+      /* Re-show filter action bar if a filter is still active */
+      taggingUpdateFilterActionBar();
     }
 
     function taggingRestoreTopBar() {
@@ -4207,12 +4277,12 @@
         var on = (taggingFaceFilter === pid);
         pChips += (
           '<div onclick="taggingSetFace(\'' + pid + '\')"' +
-               ' style="width:30px;height:30px;border-radius:50%;' +
-                       'background:' + person.bg + ';' +
+               ' style="width:28px;height:28px;border-radius:50%;' +
+                       'background:' + (on ? T.blue : 'rgba(0,0,0,.09)') + ';' +
                        'display:flex;align-items:center;justify-content:center;' +
                        'cursor:pointer;flex-shrink:0;' +
-                       'font-size:10px;font-weight:800;color:#fff;' +
-                       'box-shadow:' + (on ? '0 0 0 2.5px ' + T.blue + ',0 0 0 4px rgba(27,79,216,.2)' : 'none') + ';' +
+                       'font-size:10px;font-weight:700;' +
+                       'color:' + (on ? '#fff' : T.textS) + ';' +
                        'opacity:' + (!taggingFaceFilter || on ? '1' : '0.45') + ';">' +
             pid +
           '</div>'
@@ -4231,10 +4301,10 @@
                ' style="display:inline-flex;align-items:center;gap:3px;' +
                        'height:26px;padding:0 9px;' +
                        'border-radius:13px;flex-shrink:0;cursor:pointer;' +
-                       'background:' + (cOn ? cp2.bg : 'rgba(0,0,0,.06)') + ';' +
-                       'border:1.5px solid ' + (cOn ? cp2.clr : 'transparent') + ';">' +
+                       'background:' + (cOn ? 'rgba(0,0,0,.12)' : 'rgba(0,0,0,.06)') + ';' +
+                       'border:1.5px solid transparent;">' +
             '<span style="font-size:12px;line-height:1;">' + cp2.emoji + '</span>' +
-            '<span style="font-size:11px;font-weight:600;color:' + (cOn ? cp2.clr : T.textS) + ';">' + cp2.cat + '</span>' +
+            '<span style="font-size:11px;font-weight:600;color:' + T.textS + ';">' + cp2.cat + '</span>' +
           '</div>'
         );
       }
@@ -4244,9 +4314,6 @@
           '<div class="hscroll"' +
                ' style="display:flex;align-items:center;gap:8px;overflow-x:auto;">' +
             pChips +
-            (pChips && cPills
-              ? '<div style="width:1px;height:16px;background:rgba(0,0,0,.1);flex-shrink:0;"></div>'
-              : '') +
             cPills +
           '</div>' +
         '</div>'
@@ -4402,6 +4469,7 @@
         if (cell) cell.style.opacity = (!taggingFaceFilter || ph.by === taggingFaceFilter) ? '1' : '0.15';
       }
       taggingUpdateStickyBar();
+      taggingUpdateFilterActionBar();
     }
 
     /* ─── filter bar ─── */
@@ -4499,6 +4567,8 @@
       }
       /* If already in select mode, refresh the CTA bar for the new tab context */
       if (taggingSelectMode && taggingSelected.length) taggingRefreshSelectionUI();
+      /* Update filter action bar count for the new tab */
+      taggingUpdateFilterActionBar();
     }
 
     /* ─── three-dot menu (group screen only) ─── */
@@ -4829,6 +4899,7 @@
         cell.style.opacity = (!targetScene || ph.scene === targetScene) ? '1' : '0.12';
       }
       taggingUpdateStickyBar();
+      taggingUpdateFilterActionBar();
     }
 
     /* ─────────────────────────────────────────────────────
@@ -6084,6 +6155,23 @@
                   : '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;">' +
                       gridHTML +
                     '</div>')) +
+          '</div>' +
+
+          /* ── filter action bar — appears when any filter is active ── */
+          '<div id="tagging-filter-action-bar"' +
+               ' style="position:absolute;left:16px;right:16px;bottom:78px;' +
+                      'display:none;z-index:215;pointer-events:auto;' +
+                      'opacity:0;transform:translateY(8px);' +
+                      'transition:opacity .22s ease,transform .22s cubic-bezier(.22,.1,.15,1);">' +
+            '<button id="tagging-filter-action-btn"' +
+                    ' onclick="taggingFilterSelectAll()"' +
+                    ' style="width:100%;height:48px;border-radius:24px;border:none;' +
+                           'background:' + T.blue + ';color:#fff;' +
+                           'font-family:inherit;font-size:14px;font-weight:700;' +
+                           'cursor:pointer;letter-spacing:-.01em;' +
+                           'box-shadow:0 4px 20px rgba(27,79,216,.35),0 2px 8px rgba(0,0,0,.12);">' +
+              'Share photos with group →' +
+            '</button>' +
           '</div>' +
 
           /* ── share bottom bar — populated by taggingRefreshSelectionUI ── */
