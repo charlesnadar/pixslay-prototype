@@ -1002,7 +1002,7 @@
         { num:1, name:'Varun',   initials:'VR', bg:'linear-gradient(135deg,#1B4FD8,#2D7DD2)',
           tag:'New user',  tagBg:'#EEF2FD', tagClr:T.blue,
           desc:'Creating his first album after a trip with friends',
-          action:'startJourney(\'varun\',\'varun-reg\',{otpDest:\'varun-empty-home\',splash:true})' },
+          action:'startJourney(\'varun\',\'varun-reg\',{otpDest:\'varun-home\',splash:true})' },
         { num:2, name:'Anand',   initials:'AN', bg:'linear-gradient(135deg,#006064,#00838F)',
           tag:'Existing',  tagBg:'#E8F5E9', tagClr:'#2E7D32',
           desc:'Existing user · Got Varun\'s invite via WhatsApp DM',
@@ -1118,7 +1118,7 @@
                         'background:' + (sessionStorage.getItem('_refreshed') === '1' ? T.ok : T.alert) + ';' +
                         'color:#fff;transition:background .3s;">' +
                 '<span style="font-size:16px;">' + (sessionStorage.getItem('_refreshed') === '1' ? '✓' : '↻') + '</span>' +
-                (sessionStorage.getItem('_refreshed') === '1' ? 'You\'re on the latest version · v87' : 'Update available · tap to get v87') +
+                (sessionStorage.getItem('_refreshed') === '1' ? 'You\'re on the latest version · v88' : 'Update available · tap to get v88') +
               '</button>' +
 
             '</div>' +
@@ -1135,7 +1135,7 @@
 
             '<p style="text-align:center;font-size:10px;font-weight:500;' +
                       'color:' + T.textT + ';margin-top:8px;letter-spacing:.04em;">' +
-              'v87' +
+              'v88' +
             '</p>' +
 
           '</div>' +
@@ -2880,6 +2880,42 @@
             '</div>' +
 
             '<div style="flex:1;min-height:8px;"></div>' +
+
+          '</div>' +
+
+          /* ── Sticky bottom action area ── */
+          '<div style="padding:12px 16px calc(env(safe-area-inset-bottom,0px) + 12px);flex-shrink:0;' +
+               'border-top:0.5px solid ' + T.bgSub + ';background:#fff;">' +
+
+            '<p style="font-size:12px;font-weight:400;color:' + T.textS + ';' +
+                      'text-align:center;line-height:1.55;margin-bottom:12px;">' +
+              'We scan only photos taken during your trip window — never your full gallery. Takes about 30 seconds.' +
+            '</p>' +
+
+            '<button id="sync-primary-btn"' +
+              ' onclick="showPhotoPermissionSheet()"' +
+              ' style="display:block;width:100%;height:50px;' +
+                     'border-radius:12px;border:none;' +
+                     'background:' + T.blue + ';color:#fff;' +
+                     'font-family:inherit;font-size:15px;font-weight:600;' +
+                     'cursor:pointer;margin-bottom:8px;' +
+                     'transition:background .2s,color .2s;">' +
+              'Sync trip photos from gallery' +
+            '</button>' +
+
+            '<button id="sync-later-btn"' +
+              ' onclick="taggingOpenTab=\'my-photos\';go(\'varun-tagging\')"' +
+              ' style="display:block;width:100%;height:44px;' +
+                     'border-radius:12px;border:none;background:transparent;' +
+                     'color:' + T.textS + ';font-family:inherit;' +
+                     'font-size:13px;font-weight:500;cursor:pointer;margin-bottom:4px;">' +
+              "I'll add photos later" +
+            '</button>' +
+
+            '<p style="font-size:11px;font-weight:400;color:' + T.textT + ';' +
+                      'text-align:center;line-height:1.5;">' +
+              '🔒 Your photos stay private until you choose to share them' +
+            '</p>' +
 
           '</div>' +
 
@@ -10460,7 +10496,7 @@
       'varun-reg':           screenVarunReg,
       'varun-otp':           screenVarunOtp,
       'varun-profile':       screenVarunProfile,
-      'varun-home':          screenAlbumListing,
+      'varun-home':          screenVarunHome,
       'varun-empty-home':    screenVarunEmptyHome,
       'varun-create-group':  screenVarunCreateGroup,
       'varun-sync':          screenVarunSync,
