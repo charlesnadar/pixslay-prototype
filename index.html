@@ -278,7 +278,7 @@
        STATE + NAVIGATION
     ───────────────────────────────────────────────────── */
     var state = {
-      screen:    sessionStorage.getItem('_onboarding_done') ? 'entry' : 'onboarding',
+      screen:    'entry',
       journey:   'varun',
       completed: [],
       backOnce:  false,
@@ -10520,7 +10520,7 @@
        SCREEN MAP
     ───────────────────────────────────────────────────── */
     var SCREEN_MAP = {
-      'onboarding':          screenOnboarding,
+      /* 'onboarding': screenOnboarding, — commented out, journey starts at entry */
       'splash':              screenSplash,
       'entry':               screenEntry,
       'varun-reg':           screenVarunReg,
@@ -10616,10 +10616,10 @@
         _splashAutoNav();
       }
 
-      /* Onboarding auto-scroll — kick off on chat slides */
-      if (state.screen === 'onboarding' && (_obSlide === 0 || _obSlide === 1)) {
+      /* Onboarding auto-scroll — disabled (onboarding removed from flow) */
+      /* if (state.screen === 'onboarding' && (_obSlide === 0 || _obSlide === 1)) {
         setTimeout(_obStartScroll, 700);
-      }
+      } */
 
       /* Album listing search — restore focus after render */
       if (albumSearchOpen) {
