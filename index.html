@@ -1118,7 +1118,7 @@
                         'background:' + (sessionStorage.getItem('_refreshed') === '1' ? T.ok : T.alert) + ';' +
                         'color:#fff;transition:background .3s;">' +
                 '<span style="font-size:16px;">' + (sessionStorage.getItem('_refreshed') === '1' ? '✓' : '↻') + '</span>' +
-                (sessionStorage.getItem('_refreshed') === '1' ? 'You\'re on the latest version · v86' : 'Update available · tap to get v86') +
+                (sessionStorage.getItem('_refreshed') === '1' ? 'You\'re on the latest version · v87' : 'Update available · tap to get v87') +
               '</button>' +
 
             '</div>' +
@@ -1135,7 +1135,7 @@
 
             '<p style="text-align:center;font-size:10px;font-weight:500;' +
                       'color:' + T.textT + ';margin-top:8px;letter-spacing:.04em;">' +
-              'v86' +
+              'v87' +
             '</p>' +
 
           '</div>' +
@@ -1684,7 +1684,7 @@
 
           switchPill() +
           sbar('#fff') +
-          screenHeader('New group', 'varun-empty-home') +
+          screenHeader('New group', 'varun-home') +
 
           /* ── Scrollable content ── */
           '<div style="flex:1;overflow-y:auto;padding:8px 16px 0;' +
@@ -1856,12 +1856,12 @@
                      'box-shadow:0 4px 14px rgba(27,79,216,.28);">' +
               'Create group' +
             '</button>' +
-            '<button onclick="go(\'varun-empty-home\')"' +
+            '<button onclick="go(\'varun-home\')"' +
               ' style="display:block;width:100%;height:44px;' +
                      'border-radius:12px;border:none;background:transparent;' +
                      'color:' + T.textS + ';font-family:inherit;' +
                      'font-size:13px;font-weight:500;cursor:pointer;">' +
-              'Skip for now' +
+              'Skip for now — explore the app' +
             '</button>' +
           '</div>' +
 
