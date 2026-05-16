@@ -997,20 +997,21 @@
        These will be replaced with real screens in later steps.
     ───────────────────────────────────────────────────── */
     function screenEntry() {
-      /* Journey definitions — ordered 1 to 6 */
+      /* Journey definitions — 2 active journeys (others commented out for future reuse) */
       var JOURNEYS = [
         { num:1, name:'Varun',   initials:'VR', bg:'linear-gradient(135deg,#1B4FD8,#2D7DD2)',
-          tag:'Organiser', tagBg:'#EEF2FD', tagClr:T.blue,
-          desc:'First-time user · Created the Iceland · Northern Lights group',
-          action:'startJourney(\'varun\',\'varun-reg\',{otpDest:\'varun-profile\'})' },
-        { num:2, name:'Mayank',  initials:'MA', bg:'linear-gradient(135deg,#E65100,#FF8F00)',
+          tag:'New user',  tagBg:'#EEF2FD', tagClr:T.blue,
+          desc:'Creating his first album after a trip with friends',
+          action:'startJourney(\'varun\',\'varun-reg\',{otpDest:\'varun-empty-home\',splash:true})' },
+        { num:2, name:'Anand',   initials:'AN', bg:'linear-gradient(135deg,#006064,#00838F)',
+          tag:'Existing',  tagBg:'#E8F5E9', tagClr:'#2E7D32',
+          desc:'Existing user · Got Varun\'s invite via WhatsApp DM',
+          action:'startJourney(\'anand\',\'anand-home\',{taggingOpenTab:\'group\',splash:true})' },
+        /* — Commented out journeys — available for future reuse —
+        { num:3, name:'Mayank',  initials:'MA', bg:'linear-gradient(135deg,#E65100,#FF8F00)',
           tag:'Existing',  tagBg:'#E8F5E9', tagClr:'#2E7D32',
           desc:'Existing user · Got Varun\'s invite via WhatsApp group',
           action:'startJourney(\'mayank\',\'mayank-scene\',{taggingOpenTab:\'group\'})' },
-        { num:3, name:'Anand',   initials:'AN', bg:'linear-gradient(135deg,#006064,#00838F)',
-          tag:'Existing',  tagBg:'#E8F5E9', tagClr:'#2E7D32',
-          desc:'Existing user · Got Varun\'s invite via WhatsApp DM',
-          action:'startJourney(\'anand\',\'anand-scene\',{taggingOpenTab:\'group\'})' },
         { num:4, name:'Vishal',  initials:'VI', bg:'linear-gradient(135deg,#4A148C,#7B1FA2)',
           tag:'New user',  tagBg:'#FFF3E0', tagClr:'#E65100',
           desc:'New user · Got Varun\'s invite via SMS',
@@ -1023,6 +1024,7 @@
           tag:'New user',  tagBg:'#FFF3E0', tagClr:'#E65100',
           desc:'New user · Got Varun\'s invite via Instagram DM',
           action:'startJourney(\'beulah\',\'beulah-scene\',{otpDest:\'varun-tagging\'})' },
+        — end commented journeys — */
       ];
 
       var cardsHTML = '';
@@ -1116,7 +1118,7 @@
                         'background:' + (sessionStorage.getItem('_refreshed') === '1' ? T.ok : T.alert) + ';' +
                         'color:#fff;transition:background .3s;">' +
                 '<span style="font-size:16px;">' + (sessionStorage.getItem('_refreshed') === '1' ? '✓' : '↻') + '</span>' +
-                (sessionStorage.getItem('_refreshed') === '1' ? 'You\'re on the latest version · v85' : 'Update available · tap to get v85') +
+                (sessionStorage.getItem('_refreshed') === '1' ? 'You\'re on the latest version · v86' : 'Update available · tap to get v86') +
               '</button>' +
 
             '</div>' +
@@ -1133,7 +1135,7 @@
 
             '<p style="text-align:center;font-size:10px;font-weight:500;' +
                       'color:' + T.textT + ';margin-top:8px;letter-spacing:.04em;">' +
-              'v85' +
+              'v86' +
             '</p>' +
 
           '</div>' +
@@ -2978,6 +2980,7 @@
     var taggingOpenTab         = '';   /* if set, overrides default tab on next render */
     var identifySelectedName   = '';  /* name chip tapped in identify sheet */
     var otpDest                = 'varun-profile'; /* screen to navigate to after OTP */
+    var splashDest             = 'entry';         /* screen to navigate to after splash */
     var activeJourney          = 'varun';         /* 'varun' | 'beulah' */
     var hasSynced              = false;           /* true only after sync completes */
     var inviteAccepted         = false;           /* true once user taps Accept & view trip */
@@ -8244,7 +8247,12 @@
       /* Varun starts with empty group tab (he hasn't shared yet); everyone else sees photos */
       groupPhotosUnlocked  = (journey !== 'varun');
       sharedPhotoIds       = [];
-      go(dest);
+      if (opts.splash) {
+        splashDest = dest;
+        go('splash');
+      } else {
+        go(dest);
+      }
     }
 
     /* ── People master list (shared across all journeys in mock) ── */
@@ -8597,6 +8605,61 @@
       if (!area) return;
       var cfg = getAlbumListingConfig();
       area.innerHTML = alSection('Recent Trips', cfg.recent) + alSection('Memories', cfg.memories);
+    }
+
+    /* ── screenVarunEmptyHome — Varun's first open: no album yet, prompt to create ── */
+    function screenVarunEmptyHome() {
+      return (
+        '<div class="screen" style="position:absolute;inset:0;display:flex;flex-direction:column;background:' + T.bgWarm + ';">' +
+
+          switchPill() +
+          sbar(T.bgWarm) +
+
+          /* Top bar */
+          '<div style="height:52px;background:' + T.bgWarm + ';display:flex;align-items:center;justify-content:space-between;padding:0 16px;flex-shrink:0;border-bottom:1px solid rgba(0,0,0,.04);">' +
+            logo(20, 16) +
+          '</div>' +
+
+          /* Empty state — centred in remaining space */
+          '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 28px 48px;text-align:center;">' +
+
+            /* Icon */
+            '<div style="width:72px;height:72px;border-radius:20px;background:' + T.bgSub + ';' +
+                        'display:flex;align-items:center;justify-content:center;' +
+                        'margin-bottom:24px;font-size:32px;">📸</div>' +
+
+            /* Headline */
+            '<h1 style="font-size:22px;font-weight:800;color:' + T.text + ';margin:0 0 12px;line-height:1.2;">' +
+              'Your first album is<br>one tap away' +
+            '</h1>' +
+
+            /* Supporting copy */
+            '<p style="font-size:15px;font-weight:400;color:' + T.textS + ';line-height:1.6;margin:0 0 32px;max-width:260px;">' +
+              'Create a group, share the link — everyone uploads their photos and finds themselves automatically.' +
+            '</p>' +
+
+            /* Primary CTA */
+            '<button onclick="go(\'varun-create-group\')"' +
+                    ' style="height:52px;padding:0 32px;border-radius:14px;border:none;cursor:pointer;' +
+                           'background:' + T.blue + ';color:#fff;font-family:inherit;' +
+                           'font-size:16px;font-weight:700;' +
+                           'display:flex;align-items:center;gap:8px;' +
+                           'box-shadow:0 4px 16px rgba(27,79,216,.35);">' +
+              '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">' +
+                '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>' +
+              '</svg>' +
+              'Create your first group' +
+            '</button>' +
+
+            /* Secondary nudge */
+            '<p style="font-size:12px;font-weight:400;color:' + T.textT + ';margin:18px 0 0;line-height:1.5;">' +
+              'Takes less than a minute ·  No app needed for your friends' +
+            '</p>' +
+
+          '</div>' +
+
+        '</div>'
+      );
     }
 
     /* ── screenAlbumListing — the one core screen all journeys share ── */
@@ -10038,7 +10101,7 @@
 
     function screenOnboarding() {
       var isLast  = (_obSlide === 3);
-      var isChat  = (_obSlide === 0 || _obSlide === 1); /* slides with auto-scroll */
+      var isChat  = false; /* WA chat slides removed — no auto-scroll until new onboarding built */
 
       /* Dot bar */
       var dots = '';
@@ -10048,12 +10111,14 @@
           'transition:width .22s,background .22s;"></div>';
       }
 
-      var visuals = [_obV0, _obV1, _obV2, _obV3];
+      /* _obV0 + _obV1 (WA chat slides) are commented out pending new onboarding design.
+         Slides 0–1 temporarily reuse _obV2/_obV3 until new screens are built. */
+      var visuals = [_obV2, _obV3, _obV2, _obV3];
       var copies  = [
-        { h: '"Hey, can you send\nthe photos?"',
-          s: 'You know how this ends.' },
-        { h: 'When they finally share...',
-          s: 'Compressed. Two Drive folders. Sunset photos — gone forever.' },
+        { h: 'Your face. Everyone\'s camera.',
+          s: 'Tap your name — see every photo you\'re in, from every phone in the room.' },
+        { h: 'Yours until you say otherwise.',
+          s: 'Private by default. You choose what goes to the group.' },
         { h: 'Your face. Everyone\'s camera.',
           s: 'Tap your name — see every photo you\'re in, from every phone in the room.' },
         { h: 'Yours until you say otherwise.',
@@ -10174,8 +10239,10 @@
       return '<div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;width:134px;margin:4px 0;border-radius:6px;overflow:hidden;">' + tiles + '</div>';
     }
 
-    /* Slide 0 — Broken promise loop */
-    function _obV0() {
+    /* ── COMMENTED OUT — OB_WAIT: WhatsApp broken promise chat (Slide 0) ──────────────────
+       Preserved for future reuse. Original WA chat simulation showing the "can we get photos"
+       loop with Charles/Ruban/Rey/Joye. Re-enable by removing this comment block.
+    function _obV0_DISABLED() {
       var BG='#0B141A', HDR='#1F2C34', RCV='#202C33', TXT='#E9EDEF', TS='#8696A0';
       var C = { charles:'#53BDEB', ruban:'#FCB04A', rey:'#CEB0FB', joye:'#20C09F' };
       var R = function(w,c,m,t) { return _waRcv(w,c,_waTxt(m,TXT),t,RCV,TXT,TS); };
@@ -10200,9 +10267,13 @@
         '</div>'
       );
     }
+    ── end OB_WAIT ── */
 
-    /* Slide 1 — The dump chaos */
-    function _obV1() {
+    /* ── COMMENTED OUT — OB_CHAOS: WhatsApp dump chaos chat (Slide 1) ──────────────────────
+       Preserved for future reuse. Full group conversation with Anbu/Obeth/Ruban/Karthik/Rey/
+       Richie/Charles/Yasin/Kavitha/Mayank — folder hell + lost sunset photos.
+       Re-enable by removing this comment block.
+    function _obV1_DISABLED() {
       var BG='#0B141A', HDR='#1F2C34', RCV='#202C33', TXT='#E9EDEF', TS='#8696A0';
       var C = { anbu:'#E47FB1', obeth:'#3FDE8A', richie:'#FF8C69', karthik:'#FF7C7C',
                 rey:'#CEB0FB', ruban:'#FCB04A', charles:'#53BDEB',
@@ -10238,6 +10309,7 @@
         '</div>'
       );
     }
+    ── end OB_CHAOS ── */
 
     /* Slide 2 — Face recognition (PixSlay light UI) */
     function _obV2() {
@@ -10410,15 +10482,52 @@
     }
 
     /* ─────────────────────────────────────────────────────
+       SPLASH SCREEN
+    ───────────────────────────────────────────────────── */
+    function screenSplash() {
+      return (
+        '<div class="screen" style="position:absolute;inset:0;display:flex;flex-direction:column;' +
+                                   'align-items:center;justify-content:center;' +
+                                   'background:' + T.blue + ';overflow:hidden;">' +
+          /* Logo mark */
+          '<div style="display:flex;flex-direction:column;align-items:center;gap:14px;">' +
+            /* Wordmark */
+            '<div style="display:flex;align-items:center;gap:10px;">' +
+              /* Camera icon */
+              '<svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+                '<rect width="44" height="44" rx="12" fill="rgba(255,255,255,.15)"/>' +
+                '<path d="M8 16a4 4 0 0 1 4-4h2.5l2-3h7l2 3H32a4 4 0 0 1 4 4v13a4 4 0 0 1-4 4H12a4 4 0 0 1-4-4V16z" stroke="#fff" stroke-width="2" fill="none"/>' +
+                '<circle cx="22" cy="22.5" r="5" stroke="#fff" stroke-width="2" fill="none"/>' +
+                '<circle cx="30.5" cy="17" r="1.2" fill="#fff"/>' +
+              '</svg>' +
+              '<span style="font-size:32px;font-weight:800;color:#fff;letter-spacing:-.5px;">PixSlay</span>' +
+            '</div>' +
+            /* Tagline */
+            '<p style="font-size:15px;font-weight:500;color:rgba(255,255,255,.75);margin:0;letter-spacing:.01em;">' +
+              'Every photo. Every face. Found.' +
+            '</p>' +
+          '</div>' +
+        '</div>'
+      );
+    }
+
+    /* Auto-navigate after splash */
+    function _splashAutoNav() {
+      setTimeout(function() { go(splashDest); }, 1500);
+    }
+
+    /* ─────────────────────────────────────────────────────
        SCREEN MAP
     ───────────────────────────────────────────────────── */
     var SCREEN_MAP = {
       'onboarding':          screenOnboarding,
+      'splash':              screenSplash,
       'entry':               screenEntry,
       'varun-reg':           screenVarunReg,
       'varun-otp':           screenVarunOtp,
       'varun-profile':       screenVarunProfile,
       'varun-home':          screenAlbumListing,
+      'varun-empty-home':    screenVarunEmptyHome,
       'varun-create-group':  screenVarunCreateGroup,
       'varun-sync':          screenVarunSync,
       'varun-tagging':       screenVarunTagging,
@@ -10502,6 +10611,11 @@
        Timers and focus calls that must run after DOM insert.
     ───────────────────────────────────────────────────── */
     function postRender() {
+      /* Splash — auto-navigate after 1.5s */
+      if (state.screen === 'splash') {
+        _splashAutoNav();
+      }
+
       /* Onboarding auto-scroll — kick off on chat slides */
       if (state.screen === 'onboarding' && (_obSlide === 0 || _obSlide === 1)) {
         setTimeout(_obStartScroll, 700);
